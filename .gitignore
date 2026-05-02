@@ -53,3 +53,13 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# temporary build
+build/
+dist/
+
+# libs
+libs/
+
+# VS Code
+.vscode/
