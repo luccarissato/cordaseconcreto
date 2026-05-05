@@ -1,4 +1,4 @@
-# Ecos do Mangue
+# Cordas e Concreto
 
 Projeto em C usando raylib para a cadeira de Algoritmos e Estrutura de Dados.
 
