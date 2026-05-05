@@ -2,6 +2,7 @@
 #include "state.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
+#include <stdio.h>
 
 #define PARTY_SIZE 4
 #define HISTORY_SIZE 1000
@@ -9,6 +10,8 @@
 Vector2 positionHistory[HISTORY_SIZE];
 Direction directionHistory[HISTORY_SIZE];
 int historyIndex = 0;
+Texture2D mapTexture;
+Camera2D camera;
 
 Player party[PARTY_SIZE];
 
@@ -23,6 +26,11 @@ void initGame() {
 
     initMenu();
     initParty();
+    camera.target = party[0].position; // segue o líder
+    camera.offset = (Vector2){800, 540};
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
+    mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
 }
 
 void updateGame() {
@@ -33,6 +41,7 @@ void updateGame() {
 
         case STATE_EXPLORATION:
             updateParty();
+            camera.target = party[0].position;
             break;
     }
 }
@@ -47,7 +56,10 @@ void drawGame() {
             break;
 
         case STATE_EXPLORATION:
+            BeginMode2D(camera);
+            DrawTexture(mapTexture, 0, 0, WHITE);
             drawParty();
+            EndMode2D();
             break;
     }
 
@@ -57,6 +69,7 @@ void drawGame() {
 void closeGame() {
     unloadMenu();
     unloadParty();
+    UnloadTexture(mapTexture);
     CloseWindow();
 }
 
@@ -93,7 +106,7 @@ void updateParty() {
     }
 
     // delay base entre personagens
-    int delay = 45;
+    int delay = 30;
 
     // followers
     for (int i = 1; i < PARTY_SIZE; i++) {
