@@ -21,5 +21,5 @@ mingw32-make
 
 ## Executar
 ```bash
-.\ecosdomangue.exe
+.\cordaseconcreto.exe
 ```
