@@ -108,6 +108,60 @@ void initParty() {
     initPlayer(&party[2], "p3", (Vector2){960, 540});
     initPlayer(&party[3], "p4", (Vector2){960, 540});
 
+    //maracatu
+    party[0].stats.baseHP = 60;
+    party[0].stats.baseMana = 25;
+    party[0].stats.fortitude = 8;
+    party[0].stats.mente = 5;
+    party[0].stats.forca = 6;
+    party[0].stats.defesa = 7;
+    party[0].stats.velocidade = 2;
+    party[0].stats.defCalor = 6;
+    party[0].stats.defVento = 3;
+    party[0].stats.defMare = 5;
+    party[0].stats.defTerra = 8;
+
+    //manguebeat
+    party[1].stats.baseHP = 50;
+    party[1].stats.baseMana = 25;
+    party[1].stats.fortitude = 6;
+    party[1].stats.mente = 4;
+    party[1].stats.forca = 7;
+    party[1].stats.defesa = 4;
+    party[1].stats.velocidade = 7;
+    party[1].stats.defCalor = 5;
+    party[1].stats.defVento = 8;
+    party[1].stats.defMare = 6;
+    party[1].stats.defTerra = 3;
+
+    //cirandeira
+    party[2].stats.baseHP = 45;
+    party[2].stats.baseMana = 35;
+    party[2].stats.fortitude = 5;
+    party[2].stats.mente = 10;
+    party[2].stats.forca = 3;
+    party[2].stats.defesa = 4;
+    party[2].stats.velocidade = 6;
+    party[2].stats.defCalor = 4;
+    party[2].stats.defVento = 8;
+    party[2].stats.defMare = 7;
+    party[2].stats.defTerra = 5;
+
+    //repentista
+    party[3].stats.baseHP = 35;
+    party[3].stats.baseMana = 40;
+    party[3].stats.fortitude = 4;
+    party[3].stats.mente = 9;
+    party[3].stats.forca = 2;
+    party[3].stats.defesa = 3;
+    party[3].stats.velocidade = 7;
+    party[3].stats.defCalor = 8;
+    party[3].stats.defVento = 6;
+    party[3].stats.defMare = 4;
+    party[3].stats.defTerra = 6;
+
+calculateStats(&party[0].stats);
+
     // inicializa histórico com posição inicial
     for (int i = 0; i < HISTORY_SIZE; i++) {
         positionHistory[i] = party[0].position;

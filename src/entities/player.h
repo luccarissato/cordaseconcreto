@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "../core/collision.h"
+#include "stats.h"
 
 typedef enum {
     DIR_UP,
@@ -24,6 +25,8 @@ typedef struct Player {
 
     int animFrame;
     float animTimer;
+
+    Stats stats;
 } Player;
 
 void initPlayer(Player* p, const char* prefix, Vector2 startPos);

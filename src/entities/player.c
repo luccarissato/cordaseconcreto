@@ -27,6 +27,8 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos) {
 
     p->animFrame = 0;
     p->animTimer = 0.0f;
+
+    calculateStats(&p->stats);
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {
