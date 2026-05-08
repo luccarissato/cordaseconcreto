@@ -22,6 +22,9 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos) {
     sprintf(path, "assets/personagens/%s_lado_andando_placeholder.png", prefix);
     p->side_walk = LoadTexture(path);
 
+    p->collider.offset = (Vector2){ 75.0f, 0.0f };
+    p->collider.size = (Vector2){ 150.0f, 300.0f };
+
     p->animFrame = 0;
     p->animTimer = 0.0f;
 }
@@ -41,7 +44,7 @@ void updatePlayerAnimation(Player* p, int isMoving) {
     }
 }
 
-void updatePlayer(Player* p) {
+void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount) {
     Vector2 move = {0};
 
     if (IsKeyDown(KEY_UP)) {
@@ -61,10 +64,13 @@ void updatePlayer(Player* p) {
         p->direction = DIR_LEFT;
     }
 
-    p->position.x += move.x;
-    p->position.y += move.y;
+    Rectangle playerCollider = getColliderRect(p->position, p->collider);
+    Vector2 resolvedMove = resolveMovement(playerCollider, move, blockers, blockerCount);
 
-    int isMoving = (move.x != 0 || move.y != 0);
+    p->position.x += resolvedMove.x;
+    p->position.y += resolvedMove.y;
+
+    int isMoving = (resolvedMove.x != 0 || resolvedMove.y != 0);
 
     updatePlayerAnimation(p, isMoving);
 }
@@ -95,6 +101,10 @@ void drawPlayer(Player* p) {
     }
 
     DrawTextureRec(tex, src, p->position, WHITE);
+
+    // colision debug
+    Rectangle colliderRect = getColliderRect(p->position, p->collider);
+    DrawRectangleLinesEx(colliderRect, 2.0f, GREEN);
 }
 
 void unloadPlayer(Player* p) {

@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include "raylib.h"
+#include "../core/collision.h"
 
 typedef enum {
     DIR_UP,
@@ -19,12 +20,14 @@ typedef struct Player {
     Texture2D side;
     Texture2D side_walk;
 
+    Collider collider;
+
     int animFrame;
     float animTimer;
 } Player;
 
 void initPlayer(Player* p, const char* prefix, Vector2 startPos);
-void updatePlayer(Player* p);
+void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount);
 void drawPlayer(Player* p);
 void unloadPlayer(Player* p);
 void updatePlayerAnimation(Player* p, int isMoving);

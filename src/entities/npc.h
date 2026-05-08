@@ -2,11 +2,13 @@
 #define NPC_H
 
 #include "raylib.h"
+#include "../core/collision.h"
 #include "../core/dialogue.h"
 
 typedef struct {
     Vector2 position;
     Texture2D sprite;
+    Collider collider;
     DialogueTree* dialogueTree;
     float interactionDistance;
 } NPC;

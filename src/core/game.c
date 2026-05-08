@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "state.h"
 #include "dialogue.h"
+#include "collision.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
 #include "../entities/npc.h"
@@ -22,7 +23,7 @@ Camera2D camera;
 Player party[PARTY_SIZE];
 
 void initParty();
-void updateParty();
+void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
 
@@ -50,7 +51,8 @@ void updateGame() {
             break;
 
         case STATE_EXPLORATION:
-            updateParty();
+            Rectangle blockers[1] = {getColliderRect(testNPC.position, testNPC.collider)};
+            updateParty(blockers, 1);
             camera.target = party[0].position;
             updateNPC(&testNPC, party[0].position);
             break;
@@ -113,12 +115,12 @@ void initParty() {
     }
 }
 
-void updateParty() {
+void updateParty(const Rectangle* blockers, int blockerCount) {
     // guarda posição anterior do líder
     Vector2 oldLeaderPos = party[0].position;
 
     // atualiza líder (input + movimento + animação)
-    updatePlayer(&party[0]);
+    updatePlayer(&party[0], blockers, blockerCount);
 
     // verifica se o líder se moveu
     int leaderMoved = (oldLeaderPos.x != party[0].position.x || 

@@ -6,7 +6,6 @@
     static DialogueTree* currentTree = NULL;
 
     void initDialogue() {
-
         dialogueBg = LoadTexture(
             "assets/interface/dialogo_background_placeholder.png"
         );

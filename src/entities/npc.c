@@ -6,6 +6,8 @@
 void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* tree) {
     npc->position = position;
     npc->sprite = LoadTexture(spritePath);
+    npc->collider.offset = (Vector2){ 0.0f, 0.0f };
+    npc->collider.size = (Vector2){ 300.0f, 300.0f };
     npc->dialogueTree = tree;
     npc->interactionDistance = 240.0f;
 }
@@ -37,6 +39,10 @@ void updateNPC(NPC* npc, Vector2 playerPos) {
 
 void drawNPC(NPC* npc) {
     DrawTexture(npc->sprite, npc->position.x, npc->position.y, WHITE);
+
+    // colision debug
+    Rectangle colliderRect = getColliderRect(npc->position, npc->collider);
+    DrawRectangleLinesEx(colliderRect, 2.0f, RED);
 
     // DrawCircleLines(
     // npc->position.x + npc->sprite.width/2,
