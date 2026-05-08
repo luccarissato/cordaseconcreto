@@ -1,11 +1,17 @@
 #include "raylib.h"
 #include "state.h"
+#include "dialogue.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
+#include "../entities/npc.h"
 #include <stdio.h>
+
+#include "../data/dialogues/teste_dialogue.h"
 
 #define PARTY_SIZE 4
 #define HISTORY_SIZE 1000
+
+NPC testNPC;
 
 Vector2 positionHistory[HISTORY_SIZE];
 Direction directionHistory[HISTORY_SIZE];
@@ -24,12 +30,16 @@ void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
     SetTargetFPS(60);
 
+    initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initMenu();
     initParty();
+    initDialogue();
+
     camera.target = party[0].position; // segue o líder
     camera.offset = (Vector2){800, 540};
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
+
     mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
 }
 
@@ -42,6 +52,11 @@ void updateGame() {
         case STATE_EXPLORATION:
             updateParty();
             camera.target = party[0].position;
+            updateNPC(&testNPC, party[0].position);
+            break;
+
+        case STATE_DIALOGUE:
+            updateDialogue();
             break;
     }
 }
@@ -58,16 +73,28 @@ void drawGame() {
         case STATE_EXPLORATION:
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
+            drawNPC(&testNPC);
             drawParty();
             EndMode2D();
             break;
-    }
+        
+        case STATE_DIALOGUE:
+            BeginMode2D(camera);
+            DrawTexture(mapTexture, 0, 0, WHITE);
+            drawNPC(&testNPC);
+            drawParty();
+            EndMode2D();
+            drawDialogue();
+            break;
+        }
 
     EndDrawing();
 }
 
 void closeGame() {
+    unloadNPC(&testNPC);
     unloadMenu();
+    closeDialogue();
     unloadParty();
     UnloadTexture(mapTexture);
     CloseWindow();

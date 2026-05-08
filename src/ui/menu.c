@@ -17,8 +17,8 @@ static int optionY[2] = {
 static int arrowX = 848;
 
 void initMenu() {
-    background = LoadTexture("assets/menus/menu_background.png");
-    arrow = LoadTexture("assets/menus/seta.png");
+    background = LoadTexture("assets/interface/menu_background_placeholder.png");
+    arrow = LoadTexture("assets/interface/seta_placeholder.png");
 }
 
 void updateMenu() {
