@@ -8,8 +8,7 @@ void initList(List* list) {
 }
 
 void pushBack(List* list, void* data) {
-    ListNode* newNode =
-        malloc(sizeof(ListNode));
+    ListNode* newNode = malloc(sizeof(ListNode));
 
     newNode->data = data;
 

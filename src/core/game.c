@@ -2,6 +2,8 @@
 #include "state.h"
 #include "dialogue.h"
 #include "collision.h"
+#include "../items/game_items.h"
+#include "../items/inventory.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
 #include "../entities/npc.h"
@@ -21,6 +23,7 @@ Texture2D mapTexture;
 Camera2D camera;
 
 Player party[PARTY_SIZE];
+Inventory playerInventory;
 
 void initParty();
 void updateParty(const Rectangle* blockers, int blockerCount);
@@ -35,6 +38,12 @@ void initGame() {
     initMenu();
     initParty();
     initDialogue();
+    initInventory(&playerInventory);
+    
+    // InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
+    // cartolaItem->baseItem = &cartola;
+    // cartolaItem->quantity = 3;
+    // addItemInventory(&playerInventory, cartolaItem);
 
     camera.target = party[0].position; // segue o líder
     camera.offset = (Vector2){800, 540};

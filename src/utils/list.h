@@ -15,18 +15,10 @@ typedef struct {
 
 void initList(List* list);
 
-void pushBack(
-    List* list,
-    void* data
-);
+void pushBack(List* list, void* data);
 
-void removeNode(
-    List* list,
-    ListNode* node
-);
+void removeNode(List* list, ListNode* node);
 
-void clearList(
-    List* list
-);
+void clearList(List* list);
 
 #endif
