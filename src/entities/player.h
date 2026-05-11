@@ -13,6 +13,7 @@ typedef enum {
 } Direction;
 
 typedef struct Player {
+    char name[32];
     Vector2 position;
     Direction direction;
 
@@ -29,7 +30,7 @@ typedef struct Player {
     Stats stats;
 } Player;
 
-void initPlayer(Player* p, const char* prefix, Vector2 startPos);
+void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name);
 void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount);
 void drawPlayer(Player* p);
 void unloadPlayer(Player* p);

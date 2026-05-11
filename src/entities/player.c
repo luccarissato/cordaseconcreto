@@ -1,10 +1,12 @@
 #include "player.h"
+#include <string.h>
 #include <stdio.h>
 
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
 
-void initPlayer(Player* p, const char* prefix, Vector2 startPos) {
+void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
+    strcpy(p->name, name);
     p->position = startPos;
     p->direction = DIR_DOWN;
 

@@ -7,7 +7,8 @@
 #include "../ui/menu.h"
 #include "../entities/player.h"
 #include "../entities/npc.h"
-#include <stdio.h>
+#include "../ui/game_menu.h"
+#include <stdlib.h>
 
 #include "../data/dialogues/teste_dialogue.h"
 
@@ -37,13 +38,15 @@ void initGame() {
     initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initMenu();
     initParty();
+    initGameMenu();
     initDialogue();
     initInventory(&playerInventory);
     
-    // InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
-    // cartolaItem->baseItem = &cartola;
-    // cartolaItem->quantity = 3;
-    // addItemInventory(&playerInventory, cartolaItem);
+    // teste
+    InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
+    cartolaItem->baseItem = &cartola;
+    cartolaItem->quantity = 3;
+    addItemInventory(&playerInventory, cartolaItem);
 
     camera.target = party[0].position; // segue o líder
     camera.offset = (Vector2){800, 540};
@@ -60,6 +63,10 @@ void updateGame() {
             break;
 
         case STATE_EXPLORATION:
+            if (IsKeyPressed(KEY_X)) {
+                openGameMenu();
+            }
+
             Rectangle blockers[1] = {getColliderRect(testNPC.position, testNPC.collider)};
             updateParty(blockers, 1);
             camera.target = party[0].position;
@@ -69,7 +76,14 @@ void updateGame() {
         case STATE_DIALOGUE:
             updateDialogue();
             break;
-    }
+
+        case STATE_GAME_MENU:
+            updateGameMenu();
+            if (IsKeyPressed(KEY_X)) {
+                closeGameMenu();
+            }
+            break;
+        }
 }
 
 void drawGame() {
@@ -97,6 +111,14 @@ void drawGame() {
             EndMode2D();
             drawDialogue();
             break;
+        case STATE_GAME_MENU:
+            BeginMode2D(camera);
+            DrawTexture(mapTexture, 0, 0, WHITE);
+            drawNPC(&testNPC);
+            drawParty();
+            EndMode2D();
+            drawGameMenu();
+            break;
         }
 
     EndDrawing();
@@ -108,14 +130,15 @@ void closeGame() {
     closeDialogue();
     unloadParty();
     UnloadTexture(mapTexture);
+    unloadGameMenu();
     CloseWindow();
 }
 
 void initParty() {
-    initPlayer(&party[0], "p1", (Vector2){960, 540});
-    initPlayer(&party[1], "p2", (Vector2){960, 540});
-    initPlayer(&party[2], "p3", (Vector2){960, 540});
-    initPlayer(&party[3], "p4", (Vector2){960, 540});
+    initPlayer(&party[0], "p1", (Vector2){960, 540}, "1");
+    initPlayer(&party[1], "p2", (Vector2){960, 540}, "2");
+    initPlayer(&party[2], "p3", (Vector2){960, 540}, "3");
+    initPlayer(&party[3], "p4", (Vector2){960, 540}, "4");
 
     //maracatu
     party[0].stats.baseHP = 60;
@@ -169,13 +192,21 @@ void initParty() {
     party[3].stats.defMare = 4;
     party[3].stats.defTerra = 6;
 
-calculateStats(&party[0].stats);
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        calculateStats(&party[i].stats);
+    }
 
     // inicializa histórico com posição inicial
     for (int i = 0; i < HISTORY_SIZE; i++) {
         positionHistory[i] = party[0].position;
         directionHistory[i] = party[0].direction;
     }
+
+    // teste
+    party[0].stats.currentHP = 30;
+    party[0].stats.currentMana = 10;
+    party[1].stats.currentHP = 30;
+    party[1].stats.currentMana = 10;
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {

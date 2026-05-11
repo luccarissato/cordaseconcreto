@@ -1,9 +1,8 @@
 #ifndef ITEM_H
 #define ITEM_H
 
-struct Player;
-struct Inventory;
-struct ListNode;
+#include "../entities/player.h"
+#include "../utils/list.h"
 
 typedef enum {
     ITEM_HEAL,
@@ -24,7 +23,9 @@ typedef struct {
     int quantity;
 } InventoryItem;
 
-void useItem(struct Player* target,Item* item);
-void consumeItem(struct Inventory* inv, struct ListNode* node, struct Player* target);
+struct Inventory;
+
+void useItem(Player* target, InventoryItem* item);
+void consumeItem(struct Inventory* inv, ListNode* node, Player* target);
 
 #endif
