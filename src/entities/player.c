@@ -5,6 +5,12 @@
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
 
+/**
+ * initPlayer - Inicializa um personagem jogável
+ * 
+ * Configura todos os campos do Player: nome, posição, texturas,
+ * colisão, animação, stats e a lista de condições de status.
+ */
 void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     strcpy(p->name, name);
     p->position = startPos;
@@ -12,6 +18,7 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
 
     char path[128];
 
+    /* Carrega as texturas do personagem */
     sprintf(path, "assets/personagens/%s_frente_placeholder.png", prefix);
     p->front = LoadTexture(path);
 
@@ -24,13 +31,22 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     sprintf(path, "assets/personagens/%s_lado_andando_placeholder.png", prefix);
     p->side_walk = LoadTexture(path);
 
+    /* Configura o colisor */
     p->collider.offset = (Vector2){ 75.0f, 0.0f };
     p->collider.size = (Vector2){ 150.0f, 300.0f };
 
+    /* Inicializa animação */
     p->animFrame = 0;
     p->animTimer = 0.0f;
 
+    /* Calcula os stats derivados (maxHP, maxMana) */
     calculateStats(&p->stats);
+    
+    /* === NOVO: Inicializa o sistema de condições de status === */
+    initStatusList(&p->statusList);
+    
+    /* Personagem começa vivo */
+    p->isAlive = 1;
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {
@@ -111,9 +127,18 @@ void drawPlayer(Player* p) {
     DrawRectangleLinesEx(colliderRect, 2.0f, GREEN);
 }
 
+/**
+ * unloadPlayer - Libera os recursos do personagem
+ * 
+ * Descarrega texturas e libera memória da lista de status.
+ */
 void unloadPlayer(Player* p) {
+    /* Descarrega as texturas */
     UnloadTexture(p->front);
     UnloadTexture(p->back);
     UnloadTexture(p->side);
     UnloadTexture(p->side_walk);
+    
+    /* === NOVO: Libera a lista de condições de status === */
+    freeStatusList(&p->statusList);
 }
