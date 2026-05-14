@@ -1,35 +1,14 @@
-/**
- * =============================================================================
- * ENEMY.C - Implementação das Funções de Inimigos
- * =============================================================================
- * 
- * Implementa todas as funções relacionadas a inimigos, incluindo
- * inicialização, combate e gerenciamento de condições de status.
- * 
- * =============================================================================
- */
-
 #include "enemy.h"
 #include <string.h>
 #include <stdlib.h>
 
-/* =============================================================================
- * FUNÇÕES DE INICIALIZAÇÃO E GERENCIAMENTO
- * ============================================================================= */
-
-/**
- * initEnemy - Inicializa um inimigo com valores padrão
- * 
- * Configura o nome, stats básicos e inicializa a lista de status vazia.
- */
+// initEnemy - Inicializa um inimigo com valores padrão
 void initEnemy(Enemy* enemy, const char* name) {
     if (enemy == NULL) return;
     
-    /* Copia o nome (limitado a 31 caracteres + null terminator) */
     strncpy(enemy->name, name, 31);
     enemy->name[31] = '\0';
     
-    /* Inicializa stats com valores padrão */
     enemy->stats.baseHP = 50;
     enemy->stats.maxHP = 50;
     enemy->stats.currentHP = 50;
@@ -46,33 +25,19 @@ void initEnemy(Enemy* enemy, const char* name) {
     enemy->stats.defMare = 0;
     enemy->stats.defTerra = 0;
     
-    /* Inicializa a lista de condições de status */
     initStatusList(&enemy->statusList);
     
-    /* Inimigo começa vivo */
     enemy->isAlive = 1;
-    
-    /* Recompensas padrão */
-    enemy->expReward = 10;
-    enemy->goldReward = 5;
 }
 
-/**
- * freeEnemy - Libera recursos do inimigo
- * 
- * Libera a memória alocada pela lista de status.
- */
+// freeEnemy - Libera recursos do inimigo
 void freeEnemy(Enemy* enemy) {
     if (enemy == NULL) return;
     
     freeStatusList(&enemy->statusList);
 }
 
-/**
- * setEnemyStats - Configura os stats de um inimigo
- * 
- * Define os atributos principais de combate do inimigo.
- */
+// setEnemyStats - Configura os stats de um inimigo
 void setEnemyStats(Enemy* enemy, int hp, int forca, int defesa, int velocidade) {
     if (enemy == NULL) return;
     
@@ -84,46 +49,19 @@ void setEnemyStats(Enemy* enemy, int hp, int forca, int defesa, int velocidade) 
     enemy->stats.velocidade = velocidade;
 }
 
-/**
- * setEnemyRewards - Configura as recompensas do inimigo
- * 
- * Define experiência e ouro dados ao derrotar o inimigo.
- */
-void setEnemyRewards(Enemy* enemy, int exp, int gold) {
-    if (enemy == NULL) return;
-    
-    enemy->expReward = exp;
-    enemy->goldReward = gold;
-}
-
-/* =============================================================================
- * FUNÇÕES DE COMBATE
- * ============================================================================= */
-
-/**
- * damageEnemy - Aplica dano a um inimigo
- * 
- * Calcula o dano efetivo considerando a defesa do inimigo.
- * O dano mínimo é sempre 1 (para garantir progresso).
- * Se o HP chegar a 0 ou menos, marca o inimigo como derrotado.
- */
+// damageEnemy - Aplica dano a um inimigo
 int damageEnemy(Enemy* enemy, int damage) {
     if (enemy == NULL || !enemy->isAlive) return 0;
     
-    /* Obtém modificador de defesa baseado em status */
     float defenseModifier = getDefenseModifier(&enemy->statusList);
     
-    /* Calcula dano efetivo (dano - defesa modificada) */
     int effectiveDefense = (int)(enemy->stats.defesa * defenseModifier);
     int effectiveDamage = damage - effectiveDefense;
     
-    /* Dano mínimo de 1 */
     if (effectiveDamage < 1) effectiveDamage = 1;
     
-    /* Aplica o dano */
     enemy->stats.currentHP -= effectiveDamage;
     
-    /* Verifica se o inimigo foi derrotado */
     if (enemy->stats.currentHP <= 0) {
         enemy->stats.currentHP = 0;
         enemy->isAlive = 0;
@@ -132,11 +70,7 @@ int damageEnemy(Enemy* enemy, int damage) {
     return effectiveDamage;
 }
 
-/**
- * healEnemy - Cura HP de um inimigo
- * 
- * Restaura HP, limitando ao máximo.
- */
+// healEnemy - Cura HP de um inimigo
 void healEnemy(Enemy* enemy, int amount) {
     if (enemy == NULL || !enemy->isAlive) return;
     
@@ -147,68 +81,107 @@ void healEnemy(Enemy* enemy, int amount) {
     }
 }
 
-/**
- * applyStatusToEnemy - Aplica uma condição de status ao inimigo
- * 
- * Adiciona uma condição de status à lista do inimigo.
- */
+// applyStatusToEnemy - Aplica uma condição de status ao inimigo
 void applyStatusToEnemy(Enemy* enemy, StatusType type, int turns, float intensity) {
     if (enemy == NULL || !enemy->isAlive) return;
     
     addStatusCondition(&enemy->statusList, type, turns, intensity);
 }
 
-/**
- * processEnemyStatusEffects - Processa efeitos de status no turno
- * 
- * Aplica os efeitos de todas as condições de status ativas:
- * - Veneno: causa dano
- * - Queimadura: causa dano
- * - Regeneração: cura HP
- * 
- * Também atualiza as durações das condições.
- */
+// processEnemyStatusEffects - Processa efeitos de status no turno
 int processEnemyStatusEffects(Enemy* enemy) {
     if (enemy == NULL || !enemy->isAlive) return 0;
     
-    /* Processa os efeitos e obtém o dano total */
     int damage = processStatusEffects(
         &enemy->statusList,
         &enemy->stats.currentHP,
         enemy->stats.maxHP
     );
     
-    /* Verifica se o inimigo foi derrotado por dano de status */
     if (enemy->stats.currentHP <= 0) {
         enemy->stats.currentHP = 0;
         enemy->isAlive = 0;
     }
     
-    /* Atualiza as durações das condições */
     updateStatusDurations(&enemy->statusList);
     
     return damage;
 }
 
-/**
- * canEnemyAct - Verifica se o inimigo pode agir neste turno
- * 
- * Considera condições como sono e paralisia que podem impedir ação.
- */
+// canEnemyAct - Verifica se o inimigo pode agir neste turno
 int canEnemyAct(Enemy* enemy) {
     if (enemy == NULL || !enemy->isAlive) return 0;
     
     return canActThisTurn(&enemy->statusList);
 }
 
-/**
- * getEnemyDamageModifier - Obtém o modificador de dano do inimigo
- * 
- * Retorna o multiplicador de dano baseado em condições de status
- * como força aumentada ou queimadura.
- */
+// getEnemyDamageModifier - Obtém o modificador de dano do inimigo
 float getEnemyDamageModifier(Enemy* enemy) {
     if (enemy == NULL) return 1.0f;
     
     return getStrengthModifier(&enemy->statusList);
+}
+
+// initEnemyWithTexture - Inicializa um inimigo com posição e textura
+void initEnemyWithTexture(Enemy* enemy, const char* name, Vector2 position, const char* texturePath) {
+    if (enemy == NULL) return;
+    
+    strncpy(enemy->name, name, 31);
+    enemy->name[31] = '\0';
+    
+    enemy->position = position;
+    
+    enemy->texture = LoadTexture(texturePath);
+    
+    enemy->collider.offset = (Vector2){ 75.0f, 0.0f };
+    enemy->collider.size = (Vector2){ 150.0f, 300.0f };
+    
+    enemy->stats.baseHP = 50;
+    enemy->stats.maxHP = 50;
+    enemy->stats.currentHP = 50;
+    enemy->stats.baseMana = 20;
+    enemy->stats.maxMana = 20;
+    enemy->stats.currentMana = 20;
+    enemy->stats.fortitude = 5;
+    enemy->stats.mente = 5;
+    enemy->stats.forca = 5;
+    enemy->stats.defesa = 5;
+    enemy->stats.velocidade = 5;
+    enemy->stats.defCalor = 0;
+    enemy->stats.defVento = 0;
+    enemy->stats.defMare = 0;
+    enemy->stats.defTerra = 0;
+    
+    initStatusList(&enemy->statusList);
+    
+    enemy->isAlive = 1;
+    enemy->inCombat = 0;
+}
+
+// drawEnemy - Renderiza um inimigo na tela
+void drawEnemy(Enemy* enemy) {
+    if (enemy == NULL) return;
+
+    DrawTexture(enemy->texture, (int)enemy->position.x, (int)enemy->position.y, WHITE);
+    
+    Rectangle colliderRect = getColliderRect(enemy->position, enemy->collider);
+    DrawRectangleLinesEx(colliderRect, 2.0f, RED);
+}
+
+// unloadEnemy - Descarrega recursos do inimigo
+void unloadEnemy(Enemy* enemy) {
+    if (enemy == NULL) return;
+    
+    UnloadTexture(enemy->texture);
+    
+    freeStatusList(&enemy->statusList);
+}
+
+// getEnemyCollider - Obtém o retângulo de colisão do inimigo
+Rectangle getEnemyCollider(Enemy* enemy) {
+    if (enemy == NULL) {
+        return (Rectangle){0, 0, 0, 0};
+    }
+    
+    return getColliderRect(enemy->position, enemy->collider);
 }
