@@ -66,6 +66,10 @@ typedef struct Player {
     /* === NOVO: Sistema de Condições de Status === */
     StatusList statusList;      /* Lista de condições de status ativas */
     int isAlive;                /* 1 se HP > 0, 0 se derrotado */
+    
+    /* === NOVO: Sistema de Habilidades === */
+    int level;                  /* Nível do personagem (1-MAX) */
+    int characterID;            /* ID do tipo de personagem (0-3) */
 } Player;
 
 void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name);

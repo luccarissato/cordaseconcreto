@@ -13,6 +13,8 @@
 #include "../interactables/interactable.h"
 #include "../interactables/chest.h"
 #include "../combat/combat.h"
+#include "../combat/ability.h"
+#include "../ui/combat_ui.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -20,9 +22,7 @@
 
 #include "../data/dialogues/teste_dialogue.h"
 
-#define PARTY_SIZE 4
 #define HISTORY_SIZE 1000
-#define MAX_ENEMIES 32
 
 NPC testNPC;
 InteractableManager interactableManager;
@@ -63,6 +63,7 @@ void initGame() {
     initInventory(&playerInventory);
     initEnemyManager();
     initCombat();
+    initCombatUI();
 
 
     // teste
@@ -176,7 +177,7 @@ void updateGame() {
             break;
         
         case STATE_COMBAT:
-            /* Aqui será implementada a lógica de combate */
+            updateCombatUI();
             break;
         }
 }
@@ -212,15 +213,7 @@ void drawGame() {
             break;
         
         case STATE_COMBAT:
-            /* Aqui será renderizada a interface de combate */
-            BeginMode2D(camera);
-            DrawTexture(mapTexture, 0, 0, WHITE);
-            drawNPC(&testNPC);
-            drawInteractables(&interactableManager);
-            drawEnemies();
-            drawParty();
-            EndMode2D();
-            DrawText("COMBAT STATE - TODO", 100, 100, 30, RED);
+            drawCombatUI();
             break;
         
         case STATE_GAME_MENU:
@@ -244,6 +237,7 @@ void closeGame() {
     closeDialogue();
     unloadParty();
     unloadEnemyManager();
+    unloadCombatUI();
     UnloadTexture(mapTexture);
     unloadGameMenu();
     unloadInteractableManager(&interactableManager);
@@ -310,6 +304,9 @@ void initParty() {
 
     for (int i = 0; i < PARTY_SIZE; i++) {
         calculateStats(&party[i].stats);
+        /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
+        party[i].characterID = i;
+        party[i].level = 1;
     }
 
     // inicializa histórico com posição inicial
@@ -381,25 +378,29 @@ void unloadParty() {
     }
 }
 
-/* =============================================================================
- * FUNÇÕES DE GERENCIAMENTO DE INIMIGOS
- * ============================================================================= */
+Player* getPartyMembers(int* outCount) {
+    if (outCount != NULL) {
+        *outCount = PARTY_SIZE;
+    }
 
-/**
- * initEnemyManager - Inicializa o gerenciador de inimigos
- * 
- * Prepara o sistema para gerenciar inimigos no mapa.
- */
+    return party;
+}
+
+Enemy* getEnemyManagerArray(int* outCount) {
+    if (outCount != NULL) {
+        *outCount = enemyManager.count;
+    }
+
+    return enemyManager.enemies;
+}
+
+ //* initEnemyManager - Inicializa o gerenciador de inimigos
 void initEnemyManager() {
     enemyManager.count = 0;
     memset(enemyManager.enemies, 0, sizeof(enemyManager.enemies));
 }
 
-/**
- * spawnEnemy - Spawna um novo inimigo no mapa
- * 
- * Adiciona um inimigo à lista de inimigos ativos.
- */
+// spawnEnemy - Spawna um novo inimigo no mapa
 void spawnEnemy(const char* name, Vector2 position, const char* texturePath) {
     if (enemyManager.count >= MAX_ENEMIES) {
         return;
@@ -409,11 +410,7 @@ void spawnEnemy(const char* name, Vector2 position, const char* texturePath) {
     enemyManager.count++;
 }
 
-/**
- * updateEnemies - Atualiza todos os inimigos
- * 
- * Processa IA, status e colisão dos inimigos (futura implementação).
- */
+// updateEnemies - Atualiza todos os inimigos
 void updateEnemies(const Rectangle* blockers, int blockerCount) {
     for (int i = 0; i < enemyManager.count; i++) {
         Enemy* enemy = &enemyManager.enemies[i];
@@ -427,11 +424,7 @@ void updateEnemies(const Rectangle* blockers, int blockerCount) {
     }
 }
 
-/**
- * drawEnemies - Renderiza todos os inimigos
- * 
- * Desenha cada inimigo ativo no mapa.
- */
+// drawEnemies - Renderiza todos os inimigos
 void drawEnemies() {
     for (int i = 0; i < enemyManager.count; i++) {
         if (enemyManager.enemies[i].isAlive) {
@@ -440,11 +433,7 @@ void drawEnemies() {
     }
 }
 
-/**
- * getEnemyBlockers - Coleta retângulos de colisão de todos os inimigos
- * 
- * Retorna array de retângulos para colisão com jugadores/objetos.
- */
+// getEnemyBlockers - Coleta retângulos de colisão de todos os inimigos
 void getEnemyBlockers(Rectangle* outBlockers, int* outCount) {
     if (outBlockers == NULL || outCount == NULL) return;
     
@@ -458,11 +447,7 @@ void getEnemyBlockers(Rectangle* outBlockers, int* outCount) {
     }
 }
 
-/**
- * unloadEnemyManager - Libera recursos do gerenciador de inimigos
- * 
- * Descarrega texturas e libera memória de todos os inimigos.
- */
+// unloadEnemyManager - Libera recursos do gerenciador de inimigos
 void unloadEnemyManager() {
     for (int i = 0; i < enemyManager.count; i++) {
         unloadEnemy(&enemyManager.enemies[i]);
@@ -470,54 +455,76 @@ void unloadEnemyManager() {
     enemyManager.count = 0;
 }
 
-/* =============================================================================
- * FUNÇÕES DE COMBATE
- * ============================================================================= */
-
-/**
- * startCombat - Inicia um combate com um inimigo
- * 
- * Detecta proximidade com inimigos e inicia combate se aplicável.
- */
+// startCombat - Inicia um combate com um inimigo
 void startCombat(Vector2 playerPos, float combatDistance) {
-    /* Se já está em combate, não inicia outro */
     if (combat.inCombat) return;
     
     combat.inCombat = 0;
     combat.enemyCount = 0;
     
-    /* Procura inimigos próximos */
     for (int i = 0; i < enemyManager.count; i++) {
         Enemy* enemy = &enemyManager.enemies[i];
         
         if (!enemy->isAlive) continue;
         
-        /* Calcula distância entre jogador e inimigo */
         float dx = enemy->position.x - playerPos.x;
         float dy = enemy->position.y - playerPos.y;
         float distance = sqrtf(dx * dx + dy * dy);
         
-        /* Se dentro da distância de combate, adiciona ao combate */
         if (distance < combatDistance) {
             combat.enemyIndices[combat.enemyCount] = i;
             combat.enemyCount++;
         }
     }
     
-    /* Se encontrou inimigos, inicia combate */
     if (combat.enemyCount > 0) {
         combat.inCombat = 1;
         
-        /* Coleta inimigos para passar ao combat system */
         Enemy enemies[MAX_ENEMIES];
         for (int i = 0; i < combat.enemyCount; i++) {
             enemies[i] = enemyManager.enemies[combat.enemyIndices[i]];
         }
         
-        /* Inicia combate com sistema de turnos */
         startCombatWithEnemies(party, PARTY_SIZE, enemies, combat.enemyCount);
         
-        /* Muda estado do jogo para combate */
         currentGameState = STATE_COMBAT;
     }
+}
+
+int getCombatState() {
+    return combat.inCombat;
+}
+
+Enemy** getEnemiesInCombat() {
+    static Enemy* combatEnemies[MAX_ENEMIES];
+
+    for (int i = 0; i < combat.enemyCount; i++) {
+        int enemyIndex = combat.enemyIndices[i];
+        if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
+            combatEnemies[i] = &enemyManager.enemies[enemyIndex];
+        } else {
+            combatEnemies[i] = NULL;
+        }
+    }
+
+    return combatEnemies;
+}
+
+int getEnemyCombatCount() {
+    return combat.enemyCount;
+}
+
+void endCombat() {
+    for (int i = 0; i < combat.enemyCount; i++) {
+        int enemyIndex = combat.enemyIndices[i];
+        if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
+            enemyManager.enemies[enemyIndex].inCombat = 0;
+        }
+    }
+
+    combat.inCombat = 0;
+    combat.enemyCount = 0;
+    memset(combat.enemyIndices, 0, sizeof(combat.enemyIndices));
+    endCombatBattle();
+    currentGameState = STATE_EXPLORATION;
 }

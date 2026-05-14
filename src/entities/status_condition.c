@@ -106,7 +106,7 @@ void removeAllDebuffs(StatusList* statusList) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
         
-        if (condition != NULL && isDebuff(condition->type)) {
+        if (condition != NULL && isDebuff(condition->type) && condition->type != STATUS_BURN) {
             free(condition);
             removeNode(&statusList->conditions, current);
         }
@@ -179,6 +179,10 @@ int isDebuff(StatusType type) {
         case STATUS_SLEEP:
         case STATUS_CONFUSION:
         case STATUS_BLIND:
+        case STATUS_BLEED:
+        case STATUS_WEAKEN:
+        case STATUS_SLOW:
+        case STATUS_DEFENSE_DOWN:
             return 1;
         default:
             return 0;
@@ -224,6 +228,16 @@ int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
                     
                     *currentHP -= burnDamage;
                     totalDamage += burnDamage;
+                    break;
+                }
+
+                case STATUS_BLEED: {
+                    int bleedDamage = (int)condition->intensity;
+                    if (bleedDamage < 1) bleedDamage = 1;
+
+                    *currentHP -= bleedDamage;
+                    totalDamage += bleedDamage;
+                    condition->intensity += 5.0f;
                     break;
                 }
                 
@@ -305,6 +319,10 @@ float getStrengthModifier(StatusList* statusList) {
     if (hasStatusCondition(statusList, STATUS_BURN)) {
         modifier -= BURN_STRENGTH_REDUCTION;
     }
+
+    if (hasStatusCondition(statusList, STATUS_WEAKEN)) {
+        modifier -= 0.25f;
+    }
     
     StatusCondition* strengthUp = getStatusCondition(statusList, STATUS_STRENGTH_UP);
     if (strengthUp != NULL) {
@@ -325,6 +343,12 @@ float getDefenseModifier(StatusList* statusList) {
     if (defenseUp != NULL) {
         modifier += DEFENSE_UP_BONUS * defenseUp->intensity;
     }
+
+    if (hasStatusCondition(statusList, STATUS_DEFENSE_DOWN)) {
+        modifier -= 0.25f;
+    }
+
+    if (modifier < 0.1f) modifier = 0.1f;
     
     return modifier;
 }
@@ -338,6 +362,12 @@ float getSpeedModifier(StatusList* statusList) {
     if (speedUp != NULL) {
         modifier += SPEED_UP_BONUS * speedUp->intensity;
     }
+
+    if (hasStatusCondition(statusList, STATUS_SLOW)) {
+        modifier -= 0.25f;
+    }
+
+    if (modifier < 0.1f) modifier = 0.1f;
     
     return modifier;
 }

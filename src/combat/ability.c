@@ -1,0 +1,553 @@
+#include "ability.h"
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+static Ability abilities[4][4];
+static int abilitiesInitialized = 0;
+
+// initCharacter1Abilities - Inicializa habilidades do Tanque/Suporte
+static void initCharacter1Abilities() {
+    /* Skill 1: Taunt - Força inimigos a atacarem ele */
+    abilities[0][0].level_unlocked = 1;
+    abilities[0][0].mana_cost = 20;
+    abilities[0][0].target_type = TARGET_SINGLE_ENEMY;
+    abilities[0][0].ability_type = ABILITY_TYPE_SPECIAL;
+    abilities[0][0].damage_base = 0;
+    abilities[0][0].scaling_type = SCALING_NONE;
+    strcpy(abilities[0][0].name, "Provocar");
+    strcpy(abilities[0][0].description, "Força inimigos a atacarem você por 1 turno");
+    abilities[0][0].data.taunt.aggro_duration = 1;
+    
+    /* Skill 2: Protect - Absorve dano de aliado */
+    abilities[0][1].level_unlocked = 2;
+    abilities[0][1].mana_cost = 30;
+    abilities[0][1].target_type = TARGET_SINGLE_ALLY;
+    abilities[0][1].ability_type = ABILITY_TYPE_BUFF;
+    abilities[0][1].damage_base = 0;
+    abilities[0][1].scaling_type = SCALING_NONE;
+    strcpy(abilities[0][1].name, "Proteção");
+    strcpy(abilities[0][1].description, "Absorve dano de um aliado por 2 turnos");
+    abilities[0][1].data.buff_action.turns_extra = 2;
+    
+    /* Skill 3: Debilitating Strike - Dano físico + debuffs */
+    abilities[0][2].level_unlocked = 3;
+    abilities[0][2].mana_cost = 25;
+    abilities[0][2].target_type = TARGET_AREA_ENEMIES;
+    abilities[0][2].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[0][2].damage_base = 25;
+    abilities[0][2].scaling_type = SCALING_FORCA;
+    abilities[0][2].scaling_mult = 0.8f;
+    strcpy(abilities[0][2].name, "Golpe Debilitante");
+    strcpy(abilities[0][2].description, "Dano em área + reduz força e velocidade por 3 turnos");
+    
+    /* Skill 4: Reduce Damage - Reduz dano e reflete */
+    abilities[0][3].level_unlocked = 4;
+    abilities[0][3].mana_cost = 35;
+    abilities[0][3].target_type = TARGET_SELF;
+    abilities[0][3].ability_type = ABILITY_TYPE_BUFF;
+    abilities[0][3].damage_base = 0;
+    abilities[0][3].scaling_type = SCALING_NONE;
+    strcpy(abilities[0][3].name, "Contra-Ataque");
+    strcpy(abilities[0][3].description, "Reduz dano e reflete parte como true damage por 3 turnos");
+    abilities[0][3].data.reflect.reflect_duration = 3;
+    abilities[0][3].data.reflect.reflect_mult = 0.3f;
+}
+
+
+ // initCharacter2Abilities - Inicializa habilidades do DPS Físico
+static void initCharacter2Abilities() {
+    /* Skill 1: Triple Strike - 3 hits com chance de debuff */
+    abilities[1][0].level_unlocked = 1;
+    abilities[1][0].mana_cost = 15;
+    abilities[1][0].target_type = TARGET_SINGLE_ENEMY;
+    abilities[1][0].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[1][0].damage_base = 20;
+    abilities[1][0].scaling_type = SCALING_FORCA;
+    abilities[1][0].scaling_mult = 0.5f;
+    strcpy(abilities[1][0].name, "Triplo Golpe");
+    strcpy(abilities[1][0].description, "3 ataques rápidos. 50% de chance de reduzir defesa");
+    abilities[1][0].data.area.max_targets = 3;
+    
+    /* Skill 2: Bleed - Aplica sangramento */
+    abilities[1][1].level_unlocked = 2;
+    abilities[1][1].mana_cost = 20;
+    abilities[1][1].target_type = TARGET_SINGLE_ENEMY;
+    abilities[1][1].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[1][1].damage_base = 35;
+    abilities[1][1].scaling_type = SCALING_FORCA;
+    abilities[1][1].scaling_mult = 0.7f;
+    strcpy(abilities[1][1].name, "Corte Sangrento");
+    strcpy(abilities[1][1].description, "Ataque físico que aplica sangramento escalável");
+    abilities[1][1].data.status.status_type = STATUS_BLEED;
+    abilities[1][1].data.status.duration = -1;
+    abilities[1][1].data.status.intensity = 5;
+    
+    /* Skill 3: Counter - Devolve dano recebido */
+    abilities[1][2].level_unlocked = 3;
+    abilities[1][2].mana_cost = 0;
+    abilities[1][2].target_type = TARGET_SELF;
+    abilities[1][2].ability_type = ABILITY_TYPE_BUFF;
+    abilities[1][2].damage_base = 0;
+    abilities[1][2].scaling_type = SCALING_NONE;
+    strcpy(abilities[1][2].name, "Contra-Ataque");
+    strcpy(abilities[1][2].description, "Devolve 50% do dano recebido. Aumenta sangramento em 1");
+    
+    /* Skill 4: Haste - Extra turno + buff velocidade */
+    abilities[1][3].level_unlocked = 4;
+    abilities[1][3].mana_cost = 30;
+    abilities[1][3].target_type = TARGET_SELF;
+    abilities[1][3].ability_type = ABILITY_TYPE_BUFF;
+    abilities[1][3].damage_base = 0;
+    abilities[1][3].scaling_type = SCALING_NONE;
+    strcpy(abilities[1][3].name, "Aceleração");
+    strcpy(abilities[1][3].description, "Ganha turno extra + 5 de velocidade por 3 turnos");
+    abilities[1][3].data.buff_action.turns_extra = 1;
+    abilities[1][3].data.buff_action.speed_bonus = 5;
+}
+
+//initCharacter3Abilities - Inicializa habilidades da Healer/Suporte
+static void initCharacter3Abilities() {
+    /* Skill 1: Cleanse - Remove debuffs */
+    abilities[2][0].level_unlocked = 1;
+    abilities[2][0].mana_cost = 20;
+    abilities[2][0].target_type = TARGET_SINGLE_ALLY;
+    abilities[2][0].ability_type = ABILITY_TYPE_CLEANSE;
+    abilities[2][0].damage_base = 0;
+    abilities[2][0].scaling_type = SCALING_NONE;
+    strcpy(abilities[2][0].name, "Purificar");
+    strcpy(abilities[2][0].description, "Remove todos os debuffs de um aliado");
+    
+    /* Skill 2: Group Heal - Cura em grupo */
+    abilities[2][1].level_unlocked = 2;
+    abilities[2][1].mana_cost = 25;
+    abilities[2][1].target_type = TARGET_AREA_ALLIES;
+    abilities[2][1].ability_type = ABILITY_TYPE_HEAL;
+    abilities[2][1].damage_base = 0;
+    abilities[2][1].scaling_type = SCALING_MENTE;
+    abilities[2][1].scaling_mult = 0.8f;
+    strcpy(abilities[2][1].name, "Cura em Grupo");
+    strcpy(abilities[2][1].description, "Cura pequena em todos os aliados");
+    abilities[2][1].data.heal.heal_amount = 30;
+    abilities[2][1].data.heal.heal_scaling = 0.8f;
+    
+    /* Skill 3: Group Buff - Buff alternável */
+    abilities[2][2].level_unlocked = 3;
+    abilities[2][2].mana_cost = 30;
+    abilities[2][2].target_type = TARGET_AREA_ALLIES;
+    abilities[2][2].ability_type = ABILITY_TYPE_BUFF;
+    abilities[2][2].damage_base = 0;
+    abilities[2][2].scaling_type = SCALING_NONE;
+    strcpy(abilities[2][2].name, "Bênção Seletiva");
+    strcpy(abilities[2][2].description, "Buff alternável: +10% dano ou +10% resistência por 3 turnos");
+    
+    /* Skill 4: Revive - Ressuscita aliado */
+    abilities[2][3].level_unlocked = 4;
+    abilities[2][3].mana_cost = 50;
+    abilities[2][3].target_type = TARGET_SINGLE_ALLY;
+    abilities[2][3].ability_type = ABILITY_TYPE_REVIVE;
+    abilities[2][3].damage_base = 0;
+    abilities[2][3].scaling_type = SCALING_NONE;
+    strcpy(abilities[2][3].name, "Ressureição");
+    strcpy(abilities[2][3].description, "Ressuscita aliado com 33% de HP");
+    abilities[2][3].data.revive.revive_hp_percent = 0.33f;
+}
+
+
+// initCharacter4Abilities - Inicializa habilidades do Mago Elemental
+static void initCharacter4Abilities() {
+    /* Skill 1: Single Element Spell - Alvo único com troca de elemento */
+    abilities[3][0].level_unlocked = 1;
+    abilities[3][0].mana_cost = 18;
+    abilities[3][0].target_type = TARGET_SINGLE_ENEMY;
+    abilities[3][0].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[3][0].damage_base = 35;
+    abilities[3][0].scaling_type = SCALING_MENTE;
+    abilities[3][0].scaling_mult = 0.9f;
+    strcpy(abilities[3][0].name, "Magia Elemental");
+    strcpy(abilities[3][0].description, "Ataque elemental em alvo único. Pressione setas para trocar elemento");
+    
+    /* Skill 2: Arcane Mark - Marca para próximo dano 2x */
+    abilities[3][1].level_unlocked = 2;
+    abilities[3][1].mana_cost = 15;
+    abilities[3][1].target_type = TARGET_SINGLE_ENEMY;
+    abilities[3][1].ability_type = ABILITY_TYPE_DEBUFF;
+    abilities[3][1].damage_base = 0;
+    abilities[3][1].scaling_type = SCALING_NONE;
+    strcpy(abilities[3][1].name, "Marca Arcana");
+    strcpy(abilities[3][1].description, "Marca alvo. Próximo dano elemental recebe 2x multiplicador");
+    abilities[3][1].data.status.duration = 1;
+    
+    /* Skill 3: Area Element Spell - Área com troca de elemento */
+    abilities[3][2].level_unlocked = 3;
+    abilities[3][2].mana_cost = 30;
+    abilities[3][2].target_type = TARGET_AREA_ENEMIES;
+    abilities[3][2].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[3][2].damage_base = 28;
+    abilities[3][2].scaling_type = SCALING_MENTE;
+    abilities[3][2].scaling_mult = 0.8f;
+    strcpy(abilities[3][2].name, "Explosão Elemental");
+    strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos");
+    
+    /* Skill 4: Permanent Buff - Aumenta dano por turno */
+    abilities[3][3].level_unlocked = 4;
+    abilities[3][3].mana_cost = 20;
+    abilities[3][3].target_type = TARGET_SELF;
+    abilities[3][3].ability_type = ABILITY_TYPE_BUFF;
+    abilities[3][3].damage_base = 0;
+    abilities[3][3].scaling_type = SCALING_NONE;
+    strcpy(abilities[3][3].name, "Ascensão Mágica");
+    strcpy(abilities[3][3].description, "Buff permanente: +5% dano elemental por turno até morte");
+    abilities[3][3].data.buff_action.turns_extra = -1;
+}
+
+
+//initializeAbilitySystem - Inicializa todas as habilidades do jogo
+static void initializeAbilitySystem() {
+    if (abilitiesInitialized) return;
+    
+    initCharacter1Abilities();
+    initCharacter2Abilities();
+    initCharacter3Abilities();
+    initCharacter4Abilities();
+    
+    abilitiesInitialized = 1;
+}
+
+
+//initPlayerAbilities - Inicializa as habilidades de um personagem
+void initPlayerAbilities(Player* player, CharacterID characterID) {
+    if (player == NULL) return;
+    
+    initializeAbilitySystem();
+    
+    player->level = 1;
+    player->characterID = characterID;
+}
+
+
+//initAbility - Inicializa uma habilidade manualmente
+
+void initAbility(Ability* ability, const char* name, int level_unlocked, int mana_cost) {
+    if (ability == NULL) return;
+    
+    memset(ability, 0, sizeof(Ability));
+    strncpy(ability->name, name, 31);
+    ability->level_unlocked = level_unlocked;
+    ability->mana_cost = mana_cost;
+}
+
+
+// canUseAbility - Verifica se a habilidade pode ser usada
+int canUseAbility(Player* player, int ability_index) {
+    if (player == NULL || ability_index < 0 || ability_index >= 4) return 0;
+    if (!player->isAlive) return 0;
+    
+    /* Verifica se está desbloqueada */
+    Ability* ability = &abilities[player->characterID][ability_index];
+    if (ability->level_unlocked > player->level) return 0;
+    
+    /* Verifica se tem mana */
+    if (player->stats.currentMana < ability->mana_cost) return 0;
+    
+    return 1;
+}
+
+
+// getAbilityDamage - Calcula o dano da habilidade com scaling
+float getAbilityDamage(Ability* ability, Player* caster) {
+    if (ability == NULL || caster == NULL) return 0;
+    
+    float damage = ability->damage_base;
+    
+    switch (ability->scaling_type) {
+        case SCALING_FORCA:
+            damage += caster->stats.forca * ability->scaling_mult;
+            break;
+        case SCALING_MENTE:
+            damage += caster->stats.mente * ability->scaling_mult;
+            break;
+        case SCALING_DEFESA:
+            damage += caster->stats.defesa * ability->scaling_mult;
+            break;
+        case SCALING_VELOCIDADE:
+            damage += caster->stats.velocidade * ability->scaling_mult;
+            break;
+        case SCALING_NONE:
+        default:
+            break;
+    }
+    
+    return damage;
+}
+
+
+// getAbilityHeal - Calcula a cura da habilidade com scaling
+float getAbilityHeal(Ability* ability, Player* caster) {
+    if (ability == NULL || caster == NULL) return 0;
+    
+    float heal = ability->data.heal.heal_amount;
+    
+    heal += caster->stats.mente * ability->data.heal.heal_scaling;
+    
+    return heal;
+}
+
+
+//getAbilityByIndex - Obtém habilidade por personagem e índice
+Ability* getAbilityByIndex(int characterID, int abilityIndex) {
+    if (characterID < 0 || characterID >= 4 || abilityIndex < 0 || abilityIndex >= 4) {
+        return NULL;
+    }
+    
+    initializeAbilitySystem();
+    return &abilities[characterID][abilityIndex];
+}
+
+static void clampPlayerCombatStats(Player* target) {
+    if (target == NULL) return;
+
+    if (target->stats.currentHP < 0) {
+        target->stats.currentHP = 0;
+    }
+
+    if (target->stats.currentHP > target->stats.maxHP) {
+        target->stats.currentHP = target->stats.maxHP;
+    }
+
+    if (target->stats.currentMana < 0) {
+        target->stats.currentMana = 0;
+    }
+
+    if (target->stats.currentMana > target->stats.maxMana) {
+        target->stats.currentMana = target->stats.maxMana;
+    }
+
+    target->isAlive = (target->stats.currentHP > 0);
+}
+
+static void damagePlayer(Player* target, int damage) {
+    if (target == NULL || !target->isAlive) return;
+
+    float defenseModifier = getDefenseModifier(&target->statusList);
+    int effectiveDefense = (int)(target->stats.defesa * defenseModifier);
+    int effectiveDamage = damage - effectiveDefense;
+
+    if (effectiveDamage < 1) effectiveDamage = 1;
+
+    target->stats.currentHP -= effectiveDamage;
+    clampPlayerCombatStats(target);
+}
+
+static void healPlayer(Player* target, int amount) {
+    if (target == NULL || !target->isAlive) return;
+
+    target->stats.currentHP += amount;
+    clampPlayerCombatStats(target);
+}
+
+static void revivePlayerCombat(Player* target, float hpPercent) {
+    if (target == NULL) return;
+
+    if (hpPercent < 0.1f) hpPercent = 0.1f;
+    if (hpPercent > 1.0f) hpPercent = 1.0f;
+
+    if (target->stats.currentHP > 0) return;
+
+    int hpToRestore = (int)(target->stats.maxHP * hpPercent);
+    if (hpToRestore < 1) hpToRestore = 1;
+
+    target->stats.currentHP = hpToRestore;
+    clearAllStatus(&target->statusList);
+    clampPlayerCombatStats(target);
+}
+
+static void applyStatusToPlayerTarget(Player* target, StatusType statusType, int turns, float intensity) {
+    if (target == NULL || statusType == STATUS_NONE) return;
+    addStatusCondition(&target->statusList, statusType, turns, intensity);
+}
+
+static void applyStatusToEnemyTarget(Enemy* target, StatusType statusType, int turns, float intensity) {
+    if (target == NULL || statusType == STATUS_NONE) return;
+    applyStatusToEnemy(target, statusType, turns, intensity);
+}
+
+static void applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* ability) {
+    if (target == NULL || caster == NULL || ability == NULL) return;
+
+    int damage = (int)getAbilityDamage(ability, caster);
+    damageEnemy(target, damage);
+}
+
+static void applyDamageToPlayerTarget(Player* target, Player* caster, Ability* ability) {
+    if (target == NULL || caster == NULL || ability == NULL) return;
+
+    int damage = (int)getAbilityDamage(ability, caster);
+    damagePlayer(target, damage);
+}
+
+
+// useAbility - Executa uma habilidade
+void useAbility(Player* caster, int ability_index, void* targets, int target_count, int* target_indices, int selected_count) {
+    if (caster == NULL || !canUseAbility(caster, ability_index)) return;
+    
+    Ability* ability = getAbilityByIndex(caster->characterID, ability_index);
+    if (ability == NULL) return;
+    
+    /* Deduz mana */
+    caster->stats.currentMana -= ability->mana_cost;
+    if (caster->stats.currentMana < 0) {
+        caster->stats.currentMana = 0;
+    }
+    
+    if (ability->ability_type == ABILITY_TYPE_DAMAGE) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        if (ability->target_type == TARGET_AREA_ENEMIES || ability->target_type == TARGET_SINGLE_ENEMY) {
+            Enemy* enemyTargets = (Enemy*)targets;
+            for (int i = 0; i < selected_count; i++) {
+                int targetIndex = target_indices[i];
+                if (targetIndex < 0 || targetIndex >= target_count) continue;
+
+                Enemy* target = &enemyTargets[targetIndex];
+
+                if (caster->characterID == CHARACTER_2_DPS && ability_index == 0) {
+                    applyDamageToEnemyTarget(target, caster, ability);
+                    applyDamageToEnemyTarget(target, caster, ability);
+                    applyDamageToEnemyTarget(target, caster, ability);
+
+                    if ((rand() % 100) < 50) {
+                        applyStatusToEnemyTarget(target, STATUS_DEFENSE_DOWN, 2, 1.0f);
+                    }
+                } else {
+                    applyDamageToEnemyTarget(target, caster, ability);
+                }
+
+                if (ability->data.status.status_type != STATUS_NONE) {
+                    applyStatusToEnemyTarget(
+                        target,
+                        ability->data.status.status_type,
+                        ability->data.status.duration,
+                        ability->data.status.intensity
+                    );
+                }
+
+                if (caster->characterID == CHARACTER_1_TANK && ability_index == 2) {
+                    applyStatusToEnemyTarget(target, STATUS_WEAKEN, 3, 1.0f);
+                    applyStatusToEnemyTarget(target, STATUS_SLOW, 3, 1.0f);
+                }
+            }
+        } else if (ability->target_type == TARGET_AREA_ALLIES || ability->target_type == TARGET_SINGLE_ALLY) {
+            Player* playerTargets = (Player*)targets;
+            for (int i = 0; i < selected_count; i++) {
+                int targetIndex = target_indices[i];
+                if (targetIndex < 0 || targetIndex >= target_count) continue;
+                applyDamageToPlayerTarget(&playerTargets[targetIndex], caster, ability);
+            }
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_HEAL) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Player* playerTargets = (Player*)targets;
+        int healAmount = (int)getAbilityHeal(ability, caster);
+
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+            healPlayer(&playerTargets[targetIndex], healAmount);
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_CLEANSE) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Player* playerTargets = (Player*)targets;
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+            removeAllDebuffs(&playerTargets[targetIndex].statusList);
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_REVIVE) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Player* playerTargets = (Player*)targets;
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+            revivePlayerCombat(&playerTargets[targetIndex], ability->data.revive.revive_hp_percent);
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_BUFF) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Player* playerTargets = (Player*)targets;
+        static int blessingToggle = 0;
+        StatusType blessingType = STATUS_NONE;
+
+        if (caster->characterID == CHARACTER_3_HEALER && ability_index == 2) {
+            blessingType = blessingToggle ? STATUS_DEFENSE_UP : STATUS_STRENGTH_UP;
+            blessingToggle = !blessingToggle;
+        }
+
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+
+            Player* target = &playerTargets[targetIndex];
+
+            if (caster->characterID == CHARACTER_1_TANK && ability_index == 1) {
+                applyStatusToPlayerTarget(target, STATUS_DEFENSE_UP, ability->data.buff_action.turns_extra, 1.0f);
+            } else if (caster->characterID == CHARACTER_1_TANK && ability_index == 3) {
+                applyStatusToPlayerTarget(caster, STATUS_DEFENSE_UP, ability->data.reflect.reflect_duration, 1.0f);
+                applyStatusToPlayerTarget(caster, STATUS_SPEED_UP, ability->data.reflect.reflect_duration, 1.0f);
+            } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 2) {
+                applyStatusToPlayerTarget(caster, STATUS_DEFENSE_UP, 1, 1.0f);
+            } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 3) {
+                applyStatusToPlayerTarget(caster, STATUS_SPEED_UP, 3, 1.0f);
+            } else if (caster->characterID == CHARACTER_3_HEALER && ability_index == 2) {
+                applyStatusToPlayerTarget(target, blessingType, 3, 1.0f);
+            } else if (caster->characterID == CHARACTER_4_MAGE && ability_index == 3) {
+                applyStatusToPlayerTarget(caster, STATUS_STRENGTH_UP, -1, 0.05f);
+            } else {
+                applyStatusToPlayerTarget(target, STATUS_DEFENSE_UP, 2, 1.0f);
+            }
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_DEBUFF) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Enemy* enemyTargets = (Enemy*)targets;
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+
+            Enemy* target = &enemyTargets[targetIndex];
+
+            if (caster->characterID == CHARACTER_4_MAGE && ability_index == 1) {
+                applyStatusToEnemyTarget(target, STATUS_DEFENSE_DOWN, 2, 1.0f);
+            } else {
+                applyStatusToEnemyTarget(target, ability->data.status.status_type, ability->data.status.duration, ability->data.status.intensity);
+            }
+        }
+    }
+
+    if (ability->ability_type == ABILITY_TYPE_SPECIAL) {
+        if (target_indices == NULL || selected_count <= 0) return;
+
+        Enemy* enemyTargets = (Enemy*)targets;
+        for (int i = 0; i < selected_count; i++) {
+            int targetIndex = target_indices[i];
+            if (targetIndex < 0 || targetIndex >= target_count) continue;
+            applyStatusToEnemyTarget(&enemyTargets[targetIndex], STATUS_CONFUSION, 1, 1.0f);
+        }
+    }
+
+    caster->isAlive = (caster->stats.currentHP > 0);
+}

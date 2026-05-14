@@ -5,12 +5,6 @@
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
 
-/**
- * initPlayer - Inicializa um personagem jogável
- * 
- * Configura todos os campos do Player: nome, posição, texturas,
- * colisão, animação, stats e a lista de condições de status.
- */
 void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     strcpy(p->name, name);
     p->position = startPos;
@@ -47,6 +41,10 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     
     /* Personagem começa vivo */
     p->isAlive = 1;
+    
+    /* Inicializa sistema de habilidades === */
+    p->level = 1;
+    p->characterID = 0;  /* Será alterado ao carregar o personagem específico */
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {

@@ -29,6 +29,9 @@ void setEnemyStats(Enemy* enemy, int hp, int forca, int defesa, int velocidade);
 // setEnemyRewards - Configura as recompensas do inimigo
 void setEnemyRewards(Enemy* enemy, int exp, int gold);
 
+// damageEnemy - Aplica dano a um inimigo
+int damageEnemy(Enemy* enemy, int damage);
+
 // healEnemy - Cura HP de um inimigo
 void healEnemy(Enemy* enemy, int amount);
 

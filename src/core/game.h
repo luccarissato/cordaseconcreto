@@ -19,6 +19,9 @@
 /* Número máximo de inimigos no mapa */
 #define MAX_ENEMIES 32
 
+/* Tamanho fixo da party */
+#define PARTY_SIZE 4
+
 /* Distância máxima para detecção de combate (proximidade) */
 #define COMBAT_DETECTION_DISTANCE 200.0f
 
@@ -51,6 +54,10 @@ typedef struct {
     int enemyIndices[MAX_ENEMIES];
     int enemyCount;
 } Combat;
+
+extern Player party[PARTY_SIZE];
+extern EnemyManager enemyManager;
+extern Combat combat;
 
 /* =============================================================================
  * FUNÇÕES PRINCIPAIS DO JOGO
@@ -183,5 +190,8 @@ int getEnemyCombatCount();
  * Remove inimigos derrotados e volta para exploração.
  */
 void endCombat();
+
+Player* getPartyMembers(int* outCount);
+Enemy* getEnemyManagerArray(int* outCount);
 
 #endif /* GAME_H */
