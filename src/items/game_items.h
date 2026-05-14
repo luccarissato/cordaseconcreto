@@ -1,24 +1,3 @@
-/**
- * =============================================================================
- * GAME_ITEMS.H - Definições de Todos os Itens do Jogo
- * =============================================================================
- * 
- * Este arquivo declara todos os itens disponíveis no jogo.
- * Os itens são organizados por categoria para facilitar a manutenção.
- * 
- * CATEGORIAS:
- * 1. Itens de Cura (HP) - Comidas típicas do Nordeste
- * 2. Itens de Mana - Doces e sobremesas
- * 3. Itens Mistos (HP + Mana) - Combinações especiais
- * 4. Itens de Revive - Para ressuscitar personagens derrotados
- * 5. Itens de Buff - Aplicam condições positivas temporárias
- * 6. Itens de Cura de Status - Removem condições negativas
- * 7. Itens de Stat Boost - Aumentam atributos permanentemente
- * 8. Itens de Aplicar Status - Usados em combate
- * 
- * =============================================================================
- */
-
 #ifndef GAME_ITEMS_H
 #define GAME_ITEMS_H
 
@@ -195,41 +174,16 @@ extern Item pedaçoDeChave1;
 /* Segunda metade de uma chave misteriosa */
 extern Item pedaçoDeChave2;
 
-/* =============================================================================
- * FUNÇÕES DE INICIALIZAÇÃO
- * ============================================================================= */
-
-/**
- * initAllGameItems - Inicializa todos os itens do jogo
- * 
- * Deve ser chamada uma vez no início do jogo para configurar
- * corretamente todos os itens com seus valores padrão.
- * Os itens são variáveis globais para fácil acesso.
- */
+// initAllGameItems - Inicializa todos os itens do jogo
 void initAllGameItems(void);
 
-/**
- * getItemByName - Busca um item pelo nome
- * @param name: Nome do item a buscar
- * @return: Ponteiro para o Item ou NULL se não encontrado
- * 
- * Utiliza busca linear na lista de itens.
- * Útil para sistemas de loot e loja.
- */
+// getItemByName - Busca um item pelo nome
 Item* getItemByName(const char* name);
 
-/**
- * getAllHealItems - Retorna array de ponteiros para itens de cura
- * @param count: Ponteiro para armazenar a quantidade de itens
- * @return: Array de ponteiros Item*
- */
+//getAllHealItems - Retorna array de ponteiros para itens de cura
 Item** getAllHealItems(int* count);
 
-/**
- * getAllBuffItems - Retorna array de ponteiros para itens de buff
- * @param count: Ponteiro para armazenar a quantidade de itens
- * @return: Array de ponteiros Item*
- */
+// getAllBuffItems - Retorna array de ponteiros para itens de buff
 Item** getAllBuffItems(int* count);
 
-#endif /* GAME_ITEMS_H */
+#endif

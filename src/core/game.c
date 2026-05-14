@@ -8,7 +8,10 @@
 #include "../entities/player.h"
 #include "../entities/npc.h"
 #include "../ui/game_menu.h"
+#include "../interactables/interactable.h"
+#include "../interactables/chest.h"
 #include <stdlib.h>
+#include <time.h>
 
 #include "../data/dialogues/teste_dialogue.h"
 
@@ -16,6 +19,7 @@
 #define HISTORY_SIZE 1000
 
 NPC testNPC;
+InteractableManager interactableManager;
 
 Vector2 positionHistory[HISTORY_SIZE];
 Direction directionHistory[HISTORY_SIZE];
@@ -34,6 +38,7 @@ void unloadParty();
 void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
     SetTargetFPS(60);
+    srand((unsigned int) time(NULL));  /* Seed para random number generator */
 
     initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initMenu();
@@ -41,8 +46,18 @@ void initGame() {
     initGameMenu();
     initDialogue();
     initInventory(&playerInventory);
-    
+
+
     // teste
+    initInteractableManager(&interactableManager);
+    
+    Interactable testChest = createChest(
+        (Vector2){400, 400},
+        "assets/interagiveis/caixa_fechada_placeholder.png",
+        "assets/interagiveis/caixa_aberta_placeholder.png"
+    );
+    addInteractable(&interactableManager, &testChest);
+    
     InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
     cartolaItem->baseItem = &cartola;
     cartolaItem->quantity = 3;
@@ -68,6 +83,7 @@ void initGame() {
     pedaço2Item->quantity = 1;
     addItemInventory(&playerInventory, pedaço2Item);
 
+
     camera.target = party[0].position; // segue o líder
     camera.offset = (Vector2){800, 540};
     camera.rotation = 0.0f;
@@ -87,10 +103,28 @@ void updateGame() {
                 openGameMenu();
             }
 
-            Rectangle blockers[1] = {getColliderRect(testNPC.position, testNPC.collider)};
-            updateParty(blockers, 1);
+            /* Coleta blockers de NPC e interagíveis */
+            int interactableBlockerCount = 0;
+            Rectangle* interactableBlockers = getInteractableBlockers(
+                &interactableManager, 
+                &interactableBlockerCount
+            );
+            
+            /* Monta array com todos os blockers (NPC + interactables) */
+            int totalBlockerCount = 1 + interactableBlockerCount;
+            Rectangle* allBlockers = malloc(sizeof(Rectangle) * totalBlockerCount);
+            allBlockers[0] = getColliderRect(testNPC.position, testNPC.collider);
+            for (int i = 0; i < interactableBlockerCount; i++) {
+                allBlockers[1 + i] = interactableBlockers[i];
+            }
+            
+            updateParty(allBlockers, totalBlockerCount);
+            free(allBlockers);
+            free(interactableBlockers);
+            
             camera.target = party[0].position;
             updateNPC(&testNPC, party[0].position);
+            updateInteractables(&interactableManager, party[0].position);
             break;
 
         case STATE_DIALOGUE:
@@ -119,6 +153,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawNPC(&testNPC);
+            drawInteractables(&interactableManager);
             drawParty();
             EndMode2D();
             break;
@@ -127,6 +162,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawNPC(&testNPC);
+            drawInteractables(&interactableManager);
             drawParty();
             EndMode2D();
             drawDialogue();
@@ -135,6 +171,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawNPC(&testNPC);
+            drawInteractables(&interactableManager);
             drawParty();
             EndMode2D();
             drawGameMenu();
@@ -151,6 +188,7 @@ void closeGame() {
     unloadParty();
     UnloadTexture(mapTexture);
     unloadGameMenu();
+    unloadInteractableManager(&interactableManager);
     CloseWindow();
 }
 

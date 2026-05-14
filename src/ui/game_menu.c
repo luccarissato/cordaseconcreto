@@ -257,7 +257,6 @@ static void drawItemCategory() {
     }
 }
 
-
 void unloadGameMenu() {
     UnloadTexture(gameMenuBg);
     UnloadTexture(gameMenuOptions);

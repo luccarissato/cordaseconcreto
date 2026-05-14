@@ -297,7 +297,7 @@ Item festaDeSaoJoao = {
  * Erva medicinal básica da região */
 Item ervaCidreira = {
     .name = "Erva Cidreira",
-    .description = "Revive aliado com 25%% do HP maximo.",
+    .description = "Revive aliado com 25% do HP maximo.",
     .type = ITEM_REVIVE,
     .hpRestore = 0,
     .manaRestore = 0,
