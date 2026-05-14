@@ -26,15 +26,19 @@ static int itemSelection = 0;
 extern Inventory playerInventory;
 extern Player party[4];
 
+static int countItemsInCategory(int category);
+static int isKeyItem(InventoryItem* item);
+static int isConsumableItem(InventoryItem* item);
+static InventoryItem* getItemInCategory(int category, int index);
+static ListNode* getItemNodeInCategory(int category, int index);
+
 static void updateItemTarget();
 static void updateMainMenu();
 static void updateItemCategory();
-static void updateItemList();
 
 static void drawItemTarget();
 static void drawMainMenu();
 static void drawItemCategory();
-static void drawItemList();
 
 void initGameMenu() {
     gameMenuBg = LoadTexture("assets/interface/game_menu_bg_placeholder.png");
@@ -69,10 +73,6 @@ void updateGameMenu() {
             updateItemCategory();
             break;
 
-        case MENU_ITEMS_LIST:
-            updateItemList();
-            break;
-
         case MENU_ITEM_TARGET:
             updateItemTarget();
             break;
@@ -94,6 +94,8 @@ static void updateMainMenu() {
         switch(mainMenuSelection) {
             case 0:
                 currentMenuState = MENU_ITEMS_CATEGORY;
+                categorySelection = 0;  // Reseta categoria
+                itemSelection = 0;       // Reseta item
                 break;
 
             case 3:
@@ -107,65 +109,43 @@ static void updateMainMenu() {
     }
 }
 
-static void updateItemList() {
-    int totalItems = playerInventory.items.size;
-    if (totalItems <= 0) {
-        if (IsKeyPressed(KEY_X)) {
-            currentMenuState = MENU_ITEMS_CATEGORY;
-        }
-
-        return;
-    }
-
-    if (IsKeyPressed(KEY_DOWN)) {
-        itemSelection++;
-        if (itemSelection >= totalItems) {
-            itemSelection = 0;
-        }
-    }
-
-    if (IsKeyPressed(KEY_UP)) {
-        itemSelection--;
-        if (itemSelection < 0) {
-            itemSelection = totalItems - 1;
-        }
-    }
-
-    if (IsKeyPressed(KEY_Z)) {
-        ListNode* current = playerInventory.items.head;
-
-        for (int i = 0; i < itemSelection; i++) {
-            current = current->next;
-        }
-        
-        //aqui
-        selectedItemNode = current;
-        currentMenuState = MENU_ITEM_TARGET;
-
-        if (itemSelection >= playerInventory.items.size) {
-            itemSelection = playerInventory.items.size - 1;
-        }
-    }
-
-    if (IsKeyPressed(KEY_X)) {
-        currentMenuState = MENU_ITEMS_CATEGORY;
-    }
-}
 
 static void updateItemCategory() {
 
     if (IsKeyPressed(KEY_RIGHT)) {
         categorySelection = 1;
+        itemSelection = 0;  // Reseta seleção ao mudar categoria
     }
 
     if (IsKeyPressed(KEY_LEFT)) {
         categorySelection = 0;
+        itemSelection = 0;  // Reseta seleção ao mudar categoria
+    }
+
+    // Navegar entre itens da categoria
+    if (IsKeyPressed(KEY_DOWN)) {
+        int itemsInCategory = countItemsInCategory(categorySelection);
+        itemSelection++;
+        if (itemSelection >= itemsInCategory) {
+            itemSelection = 0;
+        }
+    }
+
+    if (IsKeyPressed(KEY_UP)) {
+        int itemsInCategory = countItemsInCategory(categorySelection);
+        itemSelection--;
+        if (itemSelection < 0) {
+            itemSelection = itemsInCategory - 1;
+        }
     }
 
     if (IsKeyPressed(KEY_Z)) {
-
-        if (categorySelection == 0) {
-            currentMenuState = MENU_ITEMS_LIST;
+        // Seleciona item e vai para tela de alvo
+        int itemsInCategory = countItemsInCategory(categorySelection);
+        if (itemsInCategory > 0) {
+            selectedItemNode = getItemNodeInCategory(categorySelection, itemSelection);
+            currentMenuState = MENU_ITEM_TARGET;
+            targetSelection = 0;
         }
     }
 
@@ -184,9 +164,6 @@ void drawGameMenu() {
             drawItemCategory();
             break;
 
-        case MENU_ITEMS_LIST:
-            drawItemList();
-            break;
         case MENU_ITEM_TARGET:
             drawItemTarget();
             break;
@@ -242,40 +219,44 @@ static void drawMainMenu() {
 static void drawItemCategory() {
     DrawTexture(gameMenuBg, menuX, menuY, WHITE);
     DrawTexture(itemMenuOptions, menuX + 450, menuY + 75, WHITE);
+    
     DrawTexture(cursorArrow, menuX + categoryCursorX[categorySelection], menuY + 95, WHITE);
-}
 
-static void drawItemList() {
-    DrawTexture(gameMenuBg, menuX, menuY, WHITE);
-    if (playerInventory.items.head == NULL) {
-        DrawText("Inventario vazio", 300, 200, 40, WHITE);
-        return;
+    int previewX = menuX + 120;
+    int previewY = menuY + 200;
+    int previewWidth = 350;
+    int previewHeight = 100;
+
+    InventoryItem* selectedItem = getItemInCategory(categorySelection, itemSelection);
+    
+    if (selectedItem != NULL) {
+        int textX = previewX + 20;
+        int textY = previewY + 30;
+
+        DrawText(selectedItem->baseItem->description, textX + 450, textY, 20, LIGHTGRAY);
+    } else {
+        DrawText("Nenhum item", previewX + 20, previewY + 50, 25, GRAY);
     }
 
-    ListNode* current = playerInventory.items.head;
+    int itemsInCategory = countItemsInCategory(categorySelection);
+    int listStartY = previewY + previewHeight;
+    
+    for (int i = 0; i < itemsInCategory; i++) {
+        InventoryItem* item = getItemInCategory(categorySelection, i);
+        
+        if (item != NULL) {
+            Color color = (i == itemSelection) ? YELLOW : WHITE;
+            int y = listStartY + (i * 50);
 
-    int y = 200;
-    int index = 0;
+            if (i == itemSelection) {
+                DrawTexture(cursorArrow, menuX + 120, y - 5, WHITE);
+            }
 
-    do {
-
-        InventoryItem* item = (InventoryItem*) current->data;
-        Color color = (index == itemSelection) ? YELLOW: WHITE;
-
-        if (index == itemSelection) {
-            DrawTexture(cursorArrow, menuX + 120, y - 5, WHITE);
+            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), menuX + 220, y, 35, color);
         }
-
-        DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), menuX + 220, y, 35, color);
-
-        y += 50;
-        current = current->next;
-        index++;
-
-    } while (
-        current != playerInventory.items.head
-    );
+    }
 }
+
 
 void unloadGameMenu() {
     UnloadTexture(gameMenuBg);
@@ -303,15 +284,16 @@ static void updateItemTarget() {
 
     if (IsKeyPressed(KEY_Z)) {
         consumeItem(&playerInventory, selectedItemNode, &party[targetSelection]);
-        currentMenuState = MENU_GAME_MAIN;
+        currentMenuState = MENU_ITEMS_CATEGORY;
 
-        if ( itemSelection >= playerInventory.items.size) {
-            itemSelection = playerInventory.items.size - 1;
+        int itemsInCategory = countItemsInCategory(categorySelection);
+        if ( itemSelection >= itemsInCategory) {
+            itemSelection = itemsInCategory - 1;
         }
     }
 
     if (IsKeyPressed(KEY_X)) {
-        currentMenuState = MENU_ITEMS_LIST;
+        currentMenuState = MENU_ITEMS_CATEGORY;
     }
 }
 
@@ -332,4 +314,75 @@ static void drawItemTarget() {
     }
 
     DrawText("Escolha um personagem", menuX + 650, menuY + 800, 30, WHITE);
+}
+
+static int isConsumableItem(InventoryItem* item) {
+    ItemType type = item->baseItem->type;
+    return (type == ITEM_HEAL || type == ITEM_MANA || 
+            type == ITEM_BUFF || type == ITEM_CURE || 
+            type == ITEM_REVIVE || type == ITEM_STAT_BOOST);
+}
+
+static int isKeyItem(InventoryItem* item) {
+    return item->baseItem->type == ITEM_KEY;
+}
+
+static int countItemsInCategory(int category) {
+    int count = 0;
+    if (playerInventory.items.head == NULL) return 0;
+    
+    ListNode* current = playerInventory.items.head;
+    do {
+        InventoryItem* item = (InventoryItem*) current->data;
+        int isInCategory = (category == 0) ? isConsumableItem(item) : isKeyItem(item);
+        
+        if (isInCategory) count++;
+        current = current->next;
+    } while (current != playerInventory.items.head);
+    
+    return count;
+}
+
+static InventoryItem* getItemInCategory(int category, int index) {
+    if (playerInventory.items.head == NULL) return NULL;
+    
+    int count = 0;
+    ListNode* current = playerInventory.items.head;
+    
+    do {
+        InventoryItem* item = (InventoryItem*) current->data;
+        int isInCategory = (category == 0) ? isConsumableItem(item) : isKeyItem(item);
+        
+        if (isInCategory) {
+            if (count == index) {
+                return item;
+            }
+            count++;
+        }
+        current = current->next;
+    } while (current != playerInventory.items.head);
+    
+    return NULL;
+}
+
+static ListNode* getItemNodeInCategory(int category, int index) {
+    if (playerInventory.items.head == NULL) return NULL;
+    
+    int count = 0;
+    ListNode* current = playerInventory.items.head;
+    
+    do {
+        InventoryItem* item = (InventoryItem*) current->data;
+        int isInCategory = (category == 0) ? isConsumableItem(item) : isKeyItem(item);
+        
+        if (isInCategory) {
+            if (count == index) {
+                return current;
+            }
+            count++;
+        }
+        current = current->next;
+    } while (current != playerInventory.items.head);
+    
+    return NULL;
 }

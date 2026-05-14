@@ -1,18 +1,3 @@
-/**
- * =============================================================================
- * GAME_ITEMS.C - Implementação e Definição de Todos os Itens do Jogo
- * =============================================================================
- * 
- * Este arquivo define e inicializa todos os itens disponíveis no jogo.
- * Cada item é configurado com seus atributos específicos de acordo com
- * seu tipo e propósito.
- * 
- * O tema dos itens é baseado na cultura nordestina brasileira, com comidas
- * típicas, ervas medicinais e elementos regionais.
- * 
- * =============================================================================
- */
-
 #include "game_items.h"
 #include <string.h>
 #include <stdio.h>
@@ -210,13 +195,6 @@ Item pudimLeite = {
     .statBoostValue = 0,
     .reviveHPPercent = 0
 };
-
-/* =============================================================================
- * ITENS MISTOS (HP + MANA) - COMBINAÇÕES ESPECIAIS
- * =============================================================================
- * Estes itens restauram tanto HP quanto Mana, sendo mais versáteis
- * mas geralmente mais raros.
- * ============================================================================= */
 
 /* Café com Bolo de Rolo - 20 HP + 10 Mana
  * Lanche leve e revigorante */
@@ -865,19 +843,40 @@ Item bombaDeFumaça = {
     .reviveHPPercent = 0
 };
 
-/* =============================================================================
- * FUNÇÕES DE UTILIDADE
- * ============================================================================= */
+/* Pedaço de Chave 1 - Primeira metade de uma chave misteriosa */
+Item pedaçoDeChave1 = {
+    .name = "Pedaco de Chave 1",
+    .description = "Primeira metade de uma chave misteriosa.",
+    .type = ITEM_KEY,
+    .hpRestore = 0,
+    .manaRestore = 0,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
+    .statusToCure = STATUS_NONE,
+    .cureType = CURE_SPECIFIC,
+    .statBoostType = BOOST_HP,
+    .statBoostValue = 0,
+    .reviveHPPercent = 0
+};
 
-/**
- * initAllGameItems - Inicializa todos os itens do jogo
- * 
- * Esta função é chamada no início do jogo para garantir que todos
- * os itens estejam corretamente configurados. Como os itens são
- * definidos como variáveis globais com inicializadores designados,
- * esta função atualmente não precisa fazer nada, mas existe para
- * futuras expansões.
- */
+/* Pedaço de Chave 2 - Segunda metade de uma chave misteriosa */
+Item pedaçoDeChave2 = {
+    .name = "Pedaco de Chave 2",
+    .description = "Segunda metade de uma chave misteriosa.",
+    .type = ITEM_KEY,
+    .hpRestore = 0,
+    .manaRestore = 0,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
+    .statusToCure = STATUS_NONE,
+    .cureType = CURE_SPECIFIC,
+    .statBoostType = BOOST_HP,
+    .statBoostValue = 0,
+    .reviveHPPercent = 0
+};
+
 void initAllGameItems(void) {
     /* Os itens já são inicializados estaticamente com designated initializers */
     /* Esta função existe para futuras expansões dinâmicas */
@@ -945,15 +944,9 @@ static Item* allItems[] = {
     &cogumelo,
     &bombaDeFumaça,
     
-    NULL  /* Marcador de fim do array */
+    NULL
 };
 
-/**
- * getItemByName - Busca um item pelo nome
- * 
- * Percorre o array de todos os itens comparando nomes.
- * Retorna NULL se o item não for encontrado.
- */
 Item* getItemByName(const char* name) {
     if (name == NULL) return NULL;
     

@@ -245,6 +245,11 @@ void consumeItem(Inventory* inv, ListNode* node, Player* target) {
         return;
     }
     
+    /* Itens-chave não podem ser consumidos */
+    if (invItem->baseItem->type == ITEM_KEY) {
+        return;
+    }
+    
     /* Aplica os efeitos do item no jogador */
     useItem(target, invItem);
     

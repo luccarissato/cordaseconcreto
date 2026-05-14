@@ -188,6 +188,13 @@ extern Item cogumelo;
 /* Aplica Cegueira no alvo por 3 turnos */
 extern Item bombaDeFumaça;
 
+//itens nao consumiveis
+/* Primeira metade de uma chave misteriosa */
+extern Item pedaçoDeChave1;
+
+/* Segunda metade de uma chave misteriosa */
+extern Item pedaçoDeChave2;
+
 /* =============================================================================
  * FUNÇÕES DE INICIALIZAÇÃO
  * ============================================================================= */

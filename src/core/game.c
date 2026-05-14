@@ -47,6 +47,26 @@ void initGame() {
     cartolaItem->baseItem = &cartola;
     cartolaItem->quantity = 3;
     addItemInventory(&playerInventory, cartolaItem);
+    
+    InventoryItem* tapiocaItem = malloc(sizeof(InventoryItem));
+    tapiocaItem->baseItem = &tapiocaRecheada;
+    tapiocaItem->quantity = 3;
+    addItemInventory(&playerInventory, tapiocaItem);
+
+    InventoryItem* pratoBuchadaItem = malloc(sizeof(InventoryItem));
+    pratoBuchadaItem->baseItem = &pratoBuchada;
+    pratoBuchadaItem->quantity = 3;
+    addItemInventory(&playerInventory, pratoBuchadaItem);
+
+    InventoryItem* pedaço1Item = malloc(sizeof(InventoryItem));
+    pedaço1Item->baseItem = &pedaçoDeChave1;
+    pedaço1Item->quantity = 1;
+    addItemInventory(&playerInventory, pedaço1Item);
+
+    InventoryItem* pedaço2Item = malloc(sizeof(InventoryItem));
+    pedaço2Item->baseItem = &pedaçoDeChave2;
+    pedaço2Item->quantity = 1;
+    addItemInventory(&playerInventory, pedaço2Item);
 
     camera.target = party[0].position; // segue o líder
     camera.offset = (Vector2){800, 540};

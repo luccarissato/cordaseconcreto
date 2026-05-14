@@ -47,6 +47,7 @@ typedef enum {
     ITEM_REVIVE,            /* Item que revive personagem com HP = 0 */
     ITEM_STAT_BOOST,        /* Item que aumenta atributos permanentemente */
     ITEM_INFLICT_STATUS,    /* Item que aplica condição de status em combate */
+    ITEM_KEY,               /* Item-chave não consumível */
 } ItemType;
 
 /* -----------------------------------------------------------------------------
