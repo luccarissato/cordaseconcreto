@@ -48,4 +48,8 @@ int isCombatActive();
 // endCombatBattle - Finaliza o combate
 void endCombatBattle();
 
+// checkPlayerEnemyCollision - Verifica se o jogador está colidindo com algum inimigo vivo
+// Retorna 1 se há colisão, 0 caso contrário
+int checkPlayerEnemyCollision(Player* player);
+
 #endif

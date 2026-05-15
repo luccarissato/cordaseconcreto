@@ -1,6 +1,11 @@
 #include "enemy.h"
+#include "../core/game.h"
+#include "../core/collision.h"
 #include <string.h>
 #include <stdlib.h>
+
+/* Variável global de game.c que é necessária */
+extern EnemyManager enemyManager;
 
 // initEnemy - Inicializa um inimigo com valores padrão
 void initEnemy(Enemy* enemy, const char* name) {
@@ -184,4 +189,67 @@ Rectangle getEnemyCollider(Enemy* enemy) {
     }
     
     return getColliderRect(enemy->position, enemy->collider);
+}
+
+Enemy* getEnemyManagerArray(int* outCount) {
+    if (outCount != NULL) {
+        *outCount = enemyManager.count;
+    }
+
+    return enemyManager.enemies;
+}
+
+void initEnemyManager() {
+    enemyManager.count = 0;
+    memset(enemyManager.enemies, 0, sizeof(enemyManager.enemies));
+}
+
+void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int maxEnemies) {
+    if (enemyManager.count >= maxEnemies) {
+        return;
+    }
+    
+    initEnemyWithTexture(&enemyManager.enemies[enemyManager.count], name, position, texturePath);
+    enemyManager.count++;
+}
+
+void updateEnemies(const Rectangle* blockers, int blockerCount) {
+    for (int i = 0; i < enemyManager.count; i++) {
+        Enemy* enemy = &enemyManager.enemies[i];
+        
+        if (!enemy->isAlive) continue;
+        
+        /* Processa status effects no inimigo */
+        processEnemyStatusEffects(enemy);
+        
+        /* Aqui será adicionada lógica de IA no futuro */
+    }
+}
+
+void drawEnemies() {
+    for (int i = 0; i < enemyManager.count; i++) {
+        if (enemyManager.enemies[i].isAlive) {
+            drawEnemy(&enemyManager.enemies[i]);
+        }
+    }
+}
+
+void getEnemyBlockers(Rectangle* outBlockers, int* outCount) {
+    if (outBlockers == NULL || outCount == NULL) return;
+    
+    *outCount = 0;
+    
+    for (int i = 0; i < enemyManager.count; i++) {
+        if (enemyManager.enemies[i].isAlive) {
+            outBlockers[*outCount] = getEnemyCollider(&enemyManager.enemies[i]);
+            (*outCount)++;
+        }
+    }
+}
+
+void unloadEnemyManager() {
+    for (int i = 0; i < enemyManager.count; i++) {
+        unloadEnemy(&enemyManager.enemies[i]);
+    }
+    enemyManager.count = 0;
 }

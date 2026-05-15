@@ -12,6 +12,8 @@
 #include "../ui/game_menu.h"
 #include "../interactables/interactable.h"
 #include "../interactables/chest.h"
+#include "../interactables/door.h"
+#include "../data/dialogues/door_questions.h"
 #include "../combat/combat.h"
 #include "../combat/ability.h"
 #include "../ui/combat_ui.h"
@@ -44,11 +46,17 @@ void drawParty();
 void unloadParty();
 
 void initEnemyManager();
-void spawnEnemy(const char* name, Vector2 position, const char* texturePath);
+void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int maxEnemies);
 void updateEnemies(const Rectangle* blockers, int blockerCount);
 void drawEnemies();
 void getEnemyBlockers(Rectangle* outBlockers, int* outCount);
 void unloadEnemyManager();
+
+void startCombat(Vector2 playerPos, float combatDistance);
+int getCombatState();
+Enemy** getEnemiesInCombat();
+int getEnemyCombatCount();
+void endCombat();
 
 void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
@@ -76,6 +84,16 @@ void initGame() {
     );
     addInteractable(&interactableManager, &testChest);
     
+    /* Cria porta teste com pergunta */
+    Interactable testDoor = createDoor(
+        (Vector2){0, 0},
+        "assets/interagiveis/porta_fechada_placeholder.png",
+        "assets/interagiveis/porta_aberta_placeholder.png",
+        &doorQuestion1,      /* Pergunta: "Quanto é 2 + 2?" */
+        1                    /* Node 1 = resposta correta */
+    );
+    addInteractable(&interactableManager, &testDoor);
+    
     InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
     cartolaItem->baseItem = &cartola;
     cartolaItem->quantity = 3;
@@ -101,10 +119,10 @@ void initGame() {
     pedaço2Item->quantity = 1;
     addItemInventory(&playerInventory, pedaço2Item);
     
-    spawnEnemy("Boss 1", (Vector2){1400, 200}, "assets/antagonistas/boss1_placeholder.png");
+    spawnEnemy("Boss 1", (Vector2){1400, 200}, "assets/antagonistas/boss1_placeholder.png", 32);
 
 
-    camera.target = party[0].position; // segue o líder
+    camera.target = party[0].position; /* segue o líder */
     camera.offset = (Vector2){800, 540};
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
@@ -156,11 +174,11 @@ void updateGame() {
             updateNPC(&testNPC, party[0].position);
             updateInteractables(&interactableManager, party[0].position);
             
-            /* Detecta combate com Z ou proximidade */
+            /* Detecta combate quando Z é pressionado e há colisão com inimigo */
             if (IsKeyPressed(KEY_Z)) {
-                startCombat(party[0].position, 999999.0f); /* Z força combate com qualquer inimigo próximo */
-            } else {
-                startCombat(party[0].position, COMBAT_DETECTION_DISTANCE);
+                if (checkPlayerEnemyCollision(&party[0])) {
+                    startCombat(party[0].position, COMBAT_DETECTION_DISTANCE);
+                }
             }
             
             break;
@@ -384,147 +402,4 @@ Player* getPartyMembers(int* outCount) {
     }
 
     return party;
-}
-
-Enemy* getEnemyManagerArray(int* outCount) {
-    if (outCount != NULL) {
-        *outCount = enemyManager.count;
-    }
-
-    return enemyManager.enemies;
-}
-
- //* initEnemyManager - Inicializa o gerenciador de inimigos
-void initEnemyManager() {
-    enemyManager.count = 0;
-    memset(enemyManager.enemies, 0, sizeof(enemyManager.enemies));
-}
-
-// spawnEnemy - Spawna um novo inimigo no mapa
-void spawnEnemy(const char* name, Vector2 position, const char* texturePath) {
-    if (enemyManager.count >= MAX_ENEMIES) {
-        return;
-    }
-    
-    initEnemyWithTexture(&enemyManager.enemies[enemyManager.count], name, position, texturePath);
-    enemyManager.count++;
-}
-
-// updateEnemies - Atualiza todos os inimigos
-void updateEnemies(const Rectangle* blockers, int blockerCount) {
-    for (int i = 0; i < enemyManager.count; i++) {
-        Enemy* enemy = &enemyManager.enemies[i];
-        
-        if (!enemy->isAlive) continue;
-        
-        /* Processa status effects no inimigo */
-        processEnemyStatusEffects(enemy);
-        
-        /* Aqui será adicionada lógica de IA no futuro */
-    }
-}
-
-// drawEnemies - Renderiza todos os inimigos
-void drawEnemies() {
-    for (int i = 0; i < enemyManager.count; i++) {
-        if (enemyManager.enemies[i].isAlive) {
-            drawEnemy(&enemyManager.enemies[i]);
-        }
-    }
-}
-
-// getEnemyBlockers - Coleta retângulos de colisão de todos os inimigos
-void getEnemyBlockers(Rectangle* outBlockers, int* outCount) {
-    if (outBlockers == NULL || outCount == NULL) return;
-    
-    *outCount = 0;
-    
-    for (int i = 0; i < enemyManager.count; i++) {
-        if (enemyManager.enemies[i].isAlive) {
-            outBlockers[*outCount] = getEnemyCollider(&enemyManager.enemies[i]);
-            (*outCount)++;
-        }
-    }
-}
-
-// unloadEnemyManager - Libera recursos do gerenciador de inimigos
-void unloadEnemyManager() {
-    for (int i = 0; i < enemyManager.count; i++) {
-        unloadEnemy(&enemyManager.enemies[i]);
-    }
-    enemyManager.count = 0;
-}
-
-// startCombat - Inicia um combate com um inimigo
-void startCombat(Vector2 playerPos, float combatDistance) {
-    if (combat.inCombat) return;
-    
-    combat.inCombat = 0;
-    combat.enemyCount = 0;
-    
-    for (int i = 0; i < enemyManager.count; i++) {
-        Enemy* enemy = &enemyManager.enemies[i];
-        
-        if (!enemy->isAlive) continue;
-        
-        float dx = enemy->position.x - playerPos.x;
-        float dy = enemy->position.y - playerPos.y;
-        float distance = sqrtf(dx * dx + dy * dy);
-        
-        if (distance < combatDistance) {
-            combat.enemyIndices[combat.enemyCount] = i;
-            combat.enemyCount++;
-        }
-    }
-    
-    if (combat.enemyCount > 0) {
-        combat.inCombat = 1;
-        
-        Enemy enemies[MAX_ENEMIES];
-        for (int i = 0; i < combat.enemyCount; i++) {
-            enemies[i] = enemyManager.enemies[combat.enemyIndices[i]];
-        }
-        
-        startCombatWithEnemies(party, PARTY_SIZE, enemies, combat.enemyCount);
-        
-        currentGameState = STATE_COMBAT;
-    }
-}
-
-int getCombatState() {
-    return combat.inCombat;
-}
-
-Enemy** getEnemiesInCombat() {
-    static Enemy* combatEnemies[MAX_ENEMIES];
-
-    for (int i = 0; i < combat.enemyCount; i++) {
-        int enemyIndex = combat.enemyIndices[i];
-        if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
-            combatEnemies[i] = &enemyManager.enemies[enemyIndex];
-        } else {
-            combatEnemies[i] = NULL;
-        }
-    }
-
-    return combatEnemies;
-}
-
-int getEnemyCombatCount() {
-    return combat.enemyCount;
-}
-
-void endCombat() {
-    for (int i = 0; i < combat.enemyCount; i++) {
-        int enemyIndex = combat.enemyIndices[i];
-        if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
-            enemyManager.enemies[enemyIndex].inCombat = 0;
-        }
-    }
-
-    combat.inCombat = 0;
-    combat.enemyCount = 0;
-    memset(combat.enemyIndices, 0, sizeof(combat.enemyIndices));
-    endCombatBattle();
-    currentGameState = STATE_EXPLORATION;
 }

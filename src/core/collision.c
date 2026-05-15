@@ -13,6 +13,14 @@ int rectsCollide(Rectangle a, Rectangle b) {
     return CheckCollisionRecs(a, b);
 }
 
+// rectsCollideTouching - Verifica colisão INCLUSIVE toque nas bordas
+static int rectsCollideTouching(Rectangle a, Rectangle b) {
+    return (a.x < b.x + b.width &&
+            a.x + a.width >= b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height >= b.y);
+}
+
 int collidesWithAny(Rectangle rect, const Rectangle* blockers, int blockerCount) {
     if (!blockers || blockerCount <= 0) {
         return 0;

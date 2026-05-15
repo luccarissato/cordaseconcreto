@@ -1,14 +1,3 @@
-/**
- * =============================================================================
- * GAME.H - Gerenciador Principal do Jogo
- * =============================================================================
- * 
- * Define a estrutura e funções centrais para gerenciar o estado do jogo,
- * incluindo exploração, combate, inimigos e câmera.
- * 
- * =============================================================================
- */
-
 #ifndef GAME_H
 #define GAME_H
 
@@ -16,39 +5,17 @@
 #include "../entities/player.h"
 #include "../entities/enemy.h"
 
-/* Número máximo de inimigos no mapa */
 #define MAX_ENEMIES 32
 
-/* Tamanho fixo da party */
 #define PARTY_SIZE 4
 
-/* Distância máxima para detecção de combate (proximidade) */
 #define COMBAT_DETECTION_DISTANCE 200.0f
 
-/* =============================================================================
- * ESTRUTURA: EnemyManager
- * =============================================================================
- * Gerencia todos os inimigos presentes no mapa durante exploração.
- * 
- * Campos:
- *   - enemies: Array de inimigos presentes no mapa
- *   - count: Número de inimigos atualmente no mapa
- * -------------------------------------------------------------------------- */
 typedef struct {
     Enemy enemies[MAX_ENEMIES];
     int count;
 } EnemyManager;
 
-/* =============================================================================
- * ESTRUTURA: Combat
- * =============================================================================
- * Gerencia o estado de combate quando o jogador entra em batalha.
- * 
- * Campos:
- *   - inCombat: Flag indicando se há combate ativo (1) ou não (0)
- *   - enemyIndices: Índices dos inimigos participando do combate
- *   - enemyCount: Quantidade de inimigos no combate
- * -------------------------------------------------------------------------- */
 typedef struct {
     int inCombat;
     int enemyIndices[MAX_ENEMIES];
@@ -59,139 +26,52 @@ extern Player party[PARTY_SIZE];
 extern EnemyManager enemyManager;
 extern Combat combat;
 
-/* =============================================================================
- * FUNÇÕES PRINCIPAIS DO JOGO
- * ============================================================================= */
-
-/**
- * initGame - Inicializa o jogo
- * 
- * Cria janela, carrega mapas, inicializa party, inimigos e sistemas.
- */
+// initGame - Inicializa o jogo
 void initGame();
 
-/**
- * updateGame - Atualiza a lógica do jogo em cada frame
- * 
- * Atualiza jogadores, inimigos, câmera e detecta transições de estado.
- */
+// updateGame - Atualiza a lógica do jogo em cada frame
 void updateGame();
 
-/**
- * drawGame - Renderiza o jogo na tela
- * 
- * Desenha mapa, entidades, UI e efeitos visuais.
- */
+// drawGame - Renderiza o jogo na tela
 void drawGame();
 
-/**
- * closeGame - Finaliza e libera recursos do jogo
- * 
- * Descarrega texturas, libera memória e fecha a janela.
- */
+// closeGame - Finaliza e libera recursos do jogo
 void closeGame();
 
-/* =============================================================================
- * FUNÇÕES DE INIMIGOS
- * ============================================================================= */
-
-/**
- * initEnemyManager - Inicializa o gerenciador de inimigos
- * 
- * Prepara o sistema para gerenciar inimigos no mapa.
- */
+// initEnemyManager - Inicializa o gerenciador de inimigos
 void initEnemyManager();
 
-/**
- * spawnEnemy - Spawna um novo inimigo no mapa
- * @param name: Nome do inimigo
- * @param position: Posição inicial
- * @param texturePath: Caminho da textura
- * 
- * Adiciona um inimigo à lista de inimigos ativos.
- */
-void spawnEnemy(const char* name, Vector2 position, const char* texturePath);
+// spawnEnemy - Spawna um novo inimigo no mapa
+void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int maxEnemies);
 
-/**
- * updateEnemies - Atualiza todos os inimigos
- * @param blockers: Array de retângulos de colisão
- * @param blockerCount: Quantidade de blockers
- * 
- * Processa IA, status e colisão dos inimigos (futura implementação).
- */
+// updateEnemies - Atualiza todos os inimigos
 void updateEnemies(const Rectangle* blockers, int blockerCount);
 
-/**
- * drawEnemies - Renderiza todos os inimigos
- * 
- * Desenha cada inimigo ativo no mapa.
- */
+// drawEnemies - Renderiza todos os inimigos
 void drawEnemies();
 
-/**
- * getEnemyBlockers - Coleta retângulos de colisão de todos os inimigos
- * @param outBlockers: Array onde armazenar os retângulos
- * @param outCount: Ponteiro para receber a quantidade
- * 
- * Retorna array de retângulos para colisão com jugadores/objetos.
- */
+// getEnemyBlockers - Coleta retângulos de colisão de todos os inimigos
 void getEnemyBlockers(Rectangle* outBlockers, int* outCount);
 
-/**
- * unloadEnemyManager - Libera recursos do gerenciador de inimigos
- * 
- * Descarrega texturas e libera memória de todos os inimigos.
- */
+// unloadEnemyManager - Libera recursos do gerenciador de inimigos
 void unloadEnemyManager();
-
-/* =============================================================================
- * FUNÇÕES DE COMBATE
- * ============================================================================= */
-
-/**
- * startCombat - Inicia um combate com um inimigo
- * @param playerPos: Posição do jogador
- * @param combatDistance: Distância de detecção de combate
- * 
- * Detecta proximidade com inimigos e inicia combate se aplicável.
- */
-void startCombat(Vector2 playerPos, float combatDistance);
-
-/**
- * initCombat - Inicializa estrutura de combate
- * 
- * Prepara sistema para gerenciar batalhas.
- */
-void initCombat();
-
-/**
- * getCombatState - Obtém o estado atual de combate
- * @return: 1 se em combate, 0 caso contrário
- */
-int getCombatState();
-
-/**
- * getEnemiesInCombat - Obtém inimigos em combate
- * @return: Array de ponteiros para inimigos em combate
- * 
- * Retorna lista de inimigos participando da batalha atual.
- */
-Enemy** getEnemiesInCombat();
-
-/**
- * getEnemyCombatCount - Obtém quantidade de inimigos em combate
- * @return: Número de inimigos em combate
- */
-int getEnemyCombatCount();
-
-/**
- * endCombat - Finaliza o combate
- * 
- * Remove inimigos derrotados e volta para exploração.
- */
-void endCombat();
 
 Player* getPartyMembers(int* outCount);
 Enemy* getEnemyManagerArray(int* outCount);
 
-#endif /* GAME_H */
+// startCombat - Inicia combate com inimigos próximos
+void startCombat(Vector2 playerPos, float combatDistance);
+
+// getCombatState - Verifica se há combate ativo
+int getCombatState();
+
+// getEnemiesInCombat - Obtém os inimigos participando do combate
+Enemy** getEnemiesInCombat();
+
+// getEnemyCombatCount - Obtém quantidade de inimigos em combate
+int getEnemyCombatCount();
+
+// endCombat - Finaliza o combate e volta ao estado de exploração
+void endCombat();
+
+#endif
