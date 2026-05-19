@@ -1,4 +1,5 @@
 #include "collision.h"
+#include "raymath.h"
 
 Rectangle getColliderRect(Vector2 position, Collider collider) {
     return (Rectangle) {
@@ -7,6 +8,40 @@ Rectangle getColliderRect(Vector2 position, Collider collider) {
         collider.size.x,
         collider.size.y
     };
+}
+
+float getRectEdgeDistance(Rectangle rect1, Rectangle rect2) {
+    float gapX = 0.0f;
+    if (rect1.x + rect1.width < rect2.x) {
+        gapX = rect2.x - (rect1.x + rect1.width);
+    } else if (rect2.x + rect2.width < rect1.x) {
+        gapX = rect1.x - (rect2.x + rect2.width);
+    }
+    
+    float gapY = 0.0f;
+    if (rect1.y + rect1.height < rect2.y) {
+        gapY = rect2.y - (rect1.y + rect1.height);
+    } else if (rect2.y + rect2.height < rect1.y) {
+        gapY = rect1.y - (rect2.y + rect2.height);
+    }
+    
+    if (gapX <= 0.0f && gapY <= 0.0f) {
+        return 0.0f;
+    }
+    
+    if (gapX < 0.0f) gapX = 0.0f;
+    if (gapY < 0.0f) gapY = 0.0f;
+    
+    return sqrtf(gapX * gapX + gapY * gapY);
+}
+
+int areCollidersNearEdgeBased(Vector2 pos1, Collider collider1, Vector2 pos2, Collider collider2, float maxDistance) {
+    Rectangle rect1 = getColliderRect(pos1, collider1);
+    Rectangle rect2 = getColliderRect(pos2, collider2);
+
+    float distance = getRectEdgeDistance(rect1, rect2);
+
+    return distance <= maxDistance;
 }
 
 int rectsCollide(Rectangle a, Rectangle b) {

@@ -1,6 +1,7 @@
 #include "enemy.h"
 #include "../core/game.h"
 #include "../core/collision.h"
+#include "../core/state.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -223,6 +224,35 @@ void updateEnemies(const Rectangle* blockers, int blockerCount) {
         processEnemyStatusEffects(enemy);
         
         /* Aqui será adicionada lógica de IA no futuro */
+    }
+}
+
+void updateEnemiesInteraction(Vector2 playerPos) {
+    if (currentGameState != STATE_EXPLORATION) return;
+    
+    Collider playerCollider = {
+        .offset = {75.0f, 0.0f},
+        .size = {150.0f, 300.0f}
+    };
+    
+    float interactionDistance = 80.0f;
+    
+    for (int i = 0; i < enemyManager.count; i++) {
+        Enemy* enemy = &enemyManager.enemies[i];
+        if (!enemy->isAlive) continue;
+        
+        int isNear = areCollidersNearEdgeBased(
+            playerPos, playerCollider,
+            enemy->position, enemy->collider,
+            interactionDistance
+        );
+        
+        if (isNear) {
+            if (IsKeyPressed(KEY_Z)) {
+                startCombat(playerPos, COMBAT_DETECTION_DISTANCE);
+                return;
+            }
+        }
     }
 }
 

@@ -135,7 +135,7 @@ Interactable createChest(
             .size = {300.0f, 300.0f}
         },
         .hasInteracted = 0,
-        .interactionDistance = 240.0f,
+        .interactionDistance = 80.0f,
         .sprite = data->spriteClosed,
         
         .on_interact = chest_on_interact,

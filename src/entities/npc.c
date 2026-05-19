@@ -9,28 +9,20 @@ void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* t
     npc->collider.offset = (Vector2){ 0.0f, 0.0f };
     npc->collider.size = (Vector2){ 300.0f, 300.0f };
     npc->dialogueTree = tree;
-    npc->interactionDistance = 240.0f;
+    npc->interactionDistance = 80.0f;
 }
 
 void updateNPC(NPC* npc, Vector2 playerPos) {
     if (currentGameState != STATE_EXPLORATION) return;
 
-    Vector2 npcCenter = {
-        npc->position.x + npc->sprite.width / 2,
-        npc->position.y + npc->sprite.height / 2
+    Collider playerCollider = {
+        .offset = {75.0f, 0.0f},
+        .size = {150.0f, 300.0f}
     };
 
-    Vector2 playerCenter = {
-        playerPos.x + 150,
-        playerPos.y + 150
-    };
-
-    float distance = Vector2Distance(
-        npcCenter,
-        playerCenter
-    );
-
-    if (distance <= npc->interactionDistance) {
+    int isNear = areCollidersNearEdgeBased(playerPos, playerCollider, npc->position, npc->collider, npc->interactionDistance);
+    
+    if (isNear) {
         if (IsKeyPressed(KEY_Z)) {
             startDialogue(npc->dialogueTree);
         }
@@ -40,16 +32,13 @@ void updateNPC(NPC* npc, Vector2 playerPos) {
 void drawNPC(NPC* npc) {
     DrawTexture(npc->sprite, npc->position.x, npc->position.y, WHITE);
 
-    // colision debug
+    /* colision debug */
     Rectangle colliderRect = getColliderRect(npc->position, npc->collider);
     DrawRectangleLinesEx(colliderRect, 2.0f, RED);
 
-    // DrawCircleLines(
-    // npc->position.x + npc->sprite.width/2,
-    // npc->position.y + npc->sprite.height/2,
-    // npc->interactionDistance,
-    // RED
-    // );
+    /* DEBUG: mostra raio de interação (comentado por padrão) */
+    // Vector2 center = getColliderCenter(npc->position, npc->collider);
+    // DrawCircleLines(center.x, center.y, npc->interactionDistance, RED);
 }
 
 void unloadNPC(NPC* npc) {

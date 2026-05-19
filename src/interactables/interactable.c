@@ -3,21 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static float distance(Vector2 a, Vector2 b) {
-    return Vector2Distance(a, b);
-}
-
-static Vector2 getInteractableCenter(const Interactable* inter) {
-    return (Vector2){
-        inter->position.x + inter->sprite.width / 2.0f,
-        inter->position.y + inter->sprite.height / 2.0f
-    };
-}
-
-static Vector2 getPlayerCenter(Vector2 playerPos) {
-    return (Vector2){ playerPos.x + 150.0f, playerPos.y + 150.0f };
-}
-
 void initInteractableManager(InteractableManager* manager) {
     manager->capacity = 16;
     manager->count = 0;
@@ -61,6 +46,10 @@ Rectangle* getInteractableBlockers(InteractableManager* manager, int* outCount) 
     
     for (int i = 0; i < manager->count; i++) {
         Interactable* inter = &manager->list[i];
+
+        if (inter->type == INTERACTABLE_DOOR && inter->hasInteracted) {
+            continue;
+        }
         
         if (inter->type != INTERACTABLE_TRAP) {
             blockers[count] = getInteractableRect(inter);
@@ -88,11 +77,12 @@ void unloadInteractableManager(InteractableManager* manager) {
 }
 
 int isPlayerNearInteractable(const Interactable* interactable, Vector2 playerPos) {
-    Vector2 interCenter = getInteractableCenter(interactable);
-    Vector2 playerCenter = getPlayerCenter(playerPos);
+    Collider playerCollider = {
+        .offset = {75.0f, 0.0f},
+        .size = {150.0f, 300.0f}
+    };
     
-    float dist = distance(interCenter, playerCenter);
-    return dist <= interactable->interactionDistance;
+    return areCollidersNearEdgeBased(playerPos, playerCollider, interactable->position, interactable->collider, interactable->interactionDistance);
 }
 
 Rectangle getInteractableRect(const Interactable* interactable) {

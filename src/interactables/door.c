@@ -101,7 +101,7 @@ Interactable createDoor(Vector2 position, const char* closedSpritePath, const ch
             .size = {400.0f, 400.0f}
         },
         .hasInteracted = 0,
-        .interactionDistance = 240.0f,
+        .interactionDistance = 80.0f,
         .sprite = data->spriteClosed,
         
         .on_interact = door_on_interact,

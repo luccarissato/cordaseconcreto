@@ -119,7 +119,7 @@ void initGame() {
     pedaço2Item->quantity = 1;
     addItemInventory(&playerInventory, pedaço2Item);
     
-    spawnEnemy("Boss 1", (Vector2){1400, 200}, "assets/antagonistas/boss1_placeholder.png", 32);
+    spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
 
 
     camera.target = party[0].position; /* segue o líder */
@@ -174,12 +174,7 @@ void updateGame() {
             updateNPC(&testNPC, party[0].position);
             updateInteractables(&interactableManager, party[0].position);
             
-            /* Detecta combate quando Z é pressionado e há colisão com inimigo */
-            if (IsKeyPressed(KEY_Z)) {
-                if (checkPlayerEnemyCollision(&party[0])) {
-                    startCombat(party[0].position, COMBAT_DETECTION_DISTANCE);
-                }
-            }
+            updateEnemiesInteraction(party[0].position);
             
             break;
 

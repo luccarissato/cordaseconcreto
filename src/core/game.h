@@ -47,6 +47,9 @@ void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int
 // updateEnemies - Atualiza todos os inimigos
 void updateEnemies(const Rectangle* blockers, int blockerCount);
 
+// updateEnemiesInteraction - Verifica proximidade e início de combate (NOVO)
+void updateEnemiesInteraction(Vector2 playerPos);
+
 // drawEnemies - Renderiza todos os inimigos
 void drawEnemies();
 

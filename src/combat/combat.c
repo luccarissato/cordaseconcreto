@@ -5,7 +5,6 @@
 #include "raymath.h"
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include "../utils/sort.h"
 
 CombatState combatState;
@@ -112,44 +111,44 @@ void endCombatBattle() {
 }
 
 void startCombat(Vector2 playerPos, float combatDistance) {
-    /* Se já está em combate, não inicia outro */
     if (combat.inCombat) return;
     
     combat.inCombat = 0;
     combat.enemyCount = 0;
     
-    /* Procura inimigos próximos */
+    Collider playerCollider = {
+        .offset = {75.0f, 0.0f},
+        .size = {150.0f, 300.0f}
+    };
+    
     for (int i = 0; i < enemyManager.count; i++) {
         Enemy* enemy = &enemyManager.enemies[i];
         
         if (!enemy->isAlive) continue;
         
-        /* Calcula distância entre jogador e inimigo */
-        float dx = enemy->position.x - playerPos.x;
-        float dy = enemy->position.y - playerPos.y;
-        float distance = sqrtf(dx * dx + dy * dy);
+
+        int isNear = areCollidersNearEdgeBased(
+            playerPos, playerCollider,
+            enemy->position, enemy->collider,
+            combatDistance
+        );
         
-        /* Se dentro da distância de combate, adiciona ao combate */
-        if (distance < combatDistance) {
+        if (isNear) {
             combat.enemyIndices[combat.enemyCount] = i;
             combat.enemyCount++;
         }
     }
     
-    /* Se encontrou inimigos, inicia combate */
     if (combat.enemyCount > 0) {
         combat.inCombat = 1;
         
-        /* Coleta inimigos para passar ao combat system */
         Enemy enemies[MAX_ENEMIES];
         for (int i = 0; i < combat.enemyCount; i++) {
             enemies[i] = enemyManager.enemies[combat.enemyIndices[i]];
         }
         
-        /* Inicia combate com sistema de turnos */
         startCombatWithEnemies(party, PARTY_SIZE, enemies, combat.enemyCount);
         
-        /* Muda estado do jogo para combate */
         currentGameState = STATE_COMBAT;
     }
 }
@@ -192,33 +191,24 @@ void endCombat() {
     currentGameState = STATE_EXPLORATION;
 }
 
-// checkPlayerEnemyCollision - Verifica se o jogador está colidindo com algum inimigo vivo
-// Usa distância entre centros (simétrica, funciona de qualquer ângulo)
+// checkPlayerEnemyCollision - Verifica se o jogador está próximo de algum inimigo vivo
 int checkPlayerEnemyCollision(Player* player) {
     if (player == NULL) return 0;
     
-    // Calcula o centro do jogador (assume sprite 300x300)
-    Vector2 playerCenter = {
-        player->position.x + 150.0f,
-        player->position.y + 150.0f
-    };
-    
-    // Distância de interação: igual ao NPC e caixa
-    float interactionDistance = 240.0f;
+    float interactionDistance = 80.0f;
     
     for (int i = 0; i < enemyManager.count; i++) {
         Enemy* enemy = &enemyManager.enemies[i];
         if (!enemy->isAlive) continue;
         
-        // Calcula o centro do inimigo (assume sprite 300x300)
-        Vector2 enemyCenter = {
-            enemy->position.x + 150.0f,
-            enemy->position.y + 150.0f
-        };
+        /* Usa o sistema de distância EDGE-TO-EDGE */
+        int isNear = areCollidersNearEdgeBased(
+            player->position, player->collider,
+            enemy->position, enemy->collider,
+            interactionDistance
+        );
         
-        // Verifica distância entre centros (simétrica como NPC e caixa)
-        float distance = Vector2Distance(playerCenter, enemyCenter);
-        if (distance <= interactionDistance) {
+        if (isNear) {
             return 1;
         }
     }
