@@ -55,6 +55,16 @@ void setEnemyStats(Enemy* enemy, int hp, int forca, int defesa, int velocidade) 
     enemy->stats.velocidade = velocidade;
 }
 
+// setEnemyElementalResistances - Configura as resistências elementais de um inimigo
+void setEnemyElementalResistances(Enemy* enemy, int defCalor, int defVento, int defMare, int defTerra) {
+    if (enemy == NULL) return;
+    
+    enemy->stats.defCalor = defCalor;
+    enemy->stats.defVento = defVento;
+    enemy->stats.defMare = defMare;
+    enemy->stats.defTerra = defTerra;
+}
+
 // damageEnemy - Aplica dano a um inimigo
 int damageEnemy(Enemy* enemy, int damage) {
     if (enemy == NULL || !enemy->isAlive) return 0;

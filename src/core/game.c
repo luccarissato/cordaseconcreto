@@ -120,7 +120,18 @@ void initGame() {
     addItemInventory(&playerInventory, pedaço2Item);
     
     spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
-
+    
+    /* Configura resistências elementais diferentes para o Boss 1 */
+    /* Distribuição: Calor=100%, Maré=70%, Terra=50%, Vento=10% */
+    if (enemyManager.count > 0) {
+        setEnemyElementalResistances(
+            &enemyManager.enemies[enemyManager.count - 1],
+            100,  /* Calor: 100% resistência */
+            10,   /* Vento: 10% resistência */
+            70,   /* Maré: 70% resistência */
+            50    /* Terra: 50% resistência */
+        );
+    }
 
     camera.target = party[0].position; /* segue o líder */
     camera.offset = (Vector2){800, 540};
@@ -319,7 +330,7 @@ void initParty() {
         calculateStats(&party[i].stats);
         /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
         party[i].characterID = i;
-        party[i].level = 1;
+        party[i].level = 4;
     }
 
     // inicializa histórico com posição inicial

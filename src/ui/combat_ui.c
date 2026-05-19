@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../core/game.h"
 #include "../core/state.h"
@@ -537,7 +538,10 @@ static void drawBottomPanel() {
         if (availableAbilityCount > 0) {
             Ability* ability = getAbilityByIndex(player->characterID, availableAbilityIndices[abilitySelection]);
             if (ability != NULL) {
-                DrawText(ability->description, 840, 820, 22, LIGHTGRAY);
+                /* Gera descrição dinâmica baseada no modo/elemento atual */
+                char dynamicDescription[512];
+                getAbilityDynamicDescription(ability, dynamicDescription, sizeof(dynamicDescription));
+                DrawText(dynamicDescription, 840, 820, 22, LIGHTGRAY);
                 DrawText(TextFormat("Alvo: %d", ability->target_type), 840, 856, 20, GRAY);
             }
         }
@@ -672,6 +676,32 @@ void updateCombatUI() {
         if (IsKeyPressed(KEY_UP)) {
             abilitySelection--;
             if (abilitySelection < 0) abilitySelection = availableAbilityCount - 1;
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            /* Alterna modo/elemento da habilidade selecionada */
+            Ability* selectedAbility = getAbilityByIndex(party[combatant->playerIndex].characterID, availableAbilityIndices[abilitySelection]);
+            if (selectedAbility != NULL && selectedAbility->is_alternatable) {
+                /* Verifica se é elemental (Character 4) ou de buff (Character 3) */
+                if (selectedAbility->characterID == CHARACTER_4_MAGE && (selectedAbility->ability_index == 0 || selectedAbility->ability_index == 2)) {
+                    toggleAbilityElement(selectedAbility, -1);
+                } else if (selectedAbility->characterID == CHARACTER_3_HEALER && selectedAbility->ability_index == 2) {
+                    toggleAbilityMode(selectedAbility, -1);
+                }
+            }
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            /* Alterna modo/elemento da habilidade selecionada */
+            Ability* selectedAbility = getAbilityByIndex(party[combatant->playerIndex].characterID, availableAbilityIndices[abilitySelection]);
+            if (selectedAbility != NULL && selectedAbility->is_alternatable) {
+                /* Verifica se é elemental (Character 4) ou de buff (Character 3) */
+                if (selectedAbility->characterID == CHARACTER_4_MAGE && (selectedAbility->ability_index == 0 || selectedAbility->ability_index == 2)) {
+                    toggleAbilityElement(selectedAbility, 1);
+                } else if (selectedAbility->characterID == CHARACTER_3_HEALER && selectedAbility->ability_index == 2) {
+                    toggleAbilityMode(selectedAbility, 1);
+                }
+            }
         }
 
         if (IsKeyPressed(KEY_Z)) {

@@ -31,6 +31,28 @@ typedef enum {
     SCALING_VELOCIDADE
 } ScalingType;
 
+typedef enum {
+    ELEMENT_HEAT,       /* Calor */
+    ELEMENT_WIND,       /* Vento */
+    ELEMENT_TIDE,       /* Maré */
+    ELEMENT_EARTH,      /* Terra */
+    ELEMENT_NONE
+} ElementType;
+
+typedef enum {
+    BUFF_MODE_NONE,
+    BUFF_MODE_DAMAGE,        /* +10% dano */
+    BUFF_MODE_RESISTANCE     /* +10% resistência física e elemental */
+} BuffMode;
+
+typedef enum {
+    CHARACTER_1_TANK,
+    CHARACTER_2_DPS,
+    CHARACTER_3_HEALER,
+    CHARACTER_4_MAGE,
+    CHARACTER_COUNT
+} CharacterID;
+
 typedef struct {
     char name[32];
     char description[256];
@@ -72,6 +94,13 @@ typedef struct {
             float revive_hp_percent;
         } revive;
     } data;
+    
+    /* Sistema de alternância (modos/elementos) */
+    ElementType current_element;
+    BuffMode current_buff_mode;
+    int is_alternatable;        /* Flag: pode ser alternada com LEFT/RIGHT */
+    CharacterID characterID;    /* ID do personagem dono da habilidade */
+    int ability_index;          /* Índice da habilidade (0-3) */
 } Ability;
 
 typedef struct {
@@ -79,14 +108,6 @@ typedef struct {
     int cooldown;
     int charges;
 } AbilityState;
-
-typedef enum {
-    CHARACTER_1_TANK,
-    CHARACTER_2_DPS,
-    CHARACTER_3_HEALER,
-    CHARACTER_4_MAGE,
-    CHARACTER_COUNT
-} CharacterID;
 
 //initPlayerAbilities - Inicializa as habilidades de um personagem
 void initPlayerAbilities(Player* player, CharacterID characterID);
@@ -115,5 +136,30 @@ float getAbilityHeal(Ability* ability, Player* caster);
 
 // getAbilityByIndex - Obtém uma habilidade por personagem e índice
 Ability* getAbilityByIndex(int characterID, int abilityIndex);
+
+// getElementalDefense - Obtém a defesa elemental apropriada baseado no elemento
+int getElementalDefense(Enemy* enemy, ElementType element);
+
+// applyElementalDamage - Aplica dano elemental considerando resistência do inimigo
+void applyElementalDamage(Enemy* target, Player* caster, Ability* ability);
+
+/* ===== Sistema de Alternância de Modo/Elemento ===== */
+
+// toggleAbilityElement - Alterna elemento da habilidade (LEFT/RIGHT)
+// direction: 1 para direita (próximo), -1 para esquerda (anterior)
+void toggleAbilityElement(Ability* ability, int direction);
+
+// toggleAbilityMode - Alterna modo de buff da habilidade (LEFT/RIGHT)
+// direction: 1 para direita (próximo), -1 para esquerda (anterior)
+void toggleAbilityMode(Ability* ability, int direction);
+
+// getAbilityDynamicDescription - Gera descrição baseada no modo/elemento atual
+void getAbilityDynamicDescription(Ability* ability, char* out_description, int max_length);
+
+// getElementName - Obtém nome do elemento em português
+const char* getElementName(ElementType element);
+
+// getBuffModeName - Obtém nome do modo de buff em português
+const char* getBuffModeName(BuffMode mode);
 
 #endif 

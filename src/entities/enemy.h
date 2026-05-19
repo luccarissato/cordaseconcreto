@@ -26,6 +26,9 @@ void freeEnemy(Enemy* enemy);
 // setEnemyStats - Configura os stats de um inimigo
 void setEnemyStats(Enemy* enemy, int hp, int forca, int defesa, int velocidade);
 
+// setEnemyElementalResistances - Configura as resistências elementais de um inimigo
+void setEnemyElementalResistances(Enemy* enemy, int defCalor, int defVento, int defMare, int defTerra);
+
 // setEnemyRewards - Configura as recompensas do inimigo
 void setEnemyRewards(Enemy* enemy, int exp, int gold);
 

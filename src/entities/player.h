@@ -17,11 +17,6 @@
 #include "stats.h"
 #include "status_condition.h"
 
-/* -----------------------------------------------------------------------------
- * ENUMERAÇÃO: Direction
- * -----------------------------------------------------------------------------
- * Define as direções possíveis de movimento do jogador.
- * -------------------------------------------------------------------------- */
 typedef enum {
     DIR_UP,
     DIR_DOWN,
@@ -29,23 +24,6 @@ typedef enum {
     DIR_RIGHT
 } Direction;
 
-/* -----------------------------------------------------------------------------
- * ESTRUTURA: Player
- * -----------------------------------------------------------------------------
- * Representa um personagem jogável no jogo.
- * Contém informações de posição, sprites, colisão, animação e status.
- * 
- * Campos:
- *   - name: Nome do personagem
- *   - position: Posição atual no mundo
- *   - direction: Direção que o personagem está olhando
- *   - front/back/side/side_walk: Texturas para cada direção/estado
- *   - collider: Área de colisão do personagem
- *   - animFrame/animTimer: Controle de animação
- *   - stats: Atributos do personagem (HP, Mana, etc.)
- *   - statusList: Lista de condições de status ativas
- *   - isAlive: Flag indicando se o personagem está vivo (HP > 0)
- * -------------------------------------------------------------------------- */
 typedef struct Player {
     char name[32];              /* Nome do personagem */
     Vector2 position;           /* Posição no mundo */

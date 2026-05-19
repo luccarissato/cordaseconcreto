@@ -2,6 +2,7 @@
 #include "status_condition.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /* Porcentagem do HP máximo perdida por turno com envenenamento (10%) */
 #define POISON_DAMAGE_PERCENT 0.10f
@@ -203,29 +204,34 @@ int isBuff(StatusType type) {
 
 int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
     if (statusList == NULL || currentHP == NULL) return 0;
-    
+
     int totalDamage = 0;
-    
-    ListNode* current = statusList->conditions.head;
-    
-    while (current != NULL) {
+
+    /* Lista é circular; itere apenas pelo tamanho inicial para evitar loops infinitos */
+    List* list = &statusList->conditions;
+    if (list->head == NULL || list->size == 0) return 0;
+
+    ListNode* current = list->head;
+    int iterations = list->size;
+
+    for (int i = 0; i < iterations && current != NULL; i++) {
         StatusCondition* condition = (StatusCondition*) current->data;
-        
+
         if (condition != NULL) {
             switch (condition->type) {
                 case STATUS_POISON: {
                     int poisonDamage = (int)(maxHP * POISON_DAMAGE_PERCENT * condition->intensity);
-                    if (poisonDamage < 1) poisonDamage = 1; 
-                    
+                    if (poisonDamage < 1) poisonDamage = 1;
+
                     *currentHP -= poisonDamage;
                     totalDamage += poisonDamage;
                     break;
                 }
-                
+
                 case STATUS_BURN: {
                     int burnDamage = (int)(maxHP * BURN_DAMAGE_PERCENT * condition->intensity);
                     if (burnDamage < 1) burnDamage = 1;
-                    
+
                     *currentHP -= burnDamage;
                     totalDamage += burnDamage;
                     break;
@@ -240,26 +246,26 @@ int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
                     condition->intensity += 5.0f;
                     break;
                 }
-                
+
                 case STATUS_REGEN: {
                     int regenHeal = (int)(maxHP * REGEN_HEAL_PERCENT * condition->intensity);
                     if (regenHeal < 1) regenHeal = 1;
-                    
+
                     *currentHP += regenHeal;
-                    
+
                     if (*currentHP > maxHP) {
                         *currentHP = maxHP;
                     }
-                    
+
                     totalDamage -= regenHeal;
                     break;
                 }
-                
+
                 default:
                     break;
             }
         }
-        
+
         current = current->next;
     }
     
@@ -272,24 +278,33 @@ int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
 
 void updateStatusDurations(StatusList* statusList) {
     if (statusList == NULL) return;
-    
-    ListNode* current = statusList->conditions.head;
-    
-    while (current != NULL) {
+
+    List* list = &statusList->conditions;
+    if (list->head == NULL || list->size == 0) return;
+
+    /* Itere apenas pelo tamanho inicial da lista para evitar loops infinitos */
+    ListNode* current = list->head;
+    int iterations = list->size;
+
+    for (int i = 0; i < iterations && current != NULL; i++) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
-        
+
         if (condition != NULL) {
             if (condition->turnsRemaining > 0) {
                 condition->turnsRemaining--;
-                
+
                 if (condition->turnsRemaining == 0) {
                     free(condition);
-                    removeNode(&statusList->conditions, current);
+                    removeNode(list, current);
+
+                    if (list->head == NULL) {
+                        break;
+                    }
                 }
             }
         }
-        
+
         current = next;
     }
 }

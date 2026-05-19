@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
 
 
 static Ability abilities[4][4];
@@ -16,6 +17,8 @@ static void initCharacter1Abilities() {
     abilities[0][0].ability_type = ABILITY_TYPE_SPECIAL;
     abilities[0][0].damage_base = 0;
     abilities[0][0].scaling_type = SCALING_NONE;
+    abilities[0][0].characterID = CHARACTER_1_TANK;
+    abilities[0][0].ability_index = 0;
     strcpy(abilities[0][0].name, "Provocar");
     strcpy(abilities[0][0].description, "Força inimigos a atacarem você por 1 turno");
     abilities[0][0].data.taunt.aggro_duration = 1;
@@ -49,7 +52,7 @@ static void initCharacter1Abilities() {
     abilities[0][3].ability_type = ABILITY_TYPE_BUFF;
     abilities[0][3].damage_base = 0;
     abilities[0][3].scaling_type = SCALING_NONE;
-    strcpy(abilities[0][3].name, "Contra-Ataque");
+    strcpy(abilities[0][3].name, "Bastião");
     strcpy(abilities[0][3].description, "Reduz dano e reflete parte como true damage por 3 turnos");
     abilities[0][3].data.reflect.reflect_duration = 3;
     abilities[0][3].data.reflect.reflect_mult = 0.3f;
@@ -86,7 +89,7 @@ static void initCharacter2Abilities() {
     
     /* Skill 3: Counter - Devolve dano recebido */
     abilities[1][2].level_unlocked = 3;
-    abilities[1][2].mana_cost = 0;
+    abilities[1][2].mana_cost = 30;
     abilities[1][2].target_type = TARGET_SELF;
     abilities[1][2].ability_type = ABILITY_TYPE_BUFF;
     abilities[1][2].damage_base = 0;
@@ -135,12 +138,14 @@ static void initCharacter3Abilities() {
     /* Skill 3: Group Buff - Buff alternável */
     abilities[2][2].level_unlocked = 3;
     abilities[2][2].mana_cost = 30;
-    abilities[2][2].target_type = TARGET_AREA_ALLIES;
+    abilities[2][2].target_type = TARGET_SINGLE_ALLY;
     abilities[2][2].ability_type = ABILITY_TYPE_BUFF;
     abilities[2][2].damage_base = 0;
     abilities[2][2].scaling_type = SCALING_NONE;
-    strcpy(abilities[2][2].name, "Bênção Seletiva");
-    strcpy(abilities[2][2].description, "Buff alternável: +10% dano ou +10% resistência por 3 turnos");
+    strcpy(abilities[2][2].name, "Bênção Seletiva >");
+    strcpy(abilities[2][2].description, "Buff alternável: +10% dano por 3 turnos.\n\nPressione setas para trocar o efeito.");
+    abilities[2][2].is_alternatable = 1;
+    abilities[2][2].current_buff_mode = BUFF_MODE_DAMAGE;  /* Começa em dano */
     
     /* Skill 4: Revive - Ressuscita aliado */
     abilities[2][3].level_unlocked = 4;
@@ -165,8 +170,10 @@ static void initCharacter4Abilities() {
     abilities[3][0].damage_base = 35;
     abilities[3][0].scaling_type = SCALING_MENTE;
     abilities[3][0].scaling_mult = 0.9f;
-    strcpy(abilities[3][0].name, "Magia Elemental");
-    strcpy(abilities[3][0].description, "Ataque elemental em alvo único. Pressione setas para trocar elemento");
+    strcpy(abilities[3][0].name, "Magia Elemental >");
+    strcpy(abilities[3][0].description, "Ataque elemental em alvo único — Elemento: Calor\n\nPressione setas para trocar elemento");
+    abilities[3][0].is_alternatable = 1;
+    abilities[3][0].current_element = ELEMENT_HEAT;  /* Começa em Calor */
     
     /* Skill 2: Arcane Mark - Marca para próximo dano 2x */
     abilities[3][1].level_unlocked = 2;
@@ -187,8 +194,10 @@ static void initCharacter4Abilities() {
     abilities[3][2].damage_base = 28;
     abilities[3][2].scaling_type = SCALING_MENTE;
     abilities[3][2].scaling_mult = 0.8f;
-    strcpy(abilities[3][2].name, "Explosão Elemental");
-    strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos");
+    strcpy(abilities[3][2].name, "Explosão Elemental >");
+    strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos — Elemento: Calor\n\nPressione setas para trocar elemento");
+    abilities[3][2].is_alternatable = 1;
+    abilities[3][2].current_element = ELEMENT_HEAT;  /* Começa em Calor */
     
     /* Skill 4: Permanent Buff - Aumenta dano por turno */
     abilities[3][3].level_unlocked = 4;
@@ -211,6 +220,14 @@ static void initializeAbilitySystem() {
     initCharacter2Abilities();
     initCharacter3Abilities();
     initCharacter4Abilities();
+    
+    /* Pós-processamento: configura characterID e ability_index para todas as habilidades */
+    for (int charID = 0; charID < CHARACTER_COUNT; charID++) {
+        for (int abilityIdx = 0; abilityIdx < 4; abilityIdx++) {
+            abilities[charID][abilityIdx].characterID = (CharacterID)charID;
+            abilities[charID][abilityIdx].ability_index = abilityIdx;
+        }
+    }
     
     abilitiesInitialized = 1;
 }
@@ -420,6 +437,9 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
                     if ((rand() % 100) < 50) {
                         applyStatusToEnemyTarget(target, STATUS_DEFENSE_DOWN, 2, 1.0f);
                     }
+                } else if (caster->characterID == CHARACTER_4_MAGE && (ability_index == 0 || ability_index == 2)) {
+                    /* Dano elemental que considera resistência */
+                    applyElementalDamage(target, caster, ability);
                 } else {
                     applyDamageToEnemyTarget(target, caster, ability);
                 }
@@ -487,12 +507,11 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
         if (target_indices == NULL || selected_count <= 0) return;
 
         Player* playerTargets = (Player*)targets;
-        static int blessingToggle = 0;
         StatusType blessingType = STATUS_NONE;
 
         if (caster->characterID == CHARACTER_3_HEALER && ability_index == 2) {
-            blessingType = blessingToggle ? STATUS_DEFENSE_UP : STATUS_STRENGTH_UP;
-            blessingToggle = !blessingToggle;
+            /* Usa o modo armazenado na habilidade, não variável global */
+            blessingType = (ability->current_buff_mode == BUFF_MODE_DAMAGE) ? STATUS_STRENGTH_UP : STATUS_DEFENSE_UP;
         }
 
         for (int i = 0; i < selected_count; i++) {
@@ -551,3 +570,113 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
 
     caster->isAlive = (caster->stats.currentHP > 0);
 }
+
+/* ===== Sistema de Alternância de Modo/Elemento ===== */
+
+const char* getElementName(ElementType element) {
+    switch (element) {
+        case ELEMENT_HEAT:  return "Calor";
+        case ELEMENT_WIND:  return "Vento";
+        case ELEMENT_TIDE:  return "Maré";
+        case ELEMENT_EARTH: return "Terra";
+        default:            return "Nenhum";
+    }
+}
+
+const char* getBuffModeName(BuffMode mode) {
+    switch (mode) {
+        case BUFF_MODE_DAMAGE:      return "dano";
+        case BUFF_MODE_RESISTANCE:  return "resistência";
+        default:                    return "nenhum";
+    }
+}
+
+void toggleAbilityElement(Ability* ability, int direction) {
+    if (ability == NULL || !ability->is_alternatable) return;
+    
+    /* Elementos cíclicos: Calor -> Vento -> Maré -> Terra -> Calor */
+    int current = (int)ability->current_element;
+    int next = (current + direction) % 4;
+    if (next < 0) next += 4;
+    
+    ability->current_element = (ElementType)next;
+}
+
+void toggleAbilityMode(Ability* ability, int direction) {
+    if (ability == NULL || !ability->is_alternatable) return;
+    
+    /* Modos cíclicos: DANO <-> RESISTÊNCIA */
+    if (ability->current_buff_mode == BUFF_MODE_DAMAGE) {
+        ability->current_buff_mode = BUFF_MODE_RESISTANCE;
+    } else {
+        ability->current_buff_mode = BUFF_MODE_DAMAGE;
+    }
+}
+
+void getAbilityDynamicDescription(Ability* ability, char* out_description, int max_length) {
+    if (ability == NULL || out_description == NULL || max_length <= 0) return;
+    
+    /* Habilidades com elemento alternável (Character 4) */
+    if (ability->characterID == CHARACTER_4_MAGE && (ability->ability_index == 0 || ability->ability_index == 2)) {
+        const char* element_name = getElementName(ability->current_element);
+        
+        if (ability->ability_index == 0) {
+            /* Magia Elemental (alvo único) */
+            snprintf(out_description, max_length,
+                "Ataque elemental em alvo único — Elemento: %s\n\nPressione setas para trocar elemento",
+                element_name);
+        } else {
+            /* Explosão Elemental (área) */
+            snprintf(out_description, max_length,
+                "Ataque elemental em todos inimigos — Elemento: %s\n\nPressione setas para trocar elemento",
+                element_name);
+        }
+        return;
+    }
+    
+    /* Habilidades com modo alternável (Character 3, Skill 3) */
+    if (ability->characterID == CHARACTER_3_HEALER && ability->ability_index == 2) {
+        const char* mode_name = getBuffModeName(ability->current_buff_mode);
+        snprintf(out_description, max_length,
+            "Buff alternável: +10%% %s por 3 turnos.\n\nPressione setas para trocar o efeito.",
+            mode_name);
+        return;
+    }
+    
+    /* Padrão: usa descrição estática */
+    strncpy(out_description, ability->description, max_length - 1);
+    out_description[max_length - 1] = '\0';
+}
+
+int getElementalDefense(Enemy* enemy, ElementType element) {
+    if (enemy == NULL) return 0;
+    
+    switch (element) {
+        case ELEMENT_HEAT:  return enemy->stats.defCalor;
+        case ELEMENT_WIND:  return enemy->stats.defVento;
+        case ELEMENT_TIDE:  return enemy->stats.defMare;
+        case ELEMENT_EARTH: return enemy->stats.defTerra;
+        default:            return 0;
+    }
+}
+
+void applyElementalDamage(Enemy* target, Player* caster, Ability* ability) {
+    if (target == NULL || caster == NULL || ability == NULL) return;
+
+    int damage = (int)getAbilityDamage(ability, caster);
+    
+    /* Aplica defesa elemental se a habilidade tem elemento */
+    if (ability->current_element != ELEMENT_NONE) {
+        int elementalDefense = getElementalDefense(target, ability->current_element);
+        /* Resistência é interpretada como percentual (0-100) */
+        /* Fórmula: damage_final = damage_base * (1 - resistance_percent) */
+        float resistance_percent = elementalDefense / 100.0f;
+        if (resistance_percent > 1.0f) resistance_percent = 1.0f;  /* Clamp a 100% */
+        int reduced_damage = (int)(damage * (1.0f - resistance_percent));
+        if (reduced_damage < 1) reduced_damage = 1;  /* Mínimo 1 de dano */
+        damage = reduced_damage;
+    }
+    
+    damageEnemy(target, damage);
+}
+
