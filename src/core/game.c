@@ -25,6 +25,9 @@
 
 #include "../data/dialogues/teste_dialogue.h"
 
+extern Item gotaSangreMaldita;
+extern Item frascoMagicoCura;
+
 #define HISTORY_SIZE 1000
 
 NPC testNPC;
@@ -96,30 +99,36 @@ void initGame() {
     );
     addInteractable(&interactableManager, &testDoor);
     
-    InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
-    cartolaItem->baseItem = &cartola;
-    cartolaItem->quantity = 3;
-    addItemInventory(&playerInventory, cartolaItem);
+    /* Itens de teste para status effects */
+    InventoryItem* pimentaMalagItem = malloc(sizeof(InventoryItem));
+    pimentaMalagItem->baseItem = &pimentaMalagueta;
+    pimentaMalagItem->quantity = 2;
+    addItemInventory(&playerInventory, pimentaMalagItem);
     
-    InventoryItem* tapiocaItem = malloc(sizeof(InventoryItem));
-    tapiocaItem->baseItem = &tapiocaRecheada;
-    tapiocaItem->quantity = 3;
-    addItemInventory(&playerInventory, tapiocaItem);
-
-    InventoryItem* pratoBuchadaItem = malloc(sizeof(InventoryItem));
-    pratoBuchadaItem->baseItem = &pratoBuchada;
-    pratoBuchadaItem->quantity = 3;
-    addItemInventory(&playerInventory, pratoBuchadaItem);
-
-    InventoryItem* pedaço1Item = malloc(sizeof(InventoryItem));
-    pedaço1Item->baseItem = &pedaçoDeChave1;
-    pedaço1Item->quantity = 1;
-    addItemInventory(&playerInventory, pedaço1Item);
-
-    InventoryItem* pedaço2Item = malloc(sizeof(InventoryItem));
-    pedaço2Item->baseItem = &pedaçoDeChave2;
-    pedaço2Item->quantity = 1;
-    addItemInventory(&playerInventory, pedaço2Item);
+    InventoryItem* gotaSangueItem = malloc(sizeof(InventoryItem));
+    gotaSangueItem->baseItem = &gotaSangreMaldita;
+    gotaSangueItem->quantity = 2;
+    addItemInventory(&playerInventory, gotaSangueItem);
+    
+    InventoryItem* poEnvenenItem = malloc(sizeof(InventoryItem));
+    poEnvenenItem->baseItem = &poDeEnvenenar;
+    poEnvenenItem->quantity = 2;
+    addItemInventory(&playerInventory, poEnvenenItem);
+    
+    InventoryItem* pomadaItem = malloc(sizeof(InventoryItem));
+    pomadaItem->baseItem = &pomadaCicatrizante;
+    pomadaItem->quantity = 2;
+    addItemInventory(&playerInventory, pomadaItem);
+    
+    InventoryItem* antivenItem = malloc(sizeof(InventoryItem));
+    antivenItem->baseItem = &antiveneno;
+    antivenItem->quantity = 2;
+    addItemInventory(&playerInventory, antivenItem);
+    
+    InventoryItem* frascoMagicoItem = malloc(sizeof(InventoryItem));
+    frascoMagicoItem->baseItem = &frascoMagicoCura;
+    frascoMagicoItem->quantity = 2;
+    addItemInventory(&playerInventory, frascoMagicoItem);
     
     spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
     

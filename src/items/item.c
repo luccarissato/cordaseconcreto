@@ -46,16 +46,18 @@ static void applyItemEffectGeneric(Stats* stats, StatusList* statusList, Item* b
             break;
         }
         case ITEM_CURE: {
-            switch (base->cureType) {
-                case CURE_SPECIFIC:
-                    removeStatusCondition(statusList, base->statusToCure);
-                    break;
-                case CURE_ALL_DEBUFFS:
-                    removeAllDebuffs(statusList);
-                    break;
-                case CURE_ALL:
-                    clearAllStatus(statusList);
-                    break;
+            if (statusList != NULL) {
+                switch (base->cureType) {
+                    case CURE_SPECIFIC:
+                        removeStatusCondition(statusList, base->statusToCure);
+                        break;
+                    case CURE_ALL_DEBUFFS:
+                        removeAllDebuffs(statusList);
+                        break;
+                    case CURE_ALL:
+                        clearAllStatus(statusList);
+                        break;
+                }
             }
             break;
         }

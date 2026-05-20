@@ -34,10 +34,6 @@ static Item* chestLootPool[] = {
     &feijoada,
     &antiveneno,
     &pomadaCicatrizante,
-    &massagemRelaxante,
-    &estimulante,
-    &aguaFria,
-    &colirioNatural,
     &panaceiaUniversal,
     &vitaminaFortitude,
     &elixirMental,
@@ -48,10 +44,7 @@ static Item* chestLootPool[] = {
     &chaIluminacao,
     &poDeEnvenenar,
     &pimentaMalagueta,
-    &raioParalisante,
-    &poDoSono,
     &cogumelo,
-    &bombaDeFumaça,
 };
 
 static const int CHEST_LOOT_POOL_SIZE = sizeof(chestLootPool) / sizeof(chestLootPool[0]);
