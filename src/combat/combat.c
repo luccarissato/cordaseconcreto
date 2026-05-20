@@ -177,13 +177,30 @@ int getEnemyCombatCount() {
 }
 
 void endCombat() {
+    /* Verifica se foi vitória (todos inimigos derrotados) */
+    int aliveEnemies = 0;
+    
     for (int i = 0; i < combat.enemyCount; i++) {
         int enemyIndex = combat.enemyIndices[i];
         if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
+            if (enemyManager.enemies[enemyIndex].isAlive) {
+                aliveEnemies++;
+            }
+            /* Remove inimigos do combate */
             enemyManager.enemies[enemyIndex].inCombat = 0;
         }
     }
-
+    
+    /* Se nenhum inimigo vivo = jogadores venceram */
+    if (aliveEnemies == 0) {
+        /* Aplica level up a todos os jogadores vivos */
+        for (int i = 0; i < PARTY_SIZE; i++) {
+            if (party[i].isAlive) {
+                playerLevelUp(&party[i]);
+            }
+        }
+    }
+    
     combat.inCombat = 0;
     combat.enemyCount = 0;
     memset(combat.enemyIndices, 0, sizeof(combat.enemyIndices));

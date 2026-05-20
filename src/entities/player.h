@@ -17,6 +17,9 @@
 #include "stats.h"
 #include "status_condition.h"
 
+/* Limite máximo de nível */
+#define MAX_LEVEL 4
+
 typedef enum {
     DIR_UP,
     DIR_DOWN,
@@ -55,5 +58,23 @@ void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount);
 void drawPlayer(Player* p);
 void unloadPlayer(Player* p);
 void updatePlayerAnimation(Player* p, int isMoving);
+
+/**
+ * playerLevelUp - Aplica level up ao jogador
+ * 
+ * Fluxo:
+ * 1. Incrementa player->level
+ * 2. Aplica crescimento de stats (fortitude +5, mente +5, etc)
+ * 3. Recalcula HP/Mana derivados automaticamente
+ * 4. Restaura HP e Mana para os novos máximos
+ * 
+ * IMPORTANTE: Função modular que também servirá para inimigos
+ * (após adaptação para a estrutura Enemy).
+ * 
+ * ABORDAGEM ADOTADA PARA currentHP/currentMana:
+ * - Restauração completa (currentHP/currentMana = máximos)
+ * - Justificativa: Vitória em combate merece recuperação total
+ */
+void playerLevelUp(Player* player);
 
 #endif

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "../data/dialogues/teste_dialogue.h"
 
@@ -44,6 +45,7 @@ void initParty();
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
+
 
 void initEnemyManager();
 void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int maxEnemies);
@@ -133,12 +135,16 @@ void initGame() {
         );
     }
 
+
     camera.target = party[0].position; /* segue o líder */
     camera.offset = (Vector2){800, 540};
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 
     mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
+    
+    /* Debug: escreve informações de níveis e stats */
+    debugWriteLevelInfo();
 }
 
 void updateGame() {
@@ -282,10 +288,10 @@ void initParty() {
     party[0].stats.forca = 6;
     party[0].stats.defesa = 7;
     party[0].stats.velocidade = 2;
-    party[0].stats.defCalor = 6;
-    party[0].stats.defVento = 3;
-    party[0].stats.defMare = 5;
-    party[0].stats.defTerra = 8;
+    party[0].stats.defCalor = 60;
+    party[0].stats.defVento = 30;
+    party[0].stats.defMare = 50;
+    party[0].stats.defTerra = 80;
 
     //manguebeat
     party[1].stats.baseHP = 50;
@@ -295,10 +301,10 @@ void initParty() {
     party[1].stats.forca = 7;
     party[1].stats.defesa = 4;
     party[1].stats.velocidade = 7;
-    party[1].stats.defCalor = 5;
-    party[1].stats.defVento = 8;
-    party[1].stats.defMare = 6;
-    party[1].stats.defTerra = 3;
+    party[1].stats.defCalor = 50;
+    party[1].stats.defVento = 80;
+    party[1].stats.defMare = 60;
+    party[1].stats.defTerra = 30;
 
     //cirandeira
     party[2].stats.baseHP = 45;
@@ -308,10 +314,10 @@ void initParty() {
     party[2].stats.forca = 3;
     party[2].stats.defesa = 4;
     party[2].stats.velocidade = 6;
-    party[2].stats.defCalor = 4;
-    party[2].stats.defVento = 8;
-    party[2].stats.defMare = 7;
-    party[2].stats.defTerra = 5;
+    party[2].stats.defCalor = 40;
+    party[2].stats.defVento = 80;
+    party[2].stats.defMare = 70;
+    party[2].stats.defTerra = 50;
 
     //repentista
     party[3].stats.baseHP = 35;
@@ -321,16 +327,26 @@ void initParty() {
     party[3].stats.forca = 2;
     party[3].stats.defesa = 3;
     party[3].stats.velocidade = 7;
-    party[3].stats.defCalor = 8;
-    party[3].stats.defVento = 6;
-    party[3].stats.defMare = 4;
-    party[3].stats.defTerra = 6;
+    party[3].stats.defCalor = 80;
+    party[3].stats.defVento = 60;
+    party[3].stats.defMare = 40;
+    party[3].stats.defTerra = 60;
 
     for (int i = 0; i < PARTY_SIZE; i++) {
         calculateStats(&party[i].stats);
         /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
         party[i].characterID = i;
-        party[i].level = 4;
+        /* Personagem começa nível 1 */
+        party[i].level = 1;
+        
+        /* Aplica growth para atingir nível 4 (3 level ups: 1->2->3->4) */
+        for (int levelUp = 0; levelUp < 3; levelUp++) {
+            applyLevelGrowth(&party[i].stats);
+            party[i].level++;
+        }
+        
+        /* Recalcula stats derivados com o nível final */
+        calculateStats(&party[i].stats);
     }
 
     // inicializa histórico com posição inicial
@@ -338,12 +354,6 @@ void initParty() {
         positionHistory[i] = party[0].position;
         directionHistory[i] = party[0].direction;
     }
-
-    // teste
-    party[0].stats.currentHP = 30;
-    party[0].stats.currentMana = 10;
-    party[1].stats.currentHP = 30;
-    party[1].stats.currentMana = 10;
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {
