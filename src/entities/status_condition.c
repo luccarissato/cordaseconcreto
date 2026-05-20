@@ -20,8 +20,8 @@
 #define CONFUSION_SELF_HIT_CHANCE 30
 
 #define BURN_STRENGTH_REDUCTION 0.25f    /* -25% força quando queimando */
-#define STRENGTH_UP_BONUS 0.50f          /* +50% força com buff */
-#define DEFENSE_UP_BONUS 0.50f           /* +50% defesa com buff */
+#define STRENGTH_UP_BONUS 0.25f          /* +50% força com buff */
+#define DEFENSE_UP_BONUS 0.25f           /* +50% defesa com buff */
 #define SPEED_UP_BONUS 0.50f             /* +50% velocidade com buff */
 #define BLIND_ACCURACY_REDUCTION 0.50f   /* -50% precisão quando cego */
 
@@ -80,8 +80,10 @@ void removeStatusCondition(StatusList* statusList, StatusType type) {
     if (statusList == NULL) return;
     
     ListNode* current = statusList->conditions.head;
+    int safety = 0;
+    int maxSafety = statusList->conditions.size + 1;
     
-    while (current != NULL) {
+    while (current != NULL && safety < maxSafety) {
         StatusCondition* condition = (StatusCondition*) current->data;
         
         if (condition != NULL && condition->type == type) {
@@ -95,6 +97,7 @@ void removeStatusCondition(StatusList* statusList, StatusType type) {
         }
         
         current = current->next;
+        safety++;
     }
 }
 
@@ -152,9 +155,14 @@ int hasStatusCondition(StatusList* statusList, StatusType type) {
 StatusCondition* getStatusCondition(StatusList* statusList, StatusType type) {
     if (statusList == NULL) return NULL;
     
-    ListNode* current = statusList->conditions.head;
+    if (statusList->conditions.head == NULL || statusList->conditions.size == 0) {
+        return NULL;
+    }
     
-    while (current != NULL) {
+    ListNode* current = statusList->conditions.head;
+    int iterations = statusList->conditions.size;  /* Limite iterações para evitar loop infinito em lista circular */
+    
+    for (int i = 0; i < iterations && current != NULL; i++) {
         StatusCondition* condition = (StatusCondition*) current->data;
         
         if (condition != NULL && condition->type == type) {

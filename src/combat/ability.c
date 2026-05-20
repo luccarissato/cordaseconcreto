@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include "../entities/status_condition.h"
 
 
 static Ability abilities[4][4];
@@ -135,7 +136,7 @@ static void initCharacter3Abilities() {
     abilities[2][1].data.heal.heal_amount = 30;
     abilities[2][1].data.heal.heal_scaling = 0.8f;
     
-    /* Skill 3: Group Buff - Buff alternável */
+    /* Skill 3: Target Buff - Buff alternável */
     abilities[2][2].level_unlocked = 3;
     abilities[2][2].mana_cost = 30;
     abilities[2][2].target_type = TARGET_SINGLE_ALLY;
@@ -171,7 +172,7 @@ static void initCharacter4Abilities() {
     abilities[3][0].scaling_type = SCALING_MENTE;
     abilities[3][0].scaling_mult = 0.9f;
     strcpy(abilities[3][0].name, "Magia Elemental >");
-    strcpy(abilities[3][0].description, "Ataque elemental em alvo único — Elemento: Calor\n\nPressione setas para trocar elemento");
+    strcpy(abilities[3][0].description, "Ataque elemental em alvo único. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][0].is_alternatable = 1;
     abilities[3][0].current_element = ELEMENT_HEAT;  /* Começa em Calor */
     
@@ -195,7 +196,7 @@ static void initCharacter4Abilities() {
     abilities[3][2].scaling_type = SCALING_MENTE;
     abilities[3][2].scaling_mult = 0.8f;
     strcpy(abilities[3][2].name, "Explosão Elemental >");
-    strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos — Elemento: Calor\n\nPressione setas para trocar elemento");
+    strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][2].is_alternatable = 1;
     abilities[3][2].current_element = ELEMENT_HEAT;  /* Começa em Calor */
     
@@ -394,6 +395,13 @@ static void applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* abi
     if (target == NULL || caster == NULL || ability == NULL) return;
 
     int damage = (int)getAbilityDamage(ability, caster);
+    
+    /* Aplica modificadores de buff de força (STATUS_STRENGTH_UP) se aplicável */
+    if (ability->scaling_type == SCALING_FORCA) {
+        float strengthMod = getStrengthModifier(&caster->statusList);
+        damage = (int)(damage * strengthMod);
+    }
+    
     damageEnemy(target, damage);
 }
 
@@ -623,12 +631,12 @@ void getAbilityDynamicDescription(Ability* ability, char* out_description, int m
         if (ability->ability_index == 0) {
             /* Magia Elemental (alvo único) */
             snprintf(out_description, max_length,
-                "Ataque elemental em alvo único — Elemento: %s\n\nPressione setas para trocar elemento",
+                "Ataque elemental em alvo unico. Elemento: %s\n\nPressione setas para trocar elemento",
                 element_name);
         } else {
             /* Explosão Elemental (área) */
             snprintf(out_description, max_length,
-                "Ataque elemental em todos inimigos — Elemento: %s\n\nPressione setas para trocar elemento",
+                "Ataque elemental em todos inimigos. Elemento: %s\n\nPressione setas para trocar elemento",
                 element_name);
         }
         return;
@@ -638,7 +646,7 @@ void getAbilityDynamicDescription(Ability* ability, char* out_description, int m
     if (ability->characterID == CHARACTER_3_HEALER && ability->ability_index == 2) {
         const char* mode_name = getBuffModeName(ability->current_buff_mode);
         snprintf(out_description, max_length,
-            "Buff alternável: +10%% %s por 3 turnos.\n\nPressione setas para trocar o efeito.",
+            "Buff alternável: +25%% %s por 3 turnos.\n\nPressione setas para trocar o efeito.",
             mode_name);
         return;
     }
@@ -664,6 +672,12 @@ void applyElementalDamage(Enemy* target, Player* caster, Ability* ability) {
     if (target == NULL || caster == NULL || ability == NULL) return;
 
     int damage = (int)getAbilityDamage(ability, caster);
+    
+    /* Aplica modificadores de buff de mente (STATUS_STRENGTH_UP para elemental) */
+    if (ability->scaling_type == SCALING_MENTE) {
+        float strengthMod = getStrengthModifier(&caster->statusList);
+        damage = (int)(damage * strengthMod);
+    }
     
     /* Aplica defesa elemental se a habilidade tem elemento */
     if (ability->current_element != ELEMENT_NONE) {
