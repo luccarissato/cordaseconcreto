@@ -142,9 +142,6 @@ void initGame() {
     camera.zoom = 1.0f;
 
     mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
-    
-    /* Debug: escreve informações de níveis e stats */
-    debugWriteLevelInfo();
 }
 
 void updateGame() {

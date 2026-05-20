@@ -349,11 +349,7 @@ static void executeSelectedItem() {
     InventoryItem* item = (InventoryItem*)selectedItemNode->data;
     if (item == NULL || item->baseItem == NULL) return;
 
-    if (item->baseItem->type == ITEM_INFLICT_STATUS) {
-        buildEnemyTargetList();
-    } else {
-        buildAllyTargetList(item->baseItem->type == ITEM_REVIVE);
-    }
+    buildAllyTargetList(item->baseItem->type == ITEM_REVIVE);
 
     combatUiState = COMBAT_UI_ITEM_TARGET;
 }
@@ -402,15 +398,13 @@ static void confirmTargetAction() {
         InventoryItem* item = (InventoryItem*)selectedItemNode->data;
         if (item == NULL || item->baseItem == NULL) return;
 
-        if (item->baseItem->type == ITEM_INFLICT_STATUS) {
-            if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
-                useItemOnStatusList(&enemyManager.enemies[targetIndex].statusList, item->baseItem);
-                item->quantity--;
-                if (item->quantity <= 0) {
-                    removeItemNodeAndFree(item);
-                }
-                spendAndFinishTurn();
+        if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
+            useItemOnEnemy(&enemyManager.enemies[targetIndex], item);
+            item->quantity--;
+            if (item->quantity <= 0) {
+                removeItemNodeAndFree(item);
             }
+            spendAndFinishTurn();
             return;
         }
 
@@ -740,6 +734,20 @@ void updateCombatUI() {
         if (IsKeyPressed(KEY_UP)) {
             targetSelection--;
             if (targetSelection < 0) targetSelection = targetCount - 1;
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            if (combatUiState == COMBAT_UI_ITEM_TARGET && !targetIsEnemy) {
+                buildEnemyTargetList();
+                targetSelection = 0;
+            }
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            if (combatUiState == COMBAT_UI_ITEM_TARGET && targetIsEnemy) {
+                buildAllyTargetList(0);
+                targetSelection = 0;
+            }
         }
 
         if (IsKeyPressed(KEY_Z)) {

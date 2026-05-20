@@ -4,9 +4,11 @@
 #include "../entities/status_condition.h"
 #include "../utils/list.h"
 
-/* Forward declaration para evitar dependência circular com player.h */
+/* Forward declarations para evitar dependência circular */
 struct Player;
 typedef struct Player Player;
+struct Enemy;
+typedef struct Enemy Enemy;
 
 typedef enum {
     ITEM_HEAL,              /* Item de cura de HP */
@@ -86,5 +88,8 @@ void applyStatBoost(Player* target, Item* item);
 
 // * revivePlayer - Revive um jogador com HP = 0
 int revivePlayer(Player* target, float hpPercent);
+
+// * useItemOnEnemy - Aplica os efeitos de um item em um inimigo
+void useItemOnEnemy(Enemy* target, InventoryItem* item);
 
 #endif

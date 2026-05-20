@@ -141,19 +141,6 @@ void unloadPlayer(Player* p) {
     freeStatusList(&p->statusList);
 }
 
-/**
- * playerLevelUp - Aplica level up ao jogador
- * 
- * Fluxo:
- * 1. Incrementa player->level
- * 2. Aplica crescimento de stats base (+5 a cada atributo principal)
- * 3. Recalcula HP/Mana derivados via calculateStats()
- * 4. Restaura HP/Mana para os novos máximos (vitória merece recuperação)
- * 
- * REGRA CRÍTICA: Modular e reutilizável
- * - Mesmo padrão será adaptado para inimigos no futuro
- * - Separação clara entre growth (applyLevelGrowth) e recalc (calculateStats)
- */
 void playerLevelUp(Player* player) {
     if (player == NULL) return;
     
