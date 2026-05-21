@@ -12,6 +12,8 @@
 #include "../items/inventory.h"
 #include "../items/item.h"
 #include "../entities/status_condition.h"
+/* Status visuals (auras / buffs) */
+#include "../ui/status_visuals.h"
 
 extern Inventory playerInventory;
 
@@ -450,7 +452,15 @@ static void drawPlayers() {
         int y = 125 + (i * 165);
 
         if (party[i].front.id != 0) {
-            DrawTextureEx(party[i].front, (Vector2){ (float)x + 40, (float)y }, 0.0f, 0.25f, party[i].isAlive ? WHITE : GRAY);
+            Vector2 spritePos = {(float)x + 40, (float)y};
+            Rectangle srcRect = {0, 0, (float)party[i].front.width, (float)party[i].front.height};
+            
+            renderStatusAura(party[i].front, srcRect, spritePos, (Vector2){0, 0}, 0.25f, &party[i].statusList);
+            
+            DrawTextureEx(party[i].front, spritePos, 0.0f, 0.25f, party[i].isAlive ? WHITE : GRAY);
+            
+            Vector2 spriteSize = {party[i].front.width * 0.25f, party[i].front.height * 0.25f};
+            renderStatusBuffs(&party[i].statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, party[i].isAlive ? DARKBLUE : DARKGRAY);
         }
@@ -481,7 +491,15 @@ static void drawEnemyColumn() {
         int y = 345 + (i * 165);
 
         if (enemy->texture.id != 0) {
-            DrawTextureEx(enemy->texture, (Vector2){ (float)x, (float)y }, 0.0f, 0.55f, enemy->isAlive ? WHITE : GRAY);
+            Vector2 spritePos = {(float)x, (float)y};
+            Rectangle srcRect = {0, 0, (float)enemy->texture.width, (float)enemy->texture.height};
+            
+            renderStatusAura(enemy->texture, srcRect, spritePos, (Vector2){0, 0}, 0.55f, &enemy->statusList);
+            
+            DrawTextureEx(enemy->texture, spritePos, 0.0f, 0.55f, enemy->isAlive ? WHITE : GRAY);
+            
+            Vector2 spriteSize = {enemy->texture.width * 0.55f, enemy->texture.height * 0.55f};
+            renderStatusBuffs(&enemy->statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, enemy->isAlive ? MAROON : DARKGRAY);
         }

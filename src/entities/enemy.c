@@ -2,6 +2,7 @@
 #include "../core/game.h"
 #include "../core/collision.h"
 #include "../core/state.h"
+#include "../ui/status_visuals.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -178,7 +179,13 @@ void initEnemyWithTexture(Enemy* enemy, const char* name, Vector2 position, cons
 void drawEnemy(Enemy* enemy) {
     if (enemy == NULL) return;
 
+    Rectangle src = {0, 0, (float)enemy->texture.width, (float)enemy->texture.height};
+    renderStatusAura(enemy->texture, src, enemy->position, (Vector2){0, 0}, 1.0f, &enemy->statusList);
+
     DrawTexture(enemy->texture, (int)enemy->position.x, (int)enemy->position.y, WHITE);
+    
+    Vector2 spriteSize = {(float)enemy->texture.width, (float)enemy->texture.height};
+    renderStatusBuffs(&enemy->statusList, enemy->position, spriteSize);
     
     Rectangle colliderRect = getColliderRect(enemy->position, enemy->collider);
     DrawRectangleLinesEx(colliderRect, 2.0f, RED);

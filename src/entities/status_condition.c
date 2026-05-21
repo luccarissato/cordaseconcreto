@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+/* For debug flag reuse */
+#include "../ui/status_visuals.h"
 
 /* Porcentagem do HP máximo perdida por turno com envenenamento (12%) */
 #define POISON_DAMAGE_PERCENT 0.12f
@@ -64,6 +66,9 @@ void addStatusCondition(StatusList* statusList, StatusType type, int turns, floa
         if (intensity > existing->intensity) {
             existing->intensity = intensity;
         }
+        #if STATUS_VIS_DEBUG
+        fprintf(stderr, "[STATUS_COND] updated existing %d turns=%d intensity=%.2f\n", type, existing->turnsRemaining, existing->intensity);
+        #endif
         
     } else {  
         StatusCondition* newCondition = (StatusCondition*) malloc(sizeof(StatusCondition));
@@ -74,6 +79,9 @@ void addStatusCondition(StatusList* statusList, StatusType type, int turns, floa
         newCondition->intensity = intensity;
         
         pushBack(&statusList->conditions, newCondition);
+        #if STATUS_VIS_DEBUG
+        fprintf(stderr, "[STATUS_COND] added new %d turns=%d intensity=%.2f\n", type, turns, intensity);
+        #endif
     }
 }
 
@@ -184,6 +192,7 @@ StatusCondition* getStatusCondition(StatusList* statusList, StatusType type) {
     for (int i = 0; i < iterations && current != NULL; i++) {
         StatusCondition* condition = (StatusCondition*) current->data;
         
+        /* === PATCH 4: Double-check data pointer antes de usar === */
         if (condition != NULL && condition->type == type) {
             return condition;
         }
