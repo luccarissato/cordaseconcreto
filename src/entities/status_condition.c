@@ -2,12 +2,18 @@
 #include "status_condition.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+/* For debug flag reuse */
+#include "../ui/status_visuals.h"
 
-/* Porcentagem do HP máximo perdida por turno com envenenamento (10%) */
-#define POISON_DAMAGE_PERCENT 0.10f
+/* Porcentagem do HP máximo perdida por turno com envenenamento (12%) */
+#define POISON_DAMAGE_PERCENT 0.12f
 
-/* Porcentagem do HP máximo perdida por turno com queimadura (5%) */
-#define BURN_DAMAGE_PERCENT 0.05f
+/* Porcentagem do HP máximo perdida por turno com ensolação (15%) */
+#define ENSOLACAO_DAMAGE_PERCENT 0.15f
+
+/* Dano base de sangramento (5 HP inicial, cresce +5/turno) */
+#define BLEED_BASE_DAMAGE 5
 
 /* Porcentagem do HP máximo recuperada por turno com regeneração (10%) */
 #define REGEN_HEAL_PERCENT 0.10f
@@ -18,11 +24,9 @@
 /* Chance de atacar a si mesmo ou aliado quando confuso (30%) */
 #define CONFUSION_SELF_HIT_CHANCE 30
 
-#define BURN_STRENGTH_REDUCTION 0.25f    /* -25% força quando queimando */
 #define STRENGTH_UP_BONUS 0.50f          /* +50% força com buff */
 #define DEFENSE_UP_BONUS 0.50f           /* +50% defesa com buff */
 #define SPEED_UP_BONUS 0.50f             /* +50% velocidade com buff */
-#define BLIND_ACCURACY_REDUCTION 0.50f   /* -50% precisão quando cego */
 
 void initStatusList(StatusList* statusList) {
     if (statusList == NULL) return;
@@ -62,6 +66,9 @@ void addStatusCondition(StatusList* statusList, StatusType type, int turns, floa
         if (intensity > existing->intensity) {
             existing->intensity = intensity;
         }
+        #if STATUS_VIS_DEBUG
+        fprintf(stderr, "[STATUS_COND] updated existing %d turns=%d intensity=%.2f\n", type, existing->turnsRemaining, existing->intensity);
+        #endif
         
     } else {  
         StatusCondition* newCondition = (StatusCondition*) malloc(sizeof(StatusCondition));
@@ -72,6 +79,9 @@ void addStatusCondition(StatusList* statusList, StatusType type, int turns, floa
         newCondition->intensity = intensity;
         
         pushBack(&statusList->conditions, newCondition);
+        #if STATUS_VIS_DEBUG
+        fprintf(stderr, "[STATUS_COND] added new %d turns=%d intensity=%.2f\n", type, turns, intensity);
+        #endif
     }
 }
 
@@ -79,8 +89,10 @@ void removeStatusCondition(StatusList* statusList, StatusType type) {
     if (statusList == NULL) return;
     
     ListNode* current = statusList->conditions.head;
+    int safety = 0;
+    int maxSafety = statusList->conditions.size + 1;
     
-    while (current != NULL) {
+    while (current != NULL && safety < maxSafety) {
         StatusCondition* condition = (StatusCondition*) current->data;
         
         if (condition != NULL && condition->type == type) {
@@ -94,6 +106,23 @@ void removeStatusCondition(StatusList* statusList, StatusType type) {
         }
         
         current = current->next;
+        safety++;
+    }
+}
+
+static int isRemovableByDebuffRemoval(StatusType type) {
+    switch (type) {
+        case STATUS_ENSOLACAO:  return 0;
+        case STATUS_POISON:
+        case STATUS_BLEED:
+        case STATUS_CONFUSION:
+        case STATUS_WEAKEN:
+        case STATUS_SLOW:
+        case STATUS_DEFENSE_DOWN:
+        case STATUS_ENCHARCADO:
+            return 1;
+        default:
+            return 0;
     }
 }
 
@@ -102,13 +131,15 @@ void removeAllDebuffs(StatusList* statusList) {
     
     ListNode* current = statusList->conditions.head;
     
-    while (current != NULL) {
+    while (current != NULL && statusList->conditions.size > 0) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
         
-        if (condition != NULL && isDebuff(condition->type) && condition->type != STATUS_BURN) {
+        if (condition != NULL && isDebuff(condition->type) && isRemovableByDebuffRemoval(condition->type)) {
             free(condition);
             removeNode(&statusList->conditions, current);
+            
+            if (statusList->conditions.size == 0) break;
         }
         
         current = next;
@@ -151,11 +182,17 @@ int hasStatusCondition(StatusList* statusList, StatusType type) {
 StatusCondition* getStatusCondition(StatusList* statusList, StatusType type) {
     if (statusList == NULL) return NULL;
     
-    ListNode* current = statusList->conditions.head;
+    if (statusList->conditions.head == NULL || statusList->conditions.size == 0) {
+        return NULL;
+    }
     
-    while (current != NULL) {
+    ListNode* current = statusList->conditions.head;
+    int iterations = statusList->conditions.size;  /* Limite iterações para evitar loop infinito em lista circular */
+    
+    for (int i = 0; i < iterations && current != NULL; i++) {
         StatusCondition* condition = (StatusCondition*) current->data;
         
+        /* === PATCH 4: Double-check data pointer antes de usar === */
         if (condition != NULL && condition->type == type) {
             return condition;
         }
@@ -174,15 +211,13 @@ int countActiveStatus(StatusList* statusList) {
 int isDebuff(StatusType type) {
     switch (type) {
         case STATUS_POISON:
-        case STATUS_BURN:
-        case STATUS_PARALYSIS:
-        case STATUS_SLEEP:
+        case STATUS_ENSOLACAO:
         case STATUS_CONFUSION:
-        case STATUS_BLIND:
         case STATUS_BLEED:
         case STATUS_WEAKEN:
         case STATUS_SLOW:
         case STATUS_DEFENSE_DOWN:
+        case STATUS_ENCHARCADO:
             return 1;
         default:
             return 0;
@@ -203,63 +238,62 @@ int isBuff(StatusType type) {
 
 int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
     if (statusList == NULL || currentHP == NULL) return 0;
-    
+
     int totalDamage = 0;
-    
-    ListNode* current = statusList->conditions.head;
-    
-    while (current != NULL) {
+
+    /* Lista é circular; itere apenas pelo tamanho inicial para evitar loops infinitos */
+    List* list = &statusList->conditions;
+    if (list->head == NULL || list->size == 0) return 0;
+
+    ListNode* current = list->head;
+    int iterations = list->size;
+
+    for (int i = 0; i < iterations && current != NULL; i++) {
         StatusCondition* condition = (StatusCondition*) current->data;
-        
+
         if (condition != NULL) {
             switch (condition->type) {
                 case STATUS_POISON: {
                     int poisonDamage = (int)(maxHP * POISON_DAMAGE_PERCENT * condition->intensity);
-                    if (poisonDamage < 1) poisonDamage = 1; 
-                    
+                    if (poisonDamage < 1) poisonDamage = 1;
                     *currentHP -= poisonDamage;
                     totalDamage += poisonDamage;
                     break;
                 }
-                
-                case STATUS_BURN: {
-                    int burnDamage = (int)(maxHP * BURN_DAMAGE_PERCENT * condition->intensity);
-                    if (burnDamage < 1) burnDamage = 1;
-                    
-                    *currentHP -= burnDamage;
-                    totalDamage += burnDamage;
+
+                case STATUS_ENSOLACAO: {
+                    int ensolacaoDamage = (int)(maxHP * ENSOLACAO_DAMAGE_PERCENT * condition->intensity);
+                    if (ensolacaoDamage < 1) ensolacaoDamage = 1;
+                    *currentHP -= ensolacaoDamage;
+                    totalDamage += ensolacaoDamage;
                     break;
                 }
 
                 case STATUS_BLEED: {
-                    int bleedDamage = (int)condition->intensity;
+                    int bleedDamage = (int)(BLEED_BASE_DAMAGE + condition->intensity);
                     if (bleedDamage < 1) bleedDamage = 1;
-
                     *currentHP -= bleedDamage;
                     totalDamage += bleedDamage;
                     condition->intensity += 5.0f;
                     break;
                 }
-                
+
                 case STATUS_REGEN: {
                     int regenHeal = (int)(maxHP * REGEN_HEAL_PERCENT * condition->intensity);
                     if (regenHeal < 1) regenHeal = 1;
-                    
                     *currentHP += regenHeal;
-                    
                     if (*currentHP > maxHP) {
                         *currentHP = maxHP;
                     }
-                    
                     totalDamage -= regenHeal;
                     break;
                 }
-                
+
                 default:
                     break;
             }
         }
-        
+
         current = current->next;
     }
     
@@ -272,41 +306,39 @@ int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
 
 void updateStatusDurations(StatusList* statusList) {
     if (statusList == NULL) return;
-    
-    ListNode* current = statusList->conditions.head;
-    
-    while (current != NULL) {
+
+    List* list = &statusList->conditions;
+    if (list->head == NULL || list->size == 0) return;
+
+    /* Itere apenas pelo tamanho inicial da lista para evitar loops infinitos */
+    ListNode* current = list->head;
+    int iterations = list->size;
+
+    for (int i = 0; i < iterations && current != NULL && list->size > 0; i++) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
-        
+
         if (condition != NULL) {
             if (condition->turnsRemaining > 0) {
                 condition->turnsRemaining--;
-                
+
                 if (condition->turnsRemaining == 0) {
                     free(condition);
-                    removeNode(&statusList->conditions, current);
+                    removeNode(list, current);
+
+                    if (list->size == 0) {
+                        break;
+                    }
                 }
             }
         }
-        
+
         current = next;
     }
 }
 
 int canActThisTurn(StatusList* statusList) {
     if (statusList == NULL) return 1;
-    
-    if (hasStatusCondition(statusList, STATUS_SLEEP)) {
-        return 0;
-    }
-
-    if (hasStatusCondition(statusList, STATUS_PARALYSIS)) {
-        int roll = rand() % 100;
-        if (roll < PARALYSIS_SKIP_CHANCE) {
-            return 0;
-        }
-    }
     
     return 1;
 }
@@ -315,10 +347,6 @@ float getStrengthModifier(StatusList* statusList) {
     float modifier = 1.0f;
     
     if (statusList == NULL) return modifier;
-    
-    if (hasStatusCondition(statusList, STATUS_BURN)) {
-        modifier -= BURN_STRENGTH_REDUCTION;
-    }
 
     if (hasStatusCondition(statusList, STATUS_WEAKEN)) {
         modifier -= 0.25f;
@@ -377,10 +405,6 @@ float getAccuracyModifier(StatusList* statusList) {
     
     if (statusList == NULL) return modifier;
     
-    if (hasStatusCondition(statusList, STATUS_BLIND)) {
-        modifier -= BLIND_ACCURACY_REDUCTION;
-    }
-    
     if (modifier < 0.1f) modifier = 0.1f;
     
     return modifier;
@@ -388,18 +412,20 @@ float getAccuracyModifier(StatusList* statusList) {
 
 const char* getStatusName(StatusType type) {
     switch (type) {
-        case STATUS_NONE:        return "Nenhum";
-        case STATUS_POISON:      return "Envenenado";
-        case STATUS_BURN:        return "Queimando";
-        case STATUS_PARALYSIS:   return "Paralisado";
-        case STATUS_SLEEP:       return "Dormindo";
-        case STATUS_CONFUSION:   return "Confuso";
-        case STATUS_BLIND:       return "Cego";
-        case STATUS_REGEN:       return "Regenerando";
-        case STATUS_STRENGTH_UP: return "Forca Aumentada";
-        case STATUS_DEFENSE_UP:  return "Defesa Aumentada";
-        case STATUS_SPEED_UP:    return "Velocidade Aumentada";
-        default:                 return "Desconhecido";
+        case STATUS_NONE:           return "Nenhum";
+        case STATUS_POISON:         return "Envenenado";
+        case STATUS_ENSOLACAO:      return "Ensolacao";
+        case STATUS_CONFUSION:      return "Confuso";
+        case STATUS_BLEED:          return "Sangramento";
+        case STATUS_WEAKEN:         return "Fraqueza";
+        case STATUS_SLOW:           return "Lentidao";
+        case STATUS_DEFENSE_DOWN:   return "Defesa Reduzida";
+        case STATUS_ENCHARCADO:     return "Encharcado";
+        case STATUS_REGEN:          return "Regenerando";
+        case STATUS_STRENGTH_UP:    return "Forca Aumentada";
+        case STATUS_DEFENSE_UP:     return "Defesa Aumentada";
+        case STATUS_SPEED_UP:       return "Velocidade Aumentada";
+        default:                    return "Desconhecido";
     }
 }
 
@@ -408,17 +434,21 @@ const char* getStatusDescription(StatusType type) {
         case STATUS_NONE:
             return "Sem efeitos de status ativos.";
         case STATUS_POISON:
-            return "Perde 10%% do HP maximo a cada turno.";
-        case STATUS_BURN:
-            return "Perde 5%% do HP maximo por turno e tem forca reduzida em 25%%.";
-        case STATUS_PARALYSIS:
-            return "Tem 25%% de chance de perder o turno.";
-        case STATUS_SLEEP:
-            return "Nao pode agir ate acordar ou ser atacado.";
+            return "Perde 12%% do HP maximo a cada turno.";
+        case STATUS_ENSOLACAO:
+            return "Perde 15%% do HP maximo por turno. Nao pode ser removido por limpeza.";
         case STATUS_CONFUSION:
             return "Tem 30%% de chance de atacar a si mesmo ou aliados.";
-        case STATUS_BLIND:
-            return "Precisao dos ataques reduzida em 50%%.";
+        case STATUS_BLEED:
+            return "Sangra e perde HP escalavel a cada turno. Dano aumenta +5 por turno.";
+        case STATUS_WEAKEN:
+            return "Forca reduzida em 25%%.";
+        case STATUS_SLOW:
+            return "Velocidade reduzida em 25%%.";
+        case STATUS_DEFENSE_DOWN:
+            return "Defesa reduzida em 25%%.";
+        case STATUS_ENCHARCADO:
+            return "Recebe 25%% mais dano magico.";
         case STATUS_REGEN:
             return "Recupera 10%% do HP maximo a cada turno.";
         case STATUS_STRENGTH_UP:

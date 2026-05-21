@@ -4,27 +4,25 @@
 #include "../utils/list.h"
 
 typedef enum {
-    STATUS_NONE = 0,        /* Sem condição - usado como valor padrão */
+    STATUS_NONE = 0,
     
-    /* === DEBUFFS (Condições Negativas) === */
-    STATUS_POISON,          /* Envenenado: -10% HP max por turno */
-    STATUS_BURN,            /* Queimando: -5% HP max por turno, -25% força */
-    STATUS_PARALYSIS,       /* Paralisado: 25% chance de perder turno */
-    STATUS_SLEEP,           /* Dormindo: perde turnos até acordar ou ser atacado */
-    STATUS_CONFUSION,       /* Confuso: 30% chance de atacar aliado ou a si mesmo */
-    STATUS_BLIND,           /* Cego: -50% precisão em ataques */
-    STATUS_BLEED,           /* Sangramento: dano escalável por turno, removível por cleanse */
-    STATUS_WEAKEN,          /* Fraqueza: reduz força */
-    STATUS_SLOW,            /* Lentidão: reduz velocidade */
-    STATUS_DEFENSE_DOWN,    /* Defesa Down: reduz defesa */
+    /* DEBUFFS */
+    STATUS_POISON,              /* Envenenado: 12% HP max por turno, removível */
+    STATUS_ENSOLACAO,           /* Ensolação: 15% HP max por turno, NÃO removível */
+    STATUS_CONFUSION,           /* Confuso: 30% chance atacar aliado */
+    STATUS_BLEED,               /* Sangramento: dano escalável, removível */
+    STATUS_WEAKEN,              /* Fraqueza: -25% força */
+    STATUS_SLOW,                /* Lentidão: -25% velocidade */
+    STATUS_DEFENSE_DOWN,        /* Defesa Down: -25% defesa */
+    STATUS_ENCHARCADO,          /* Encharcado: +25% dano mágico recebido */
     
-    /* === BUFFS (Condições Positivas) === */
-    STATUS_REGEN,           /* Regeneração: +10% HP max por turno */
-    STATUS_STRENGTH_UP,     /* Força Up: +50% dano físico */
-    STATUS_DEFENSE_UP,      /* Defesa Up: +50% defesa */
-    STATUS_SPEED_UP,        /* Velocidade Up: +50% velocidade */
+    /* BUFFS */
+    STATUS_REGEN,               /* Regeneração: +10% HP/turno */
+    STATUS_STRENGTH_UP,         /* Força Up: +50% dano */
+    STATUS_DEFENSE_UP,          /* Defesa Up: +50% defesa */
+    STATUS_SPEED_UP,            /* Velocidade Up: +50% velocidade */
     
-    STATUS_COUNT            /* Total de tipos de status (usado para iteração) */
+    STATUS_COUNT
 } StatusType;
 
 typedef struct {

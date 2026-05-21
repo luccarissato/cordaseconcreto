@@ -25,4 +25,6 @@ typedef struct {
 
 void calculateStats(Stats* stats);
 
+void applyLevelGrowth(Stats* stats);
+
 #endif

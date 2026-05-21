@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "../entities/player.h"
+#include "../entities/enemy.h"
 #include "../entities/stats.h"
 #include "../entities/status_condition.h"
 #include "../utils/list.h"
@@ -29,93 +30,66 @@ static void clampMana(Stats* stats) {
     }
 }
 
-/* =============================================================================
- * FUNÇÕES PRINCIPAIS DE USO DE ITENS
- * ============================================================================= */
+static void applyItemEffectGeneric(Stats* stats, StatusList* statusList, Item* base) {
+    switch (base->type) {
+        case ITEM_HEAL:
+        case ITEM_MANA: {
+            stats->currentHP += base->hpRestore;
+            stats->currentMana += base->manaRestore;
+            clampHP(stats);
+            clampMana(stats);
+            break;
+        }
+        case ITEM_BUFF:
+        case ITEM_INFLICT_STATUS: {
+            addStatusCondition(statusList, base->statusToApply, base->statusDuration, base->statusIntensity);
+            break;
+        }
+        case ITEM_CURE: {
+            if (statusList != NULL) {
+                switch (base->cureType) {
+                    case CURE_SPECIFIC:
+                        removeStatusCondition(statusList, base->statusToCure);
+                        break;
+                    case CURE_ALL_DEBUFFS:
+                        removeAllDebuffs(statusList);
+                        break;
+                    case CURE_ALL:
+                        clearAllStatus(statusList);
+                        break;
+                }
+            }
+            break;
+        }
+        case ITEM_REVIVE:
+        case ITEM_STAT_BOOST:
+        case ITEM_KEY:
+        default:
+            break;
+    }
+}
+
 void useItem(Player* target, InventoryItem* item) {
-    /* Validação de parâmetros */
     if (target == NULL || item == NULL || item->baseItem == NULL) {
         return;
     }
     
     Item* base = item->baseItem;
     
-    switch (base->type) {
-        case ITEM_HEAL: {
-            target->stats.currentHP += base->hpRestore;
-            target->stats.currentMana += base->manaRestore;
-            
+    applyItemEffectGeneric(&target->stats, &target->statusList, base);
+    
+    if (base->type == ITEM_STAT_BOOST) {
+        applyStatBoost(target, base);
+    }
+    
+    if (base->type == ITEM_REVIVE) {
+        if (target->stats.currentHP <= 0) {
+            int hpToRestore = (int)(target->stats.maxHP * base->reviveHPPercent);
+            if (hpToRestore < 1) hpToRestore = 1;
+            target->stats.currentHP = hpToRestore;
             clampHP(&target->stats);
             clampMana(&target->stats);
-            break;
-        }
-        
-        case ITEM_MANA: {
-            target->stats.currentHP += base->hpRestore;
-            target->stats.currentMana += base->manaRestore;
-            
-            clampHP(&target->stats);
-            clampMana(&target->stats);
-            break;
-        }
-        
-        case ITEM_BUFF: {
-            addStatusCondition(
-                &target->statusList,
-                base->statusToApply,
-                base->statusDuration,
-                base->statusIntensity
-            );
-            break;
-        }
-        
-        case ITEM_CURE: {
-            switch (base->cureType) {
-                case CURE_SPECIFIC:
-                    removeStatusCondition(&target->statusList, base->statusToCure);
-                    break;
-                    
-                case CURE_ALL_DEBUFFS:
-                    removeAllDebuffs(&target->statusList);
-                    break;
-                    
-                case CURE_ALL:
-                    clearAllStatus(&target->statusList);
-                    break;
-            }
-            break;
-        }
-        
-        case ITEM_REVIVE: {
-            if (target->stats.currentHP <= 0) {
-                int hpToRestore = (int)(target->stats.maxHP * base->reviveHPPercent);
-                if (hpToRestore < 1) hpToRestore = 1;
-                
-                target->stats.currentHP = hpToRestore;
-                
-                target->stats.currentMana += base->manaRestore;
-                
-                clampHP(&target->stats);
-                clampMana(&target->stats);
-                
-                clearAllStatus(&target->statusList);
-            }
-            break;
-        }
-        
-        case ITEM_STAT_BOOST: {
-            applyStatBoost(target, base);
-            break;
-        }
-        
-        case ITEM_INFLICT_STATUS: {
-            addStatusCondition(
-                &target->statusList,
-                base->statusToApply,
-                base->statusDuration,
-                base->statusIntensity
-            );
-            break;
+            clearAllStatus(&target->statusList);
         }
     }
 }
@@ -287,4 +261,16 @@ int revivePlayer(Player* target, float hpPercent) {
     clearAllStatus(&target->statusList);
     
     return 1;
+}
+
+void useItemOnEnemy(Enemy* target, InventoryItem* item) {
+    if (target == NULL || item == NULL || item->baseItem == NULL) {
+        return;
+    }
+    
+    Item* base = item->baseItem;
+    
+    if (base->type != ITEM_REVIVE && base->type != ITEM_STAT_BOOST) {
+        applyItemEffectGeneric(&target->stats, &target->statusList, base);
+    }
 }

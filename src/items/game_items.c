@@ -487,59 +487,25 @@ Item antiveneno = {
     .reviveHPPercent = 0
 };
 
-/* Pomada Cicatrizante - Cura Queimadura
- * Unguento que alivia queimaduras */
+/* Pomada Cicatrizante - Cura Ensolacao
+ * Unguento que alivia ensolacao */
 Item pomadaCicatrizante = {
     .name = "Pomada Cicatrizante",
-    .description = "Cura a condicao de Queimadura.",
+    .description = "Cura a condicao de Ensolacao.",
     .type = ITEM_CURE,
     .hpRestore = 0,
     .manaRestore = 0,
     .statusToApply = STATUS_NONE,
     .statusDuration = 0,
     .statusIntensity = 0,
-    .statusToCure = STATUS_BURN,
+    .statusToCure = STATUS_ENSOLACAO,
     .cureType = CURE_SPECIFIC,
     .statBoostType = BOOST_HP,
     .statBoostValue = 0,
     .reviveHPPercent = 0
 };
 
-/* Massagem Relaxante - Cura Paralisia
- * Técnica que restaura os músculos */
-Item massagemRelaxante = {
-    .name = "Massagem Relaxante",
-    .description = "Cura a condicao de Paralisia.",
-    .type = ITEM_CURE,
-    .hpRestore = 0,
-    .manaRestore = 0,
-    .statusToApply = STATUS_NONE,
-    .statusDuration = 0,
-    .statusIntensity = 0,
-    .statusToCure = STATUS_PARALYSIS,
-    .cureType = CURE_SPECIFIC,
-    .statBoostType = BOOST_HP,
-    .statBoostValue = 0,
-    .reviveHPPercent = 0
-};
 
-/* Estimulante - Cura Sono
- * Substância que desperta imediatamente */
-Item estimulante = {
-    .name = "Estimulante",
-    .description = "Cura a condicao de Sono.",
-    .type = ITEM_CURE,
-    .hpRestore = 0,
-    .manaRestore = 0,
-    .statusToApply = STATUS_NONE,
-    .statusDuration = 0,
-    .statusIntensity = 0,
-    .statusToCure = STATUS_SLEEP,
-    .cureType = CURE_SPECIFIC,
-    .statBoostType = BOOST_HP,
-    .statBoostValue = 0,
-    .reviveHPPercent = 0
-};
 
 /* Água Fria - Cura Confusão
  * Choque que limpa a mente */
@@ -561,21 +527,7 @@ Item aguaFria = {
 
 /* Colírio Natural - Cura Cegueira
  * Preparado que restaura a visão */
-Item colirioNatural = {
-    .name = "Colirio Natural",
-    .description = "Cura a condicao de Cegueira.",
-    .type = ITEM_CURE,
-    .hpRestore = 0,
-    .manaRestore = 0,
-    .statusToApply = STATUS_NONE,
-    .statusDuration = 0,
-    .statusIntensity = 0,
-    .statusToCure = STATUS_BLIND,
-    .cureType = CURE_SPECIFIC,
-    .statBoostType = BOOST_HP,
-    .statBoostValue = 0,
-    .reviveHPPercent = 0
-};
+/* Colirio Natural removido - STATUS_BLIND foi removido do sistema */
 
 /* Panaceia Universal - Cura TODOS os debuffs
  * Item raro que remove qualquer condição negativa */
@@ -753,15 +705,15 @@ Item poDeEnvenenar = {
     .reviveHPPercent = 0
 };
 
-/* Pimenta Malagueta - Aplica Queimadura por 3 turnos
+/* Pimenta Malagueta - Aplica Ensolacao por 3 turnos
  * Pimenta extremamente ardida */
 Item pimentaMalagueta = {
     .name = "Pimenta Malagueta",
-    .description = "Aplica Queimadura no alvo por 3 turnos.",
+    .description = "Aplica Ensolacao no alvo por 3 turnos.",
     .type = ITEM_INFLICT_STATUS,
     .hpRestore = 0,
     .manaRestore = 0,
-    .statusToApply = STATUS_BURN,
+    .statusToApply = STATUS_ENSOLACAO,
     .statusDuration = 3,
     .statusIntensity = 1.0f,
     .statusToCure = STATUS_NONE,
@@ -771,35 +723,17 @@ Item pimentaMalagueta = {
     .reviveHPPercent = 0
 };
 
-/* Raio Paralisante - Aplica Paralisia por 2 turnos
- * Dispositivo que causa choque */
-Item raioParalisante = {
-    .name = "Raio Paralisante",
-    .description = "Aplica Paralisia no alvo por 2 turnos.",
+/* Gota de Sangue Maldita - Aplica Sangramento por duração indefinida
+ * Substância que causa ferimentos escaláveis */
+Item gotaSangreMaldita = {
+    .name = "Gota de Sangue Maldita",
+    .description = "Aplica Sangramento permanente no alvo. Dano cresce +5 HP/turno.",
     .type = ITEM_INFLICT_STATUS,
     .hpRestore = 0,
     .manaRestore = 0,
-    .statusToApply = STATUS_PARALYSIS,
-    .statusDuration = 2,
-    .statusIntensity = 1.0f,
-    .statusToCure = STATUS_NONE,
-    .cureType = CURE_SPECIFIC,
-    .statBoostType = BOOST_HP,
-    .statBoostValue = 0,
-    .reviveHPPercent = 0
-};
-
-/* Pó do Sono - Aplica Sono por 2 turnos
- * Substância sonífera potente */
-Item poDoSono = {
-    .name = "Po do Sono",
-    .description = "Aplica Sono no alvo por 2 turnos.",
-    .type = ITEM_INFLICT_STATUS,
-    .hpRestore = 0,
-    .manaRestore = 0,
-    .statusToApply = STATUS_SLEEP,
-    .statusDuration = 2,
-    .statusIntensity = 1.0f,
+    .statusToApply = STATUS_BLEED,
+    .statusDuration = -1,
+    .statusIntensity = 5.0f,
     .statusToCure = STATUS_NONE,
     .cureType = CURE_SPECIFIC,
     .statBoostType = BOOST_HP,
@@ -825,19 +759,19 @@ Item cogumelo = {
     .reviveHPPercent = 0
 };
 
-/* Bomba de Fumaça - Aplica Cegueira por 3 turnos
- * Artefato que obscurece a visão */
-Item bombaDeFumaça = {
-    .name = "Bomba de Fumaca",
-    .description = "Aplica Cegueira no alvo por 3 turnos.",
-    .type = ITEM_INFLICT_STATUS,
+/* Frasco de Cura Mágica - Remove todos os debuffs removíveis
+ * Poção que limpa status debilitantes */
+Item frascoMagicoCura = {
+    .name = "Frasco de Cura Magica",
+    .description = "Remove todos os status debilitantes removíveis.",
+    .type = ITEM_CURE,
     .hpRestore = 0,
     .manaRestore = 0,
-    .statusToApply = STATUS_BLIND,
-    .statusDuration = 3,
-    .statusIntensity = 1.0f,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
     .statusToCure = STATUS_NONE,
-    .cureType = CURE_SPECIFIC,
+    .cureType = CURE_ALL_DEBUFFS,
     .statBoostType = BOOST_HP,
     .statBoostValue = 0,
     .reviveHPPercent = 0
@@ -921,10 +855,6 @@ static Item* allItems[] = {
     /* Itens de Cura de Status */
     &antiveneno,
     &pomadaCicatrizante,
-    &massagemRelaxante,
-    &estimulante,
-    &aguaFria,
-    &colirioNatural,
     &panaceiaUniversal,
     
     /* Itens de Stat Boost */
@@ -939,10 +869,7 @@ static Item* allItems[] = {
     /* Itens de Aplicar Status */
     &poDeEnvenenar,
     &pimentaMalagueta,
-    &raioParalisante,
-    &poDoSono,
     &cogumelo,
-    &bombaDeFumaça,
     
     NULL
 };

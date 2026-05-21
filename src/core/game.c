@@ -21,8 +21,12 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "../data/dialogues/teste_dialogue.h"
+
+extern Item gotaSangreMaldita;
+extern Item frascoMagicoCura;
 
 #define HISTORY_SIZE 1000
 
@@ -44,6 +48,7 @@ void initParty();
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
+
 
 void initEnemyManager();
 void spawnEnemy(const char* name, Vector2 position, const char* texturePath, int maxEnemies);
@@ -94,32 +99,50 @@ void initGame() {
     );
     addInteractable(&interactableManager, &testDoor);
     
-    InventoryItem* cartolaItem = malloc(sizeof(InventoryItem));
-    cartolaItem->baseItem = &cartola;
-    cartolaItem->quantity = 3;
-    addItemInventory(&playerInventory, cartolaItem);
+    /* Itens de teste para status effects */
+    InventoryItem* pimentaMalagItem = malloc(sizeof(InventoryItem));
+    pimentaMalagItem->baseItem = &pimentaMalagueta;
+    pimentaMalagItem->quantity = 2;
+    addItemInventory(&playerInventory, pimentaMalagItem);
     
-    InventoryItem* tapiocaItem = malloc(sizeof(InventoryItem));
-    tapiocaItem->baseItem = &tapiocaRecheada;
-    tapiocaItem->quantity = 3;
-    addItemInventory(&playerInventory, tapiocaItem);
-
-    InventoryItem* pratoBuchadaItem = malloc(sizeof(InventoryItem));
-    pratoBuchadaItem->baseItem = &pratoBuchada;
-    pratoBuchadaItem->quantity = 3;
-    addItemInventory(&playerInventory, pratoBuchadaItem);
-
-    InventoryItem* pedaço1Item = malloc(sizeof(InventoryItem));
-    pedaço1Item->baseItem = &pedaçoDeChave1;
-    pedaço1Item->quantity = 1;
-    addItemInventory(&playerInventory, pedaço1Item);
-
-    InventoryItem* pedaço2Item = malloc(sizeof(InventoryItem));
-    pedaço2Item->baseItem = &pedaçoDeChave2;
-    pedaço2Item->quantity = 1;
-    addItemInventory(&playerInventory, pedaço2Item);
+    InventoryItem* gotaSangueItem = malloc(sizeof(InventoryItem));
+    gotaSangueItem->baseItem = &gotaSangreMaldita;
+    gotaSangueItem->quantity = 2;
+    addItemInventory(&playerInventory, gotaSangueItem);
+    
+    InventoryItem* poEnvenenItem = malloc(sizeof(InventoryItem));
+    poEnvenenItem->baseItem = &poDeEnvenenar;
+    poEnvenenItem->quantity = 2;
+    addItemInventory(&playerInventory, poEnvenenItem);
+    
+    InventoryItem* pomadaItem = malloc(sizeof(InventoryItem));
+    pomadaItem->baseItem = &pomadaCicatrizante;
+    pomadaItem->quantity = 2;
+    addItemInventory(&playerInventory, pomadaItem);
+    
+    InventoryItem* antivenItem = malloc(sizeof(InventoryItem));
+    antivenItem->baseItem = &antiveneno;
+    antivenItem->quantity = 2;
+    addItemInventory(&playerInventory, antivenItem);
+    
+    InventoryItem* frascoMagicoItem = malloc(sizeof(InventoryItem));
+    frascoMagicoItem->baseItem = &frascoMagicoCura;
+    frascoMagicoItem->quantity = 2;
+    addItemInventory(&playerInventory, frascoMagicoItem);
     
     spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
+    
+    /* Configura resistências elementais diferentes para o Boss 1 */
+    /* Distribuição: Calor=100%, Maré=70%, Terra=50%, Vento=10% */
+    if (enemyManager.count > 0) {
+        setEnemyElementalResistances(
+            &enemyManager.enemies[enemyManager.count - 1],
+            100,  /* Calor: 100% resistência */
+            10,   /* Vento: 10% resistência */
+            70,   /* Maré: 70% resistência */
+            50    /* Terra: 50% resistência */
+        );
+    }
 
 
     camera.target = party[0].position; /* segue o líder */
@@ -271,10 +294,10 @@ void initParty() {
     party[0].stats.forca = 6;
     party[0].stats.defesa = 7;
     party[0].stats.velocidade = 2;
-    party[0].stats.defCalor = 6;
-    party[0].stats.defVento = 3;
-    party[0].stats.defMare = 5;
-    party[0].stats.defTerra = 8;
+    party[0].stats.defCalor = 60;
+    party[0].stats.defVento = 30;
+    party[0].stats.defMare = 50;
+    party[0].stats.defTerra = 80;
 
     //manguebeat
     party[1].stats.baseHP = 50;
@@ -284,10 +307,10 @@ void initParty() {
     party[1].stats.forca = 7;
     party[1].stats.defesa = 4;
     party[1].stats.velocidade = 7;
-    party[1].stats.defCalor = 5;
-    party[1].stats.defVento = 8;
-    party[1].stats.defMare = 6;
-    party[1].stats.defTerra = 3;
+    party[1].stats.defCalor = 50;
+    party[1].stats.defVento = 80;
+    party[1].stats.defMare = 60;
+    party[1].stats.defTerra = 30;
 
     //cirandeira
     party[2].stats.baseHP = 45;
@@ -297,10 +320,10 @@ void initParty() {
     party[2].stats.forca = 3;
     party[2].stats.defesa = 4;
     party[2].stats.velocidade = 6;
-    party[2].stats.defCalor = 4;
-    party[2].stats.defVento = 8;
-    party[2].stats.defMare = 7;
-    party[2].stats.defTerra = 5;
+    party[2].stats.defCalor = 40;
+    party[2].stats.defVento = 80;
+    party[2].stats.defMare = 70;
+    party[2].stats.defTerra = 50;
 
     //repentista
     party[3].stats.baseHP = 35;
@@ -310,16 +333,26 @@ void initParty() {
     party[3].stats.forca = 2;
     party[3].stats.defesa = 3;
     party[3].stats.velocidade = 7;
-    party[3].stats.defCalor = 8;
-    party[3].stats.defVento = 6;
-    party[3].stats.defMare = 4;
-    party[3].stats.defTerra = 6;
+    party[3].stats.defCalor = 80;
+    party[3].stats.defVento = 60;
+    party[3].stats.defMare = 40;
+    party[3].stats.defTerra = 60;
 
     for (int i = 0; i < PARTY_SIZE; i++) {
         calculateStats(&party[i].stats);
         /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
         party[i].characterID = i;
+        /* Personagem começa nível 1 */
         party[i].level = 1;
+        
+        /* Aplica growth para atingir nível 4 (3 level ups: 1->2->3->4) */
+        for (int levelUp = 0; levelUp < 3; levelUp++) {
+            applyLevelGrowth(&party[i].stats);
+            party[i].level++;
+        }
+        
+        /* Recalcula stats derivados com o nível final */
+        calculateStats(&party[i].stats);
     }
 
     // inicializa histórico com posição inicial
@@ -327,12 +360,6 @@ void initParty() {
         positionHistory[i] = party[0].position;
         directionHistory[i] = party[0].direction;
     }
-
-    // teste
-    party[0].stats.currentHP = 30;
-    party[0].stats.currentMana = 10;
-    party[1].stats.currentHP = 30;
-    party[1].stats.currentMana = 10;
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {

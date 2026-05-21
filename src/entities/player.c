@@ -1,6 +1,8 @@
 #include "player.h"
+#include "../ui/status_visuals.h"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
@@ -118,7 +120,12 @@ void drawPlayer(Player* p) {
         src.width = -tex.width;
     }
 
+    renderStatusAura(tex, src, p->position, (Vector2){0, 0}, 1.0f, &p->statusList);
+
     DrawTextureRec(tex, src, p->position, WHITE);
+
+    Vector2 spriteSize = {fabsf((float)src.width), (float)src.height};
+    renderStatusBuffs(&p->statusList, p->position, spriteSize);
 
     // colision debug
     Rectangle colliderRect = getColliderRect(p->position, p->collider);
@@ -140,3 +147,19 @@ void unloadPlayer(Player* p) {
     /* === NOVO: Libera a lista de condições de status === */
     freeStatusList(&p->statusList);
 }
+
+void playerLevelUp(Player* player) {
+    if (player == NULL) return;
+    
+    if (player->level >= MAX_LEVEL) return;
+    
+    player->level++;
+    
+    applyLevelGrowth(&player->stats);
+    
+    calculateStats(&player->stats);
+    
+    player->stats.currentHP = player->stats.maxHP;
+    player->stats.currentMana = player->stats.maxMana;
+}
+

@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../core/game.h"
 #include "../core/state.h"
@@ -11,6 +12,8 @@
 #include "../items/inventory.h"
 #include "../items/item.h"
 #include "../entities/status_condition.h"
+/* Status visuals (auras / buffs) */
+#include "../ui/status_visuals.h"
 
 extern Inventory playerInventory;
 
@@ -348,11 +351,7 @@ static void executeSelectedItem() {
     InventoryItem* item = (InventoryItem*)selectedItemNode->data;
     if (item == NULL || item->baseItem == NULL) return;
 
-    if (item->baseItem->type == ITEM_INFLICT_STATUS) {
-        buildEnemyTargetList();
-    } else {
-        buildAllyTargetList(item->baseItem->type == ITEM_REVIVE);
-    }
+    buildAllyTargetList(item->baseItem->type == ITEM_REVIVE);
 
     combatUiState = COMBAT_UI_ITEM_TARGET;
 }
@@ -401,15 +400,13 @@ static void confirmTargetAction() {
         InventoryItem* item = (InventoryItem*)selectedItemNode->data;
         if (item == NULL || item->baseItem == NULL) return;
 
-        if (item->baseItem->type == ITEM_INFLICT_STATUS) {
-            if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
-                useItemOnStatusList(&enemyManager.enemies[targetIndex].statusList, item->baseItem);
-                item->quantity--;
-                if (item->quantity <= 0) {
-                    removeItemNodeAndFree(item);
-                }
-                spendAndFinishTurn();
+        if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
+            useItemOnEnemy(&enemyManager.enemies[targetIndex], item);
+            item->quantity--;
+            if (item->quantity <= 0) {
+                removeItemNodeAndFree(item);
             }
+            spendAndFinishTurn();
             return;
         }
 
@@ -455,7 +452,15 @@ static void drawPlayers() {
         int y = 125 + (i * 165);
 
         if (party[i].front.id != 0) {
-            DrawTextureEx(party[i].front, (Vector2){ (float)x + 40, (float)y }, 0.0f, 0.25f, party[i].isAlive ? WHITE : GRAY);
+            Vector2 spritePos = {(float)x + 40, (float)y};
+            Rectangle srcRect = {0, 0, (float)party[i].front.width, (float)party[i].front.height};
+            
+            renderStatusAura(party[i].front, srcRect, spritePos, (Vector2){0, 0}, 0.25f, &party[i].statusList);
+            
+            DrawTextureEx(party[i].front, spritePos, 0.0f, 0.25f, party[i].isAlive ? WHITE : GRAY);
+            
+            Vector2 spriteSize = {party[i].front.width * 0.25f, party[i].front.height * 0.25f};
+            renderStatusBuffs(&party[i].statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, party[i].isAlive ? DARKBLUE : DARKGRAY);
         }
@@ -486,7 +491,15 @@ static void drawEnemyColumn() {
         int y = 345 + (i * 165);
 
         if (enemy->texture.id != 0) {
-            DrawTextureEx(enemy->texture, (Vector2){ (float)x, (float)y }, 0.0f, 0.55f, enemy->isAlive ? WHITE : GRAY);
+            Vector2 spritePos = {(float)x, (float)y};
+            Rectangle srcRect = {0, 0, (float)enemy->texture.width, (float)enemy->texture.height};
+            
+            renderStatusAura(enemy->texture, srcRect, spritePos, (Vector2){0, 0}, 0.55f, &enemy->statusList);
+            
+            DrawTextureEx(enemy->texture, spritePos, 0.0f, 0.55f, enemy->isAlive ? WHITE : GRAY);
+            
+            Vector2 spriteSize = {enemy->texture.width * 0.55f, enemy->texture.height * 0.55f};
+            renderStatusBuffs(&enemy->statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, enemy->isAlive ? MAROON : DARKGRAY);
         }
@@ -537,7 +550,10 @@ static void drawBottomPanel() {
         if (availableAbilityCount > 0) {
             Ability* ability = getAbilityByIndex(player->characterID, availableAbilityIndices[abilitySelection]);
             if (ability != NULL) {
-                DrawText(ability->description, 840, 820, 22, LIGHTGRAY);
+                /* Gera descrição dinâmica baseada no modo/elemento atual */
+                char dynamicDescription[512];
+                getAbilityDynamicDescription(ability, dynamicDescription, sizeof(dynamicDescription));
+                DrawText(dynamicDescription, 840, 820, 22, LIGHTGRAY);
                 DrawText(TextFormat("Alvo: %d", ability->target_type), 840, 856, 20, GRAY);
             }
         }
@@ -674,6 +690,32 @@ void updateCombatUI() {
             if (abilitySelection < 0) abilitySelection = availableAbilityCount - 1;
         }
 
+        if (IsKeyPressed(KEY_LEFT)) {
+            /* Alterna modo/elemento da habilidade selecionada */
+            Ability* selectedAbility = getAbilityByIndex(party[combatant->playerIndex].characterID, availableAbilityIndices[abilitySelection]);
+            if (selectedAbility != NULL && selectedAbility->is_alternatable) {
+                /* Verifica se é elemental (Character 4) ou de buff (Character 3) */
+                if (selectedAbility->characterID == CHARACTER_4_MAGE && (selectedAbility->ability_index == 0 || selectedAbility->ability_index == 2)) {
+                    toggleAbilityElement(selectedAbility, -1);
+                } else if (selectedAbility->characterID == CHARACTER_3_HEALER && selectedAbility->ability_index == 2) {
+                    toggleAbilityMode(selectedAbility, -1);
+                }
+            }
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            /* Alterna modo/elemento da habilidade selecionada */
+            Ability* selectedAbility = getAbilityByIndex(party[combatant->playerIndex].characterID, availableAbilityIndices[abilitySelection]);
+            if (selectedAbility != NULL && selectedAbility->is_alternatable) {
+                /* Verifica se é elemental (Character 4) ou de buff (Character 3) */
+                if (selectedAbility->characterID == CHARACTER_4_MAGE && (selectedAbility->ability_index == 0 || selectedAbility->ability_index == 2)) {
+                    toggleAbilityElement(selectedAbility, 1);
+                } else if (selectedAbility->characterID == CHARACTER_3_HEALER && selectedAbility->ability_index == 2) {
+                    toggleAbilityMode(selectedAbility, 1);
+                }
+            }
+        }
+
         if (IsKeyPressed(KEY_Z)) {
             executeSelectedAbility(&party[combatant->playerIndex]);
         }
@@ -710,6 +752,20 @@ void updateCombatUI() {
         if (IsKeyPressed(KEY_UP)) {
             targetSelection--;
             if (targetSelection < 0) targetSelection = targetCount - 1;
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            if (combatUiState == COMBAT_UI_ITEM_TARGET && !targetIsEnemy) {
+                buildEnemyTargetList();
+                targetSelection = 0;
+            }
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            if (combatUiState == COMBAT_UI_ITEM_TARGET && targetIsEnemy) {
+                buildAllyTargetList(0);
+                targetSelection = 0;
+            }
         }
 
         if (IsKeyPressed(KEY_Z)) {
