@@ -13,6 +13,7 @@
 #include "../interactables/interactable.h"
 #include "../interactables/chest.h"
 #include "../interactables/door.h"
+#include "../interactables/trap.h"
 #include "../data/dialogues/door_questions.h"
 #include "../combat/combat.h"
 #include "../combat/ability.h"
@@ -98,6 +99,14 @@ void initGame() {
         1                    /* Node 1 = resposta correta */
     );
     addInteractable(&interactableManager, &testDoor);
+
+    Interactable testTrap = createTrap(
+        (Vector2){700, 400},
+        "assets/interagiveis/trap_escondida.png",
+        "assets/interagiveis/trap_descoberta.png",
+        50
+    );
+    addInteractable(&interactableManager, &testTrap);
     
     /* Itens de teste para status effects */
     InventoryItem* pimentaMalagItem = malloc(sizeof(InventoryItem));
