@@ -51,7 +51,7 @@ Rectangle* getInteractableBlockers(InteractableManager* manager, int* outCount) 
             continue;
         }
         
-        if (inter->type != INTERACTABLE_TRAP) {
+        if (inter->type != INTERACTABLE_TRAP && inter->type != INTERACTABLE_COLOR_PUZZLE) {
             blockers[count] = getInteractableRect(inter);
             count++;
         }

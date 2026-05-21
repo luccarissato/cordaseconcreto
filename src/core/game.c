@@ -12,6 +12,7 @@
 #include "../ui/game_menu.h"
 #include "../interactables/interactable.h"
 #include "../interactables/chest.h"
+#include "../interactables/color_puzzle.h"
 #include "../interactables/door.h"
 #include "../interactables/trap.h"
 #include "../data/dialogues/door_questions.h"
@@ -107,6 +108,17 @@ void initGame() {
         50
     );
     addInteractable(&interactableManager, &testTrap);
+
+    Interactable colorPuzzle = createColorPuzzle(
+        (Vector2){500, 700},
+        "assets/interagiveis/chao_azul_placeholder.png",
+        "assets/interagiveis/chao_verde_placeholder.png",
+        "assets/interagiveis/chao_amarelo_placeholdert.png",
+        "assets/interagiveis/chao_vermelho_placeholder.png",
+        2.0f,
+        50
+    );
+    addInteractable(&interactableManager, &colorPuzzle);
     
     /* Itens de teste para status effects */
     InventoryItem* pimentaMalagItem = malloc(sizeof(InventoryItem));

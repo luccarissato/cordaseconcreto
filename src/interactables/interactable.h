@@ -7,6 +7,7 @@
 typedef enum {
     INTERACTABLE_CHEST,
     INTERACTABLE_DOOR,      /* futuro: diálogo + pergunta */
+    INTERACTABLE_COLOR_PUZZLE, /* puzzle de tiles coloridos, sem bloquear movimento */
     INTERACTABLE_TRAP,      /* futuro: sem colisão, trigger ao pisar */
 } InteractableType;
 
