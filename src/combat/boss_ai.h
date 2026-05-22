@@ -9,8 +9,11 @@
 
 void bossAiOnCombatStart(void);
 void bossAiOnCombatEnd(void);
+void bossAiOnRoundWrap(void);
 int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy);
 int bossAiGetPlayerWeaknessElement(int playerIndex);
+int bossAiHasTrapMark(int playerIndex);
+void bossAiNotifyPlayerPhysicalAction(int playerIndex, int isPhysicalAction);
 
 void bossAiQueueMessage(const char* fmt, ...);
 void bossAiQueuePlayerAfflictedMessage(int playerIndex, StatusType statusType);

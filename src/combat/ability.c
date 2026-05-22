@@ -3,8 +3,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include "../core/game.h"
 #include "../entities/status_condition.h"
 #include "boss_ai.h"
+
+extern Player party[PARTY_SIZE];
 
 
 static Ability abilities[4][4];
@@ -169,7 +172,7 @@ static void initCharacter4Abilities() {
     abilities[3][0].mana_cost = 18;
     abilities[3][0].target_type = TARGET_SINGLE_ENEMY;
     abilities[3][0].ability_type = ABILITY_TYPE_DAMAGE;
-    abilities[3][0].damage_base = 35;
+    abilities[3][0].damage_base = 60;
     abilities[3][0].scaling_type = SCALING_MENTE;
     abilities[3][0].scaling_mult = 0.9f;
     strcpy(abilities[3][0].name, "Magia Elemental >");
@@ -193,7 +196,7 @@ static void initCharacter4Abilities() {
     abilities[3][2].mana_cost = 30;
     abilities[3][2].target_type = TARGET_AREA_ENEMIES;
     abilities[3][2].ability_type = ABILITY_TYPE_DAMAGE;
-    abilities[3][2].damage_base = 28;
+    abilities[3][2].damage_base = 53;
     abilities[3][2].scaling_type = SCALING_MENTE;
     abilities[3][2].scaling_mult = 0.8f;
     strcpy(abilities[3][2].name, "Explosão Elemental >");
@@ -417,6 +420,26 @@ static void applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* abi
     damageEnemy(target, damage);
 }
 
+    static int isPhysicalDamageAbility(Player* caster, int ability_index, Ability* ability) {
+        if (caster == NULL || ability == NULL) return 0;
+
+        if (ability->ability_type != ABILITY_TYPE_DAMAGE) {
+            return 0;
+        }
+
+        if (caster->characterID == CHARACTER_4_MAGE && (ability_index == 0 || ability_index == 2)) {
+            return (ability->current_element == ELEMENT_NONE) ? 1 : 0;
+        }
+
+        return 1;
+    }
+
+    static int getCasterPartyIndex(Player* caster) {
+        if (caster == NULL) return -1;
+        if (caster < party || caster >= party + PARTY_SIZE) return -1;
+        return (int)(caster - party);
+    }
+
 static void applyDamageToPlayerTarget(Player* target, Player* caster, Ability* ability) {
     if (target == NULL || caster == NULL || ability == NULL) return;
 
@@ -462,6 +485,10 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
                     applyElementalDamage(target, caster, ability);
                 } else {
                     applyDamageToEnemyTarget(target, caster, ability);
+                }
+
+                if (isPhysicalDamageAbility(caster, ability_index, ability)) {
+                    bossAiNotifyPlayerPhysicalAction(getCasterPartyIndex(caster), 1);
                 }
 
                 if (ability->data.status.status_type != STATUS_NONE) {

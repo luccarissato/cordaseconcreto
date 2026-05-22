@@ -30,6 +30,7 @@ typedef enum {
 static Texture2D combatUiTexture;
 static Texture2D turnArrowTexture;
 static Texture2D targetArrowTexture;
+static Texture2D trapIconTexture;
 
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
@@ -74,6 +75,26 @@ static void drawPlayerWeaknessIcon(int playerIndex, int x, int y, float spriteSc
     };
 
     DrawTextureEx(weaknessIcons[weaknessElement], iconPos, 0.0f, iconScale, WHITE);
+}
+
+static void drawPlayerTrapIcon(int playerIndex, int x, int y, float spriteScale) {
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+    if (!bossAiHasTrapMark(playerIndex)) return;
+    if (trapIconTexture.id == 0) return;
+
+    float iconScale = 0.65f;
+    Vector2 iconSize = {
+        trapIconTexture.width * iconScale,
+        trapIconTexture.height * iconScale
+    };
+
+    float spriteWidth = party[playerIndex].front.width * spriteScale;
+    Vector2 iconPos = {
+        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
+        (float)y - iconSize.y - 12.0f
+    };
+
+    DrawTextureEx(trapIconTexture, iconPos, 0.0f, iconScale, WHITE);
 }
 
 static void executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
@@ -142,9 +163,14 @@ static void resetCombatUiState() {
 }
 
 static void advanceCombatTurn() {
+    int wrapped = (combatState.currentTurn + 1 >= combatState.combatantCount);
     nextTurn();
     combatTurnEpoch++;
     processedTurnEpoch = -1;
+
+    if (wrapped) {
+        bossAiOnRoundWrap();
+    }
 }
 
 static Combatant* getCurrentCombatantSafe() {
@@ -437,6 +463,7 @@ static void confirmTargetAction() {
         if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
             int damage = 10 + player->stats.forca * 2;
             damageEnemy(&enemyManager.enemies[targetIndex], damage);
+            bossAiNotifyPlayerPhysicalAction(currentPlayerIndex(), 1);
             spendAndFinishTurn();
         }
         return;
@@ -547,6 +574,7 @@ static void drawPlayers() {
         DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 145, y + 52, 20, SKYBLUE);
 
         drawPlayerWeaknessIcon(i, x, y, 0.25f);
+        drawPlayerTrapIcon(i, x, y, 0.25f);
     }
 }
 
@@ -697,6 +725,7 @@ void initCombatUI() {
     combatUiTexture = LoadTexture("assets/interface/ui_combate_placeholder.png");
     turnArrowTexture = LoadTexture("assets/interface/seta_placeholder.png");
     targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
+    trapIconTexture = LoadTexture("assets/icones/trap.png");
 
     weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
     weaknessIcons[1] = LoadTexture("assets/icones/vento_icon.png");
@@ -710,6 +739,7 @@ void unloadCombatUI() {
     UnloadTexture(combatUiTexture);
     UnloadTexture(turnArrowTexture);
     UnloadTexture(targetArrowTexture);
+    UnloadTexture(trapIconTexture);
 
     for (int i = 0; i < 4; i++) {
         if (weaknessIcons[i].id != 0) {

@@ -120,23 +120,23 @@ void SetupTestWorldContent(int includeStarterItems) {
         addStarterItem(&frascoMagicoCura, 2);
     }
 
-    spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", MAX_ENEMIES);
+    spawnEnemy("Boss 2", (Vector2){1400, 0}, "assets/antagonistas/boss2_placeholder.png", MAX_ENEMIES);
 
     if (enemyManager.count > 0) {
         setEnemyStats(
             &enemyManager.enemies[enemyManager.count - 1],
-            1000,
-            32,
-            3,
-            0
+            1200,
+            36,
+            0,
+            10
         );
 
         setEnemyElementalResistances(
             &enemyManager.enemies[enemyManager.count - 1],
-            85,
-            80,
-            90,
-            75
+            -25,
+            -25,
+            -25,
+            -25
         );
     }
 

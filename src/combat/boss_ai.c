@@ -10,6 +10,24 @@
 #include "../entities/status_condition.h"
 
 typedef enum {
+    BOSS_KIND_NONE = 0,
+    BOSS_KIND_1,
+    BOSS_KIND_2
+} BossKind;
+
+typedef enum {
+    BOSS2_TRAP_HIGH_DAMAGE = 0,
+    BOSS2_TRAP_LOW_BLEED,
+    BOSS2_TRAP_LOW_DEFENSE_DOWN,
+    BOSS2_TRAP_FALSE
+} Boss2TrapEffect;
+
+typedef struct {
+    int active;
+    Boss2TrapEffect effect;
+} Boss2TrapMark;
+
+typedef enum {
     BOSS_ELEMENT_HEAT = 0,
     BOSS_ELEMENT_WIND,
     BOSS_ELEMENT_TIDE,
@@ -19,6 +37,7 @@ typedef enum {
 
 typedef struct {
     int active;
+    BossKind kind;
     int worldEnemyIndex;
     int phase;
     int currentElementIndex;
@@ -27,6 +46,8 @@ typedef struct {
     int originalResistances[PARTY_SIZE][4];
     int originalSaved;
     int displayedWeakness[PARTY_SIZE];
+    Boss2TrapMark trapMarks[PARTY_SIZE];
+    int boss2SpecialUsedThisRound;
 } BossEncounterState;
 
 static BossEncounterState bossState = {0};
@@ -36,6 +57,164 @@ static int bossMessageIndex = 0;
 static float bossMessageTimer = 0.0f;
 
 #define BOSS_STATUS_DURATION 3
+
+static void clearBoss2TrapMarks(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        bossState.trapMarks[i].active = 0;
+        bossState.trapMarks[i].effect = BOSS2_TRAP_HIGH_DAMAGE;
+    }
+}
+
+static int hasAnyStatusPlayer(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+        if (countActiveStatus(&party[i].statusList) > 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int findStatusTargetIndex(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+        if (countActiveStatus(&party[i].statusList) > 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int chooseRandomAliveUnmarkedPlayer(void) {
+    int candidates[PARTY_SIZE];
+    int candidateCount = 0;
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+        if (bossState.trapMarks[i].active) continue;
+        candidates[candidateCount++] = i;
+    }
+
+    if (candidateCount <= 0) {
+        return -1;
+    }
+
+    return candidates[rand() % candidateCount];
+}
+
+static Boss2TrapEffect rollTrapEffect(void) {
+    return (Boss2TrapEffect)(rand() % 3);
+}
+
+static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect);
+static void boss2UseSpecialAttack(void);
+
+static int boss2HasPendingTraps(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (bossState.trapMarks[i].active) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static void boss2ActivateAllPendingTraps(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!bossState.trapMarks[i].active) continue;
+
+        boss2ApplyTrapEffect(i, bossState.trapMarks[i].effect);
+    }
+}
+
+static void boss2LaunchNewTraps(void) {
+    int trapCount = (bossState.phase >= 2) ? 3 : 2;
+    int falseTrapIndex = (bossState.phase >= 2) ? (rand() % trapCount) : -1;
+    int marksAdded = 0;
+
+    while (marksAdded < trapCount) {
+        int playerIndex = chooseRandomAliveUnmarkedPlayer();
+        if (playerIndex < 0) break;
+
+        Boss2TrapEffect effect = (marksAdded == falseTrapIndex) ? BOSS2_TRAP_FALSE : rollTrapEffect();
+        bossState.trapMarks[playerIndex].active = 1;
+        bossState.trapMarks[playerIndex].effect = effect;
+        bossAiQueueMessage("Boss 2 armou uma armadilha em Personagem %d!", playerIndex + 1);
+        marksAdded++;
+    }
+}
+
+static void boss2ResolveTurnAction(void) {
+    if (boss2HasPendingTraps()) {
+        boss2ActivateAllPendingTraps();
+        return;
+    }
+
+    if (!bossState.boss2SpecialUsedThisRound && hasAnyStatusPlayer()) {
+        boss2UseSpecialAttack();
+        return;
+    }
+
+    boss2LaunchNewTraps();
+}
+
+static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+
+    Player* target = &party[playerIndex];
+    if (!target->isAlive) return;
+
+    float damageMultiplier = 1.0f + bossState.cumulativeDamageBonus;
+    int trapDamageHigh = (bossState.phase >= 2) ? 150 : 120;
+    int trapDamageLow = (bossState.phase >= 2) ? 60 : 45;
+
+    switch (effect) {
+        case BOSS2_TRAP_HIGH_DAMAGE:
+            bossAiQueueMessage("A armadilha explodiu em Personagem %d!", playerIndex + 1);
+            applyCombatDamageToPlayer(target, (int)(trapDamageHigh * damageMultiplier));
+            break;
+
+        case BOSS2_TRAP_LOW_BLEED:
+            bossAiQueueMessage("A armadilha feriu Personagem %d!", playerIndex + 1);
+            applyCombatDamageToPlayer(target, (int)(trapDamageLow * damageMultiplier));
+            if (!target->defenseGuardActive) {
+                addStatusCondition(&target->statusList, STATUS_BLEED, -1, 5.0f);
+                bossAiQueuePlayerAfflictedMessage(playerIndex, STATUS_BLEED);
+            }
+            break;
+
+        case BOSS2_TRAP_LOW_DEFENSE_DOWN:
+            applyCombatDamageToPlayer(target, (int)(trapDamageLow * damageMultiplier));
+            if (!target->defenseGuardActive) {
+                bossAiQueueMessage("A armadilha abalou a defesa de Personagem %d!", playerIndex + 1);
+                addStatusCondition(&target->statusList, STATUS_DEFENSE_DOWN, 3, 1.0f);
+                bossAiQueuePlayerAfflictedMessage(playerIndex, STATUS_DEFENSE_DOWN);
+            }
+            break;
+
+        case BOSS2_TRAP_FALSE:
+            bossAiQueueMessage("A armadilha era falsa em Personagem %d!", playerIndex + 1);
+            break;
+    }
+
+    bossState.cumulativeDamageBonus += 0.10f;
+    bossState.trapMarks[playerIndex].active = 0;
+    bossState.trapMarks[playerIndex].effect = BOSS2_TRAP_HIGH_DAMAGE;
+}
+
+static void boss2UseSpecialAttack(void) {
+    int targetIndex = findStatusTargetIndex();
+    if (targetIndex < 0) return;
+
+    Player* target = &party[targetIndex];
+    bossAiQueueMessage("Boss 2 esmagou %s com um ataque especial!", target->name);
+    applyCombatDamageToPlayer(target, (int)(150 * (1.0f + bossState.cumulativeDamageBonus)));
+    bossState.boss2SpecialUsedThisRound = 1;
+}
+
+static void boss2UseRoundWrapAction(void) {
+    boss2ResolveTurnAction();
+}
 
 static void clearMessageQueue(void) {
     bossMessageCount = 0;
@@ -192,8 +371,28 @@ static void shufflePartyWeaknessesForPhase2(void) {
 void bossAiOnCombatStart(void) {
     clearMessageQueue();
     memset(&bossState, 0, sizeof(bossState));
+    bossState.kind = BOSS_KIND_NONE;
     for (int i = 0; i < PARTY_SIZE; i++) {
         bossState.displayedWeakness[i] = -1;
+    }
+
+    clearBoss2TrapMarks();
+
+    for (int i = 0; i < combat.enemyCount; i++) {
+        int worldEnemyIndex = combat.enemyIndices[i];
+        if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) continue;
+
+        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 2") == 0) {
+            bossState.active = 1;
+            bossState.kind = BOSS_KIND_2;
+            bossState.worldEnemyIndex = worldEnemyIndex;
+            bossState.phase = 1;
+            bossState.currentElementIndex = 0;
+            bossState.openingTurnPending = 0;
+            bossState.cumulativeDamageBonus = 0.0f;
+            bossState.boss2SpecialUsedThisRound = 0;
+            return;
+        }
     }
 
     for (int i = 0; i < combat.enemyCount; i++) {
@@ -202,6 +401,7 @@ void bossAiOnCombatStart(void) {
 
         if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 1") == 0) {
             bossState.active = 1;
+            bossState.kind = BOSS_KIND_1;
             bossState.worldEnemyIndex = worldEnemyIndex;
             bossState.phase = 1;
             bossState.currentElementIndex = 0;
@@ -219,12 +419,30 @@ void bossAiOnCombatStart(void) {
 void bossAiOnCombatEnd(void) {
     clearMessageQueue();
     restoreOriginalPartyResistances();
+    clearBoss2TrapMarks();
     memset(&bossState, 0, sizeof(bossState));
+}
+
+void bossAiOnRoundWrap(void) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_2) return;
+
+    boss2UseRoundWrapAction();
+    bossState.boss2SpecialUsedThisRound = 0;
 }
 
 int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     if (!bossState.active || worldEnemyIndex != bossState.worldEnemyIndex || enemy == NULL || !enemy->isAlive) {
         return 0;
+    }
+
+    if (bossState.kind == BOSS_KIND_2) {
+        if (bossState.phase == 1 && enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) {
+            bossState.phase = 2;
+            bossAiQueueMessage("Boss 2 entrou na fase 2!");
+        }
+
+        boss2ResolveTurnAction();
+        return 1;
     }
 
     if (bossAiHasActiveMessage()) {
@@ -310,4 +528,20 @@ int bossAiGetPlayerWeaknessElement(int playerIndex) {
     if (!bossState.active || bossState.phase < 2) return -1;
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return -1;
     return bossState.displayedWeakness[playerIndex];
+}
+
+int bossAiHasTrapMark(int playerIndex) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_2) return 0;
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return 0;
+    return bossState.trapMarks[playerIndex].active;
+}
+
+void bossAiNotifyPlayerPhysicalAction(int playerIndex, int isPhysicalAction) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_2) return;
+    if (!isPhysicalAction) return;
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+
+    if (!bossState.trapMarks[playerIndex].active) return;
+
+    boss2ApplyTrapEffect(playerIndex, bossState.trapMarks[playerIndex].effect);
 }
