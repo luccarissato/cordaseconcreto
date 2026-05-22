@@ -35,6 +35,8 @@ static int bossMessageCount = 0;
 static int bossMessageIndex = 0;
 static float bossMessageTimer = 0.0f;
 
+#define BOSS_STATUS_DURATION 3
+
 static void clearMessageQueue(void) {
     bossMessageCount = 0;
     bossMessageIndex = 0;
@@ -56,6 +58,11 @@ void bossAiQueueMessage(const char* fmt, ...) {
         bossMessageIndex = 0;
         bossMessageTimer = 1.4f;
     }
+}
+
+void bossAiQueuePlayerAfflictedMessage(int playerIndex, StatusType statusType) {
+    if (playerIndex < 0 || statusType == STATUS_NONE || !isDebuff(statusType)) return;
+    bossAiQueueMessage("Personagem %d foi aflito com %s!", playerIndex + 1, getStatusName(statusType));
 }
 
 int bossAiHasActiveMessage(void) {
@@ -268,7 +275,8 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
 
             StatusType status = getElementStatusType(element);
             if (!target->defenseGuardActive && status != STATUS_NONE) {
-                addStatusCondition(&target->statusList, status, 2, 1.0f);
+                addStatusCondition(&target->statusList, status, BOSS_STATUS_DURATION, 1.0f);
+                bossAiQueuePlayerAfflictedMessage(i, status);
             }
 
             if (weaknessHits > 0) {

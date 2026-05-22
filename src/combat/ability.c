@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "../entities/status_condition.h"
+#include "boss_ai.h"
 
 
 static Ability abilities[4][4];
@@ -387,13 +388,14 @@ static void revivePlayerCombat(Player* target, float hpPercent) {
     clampPlayerCombatStats(target);
 }
 
-static void applyStatusToPlayerTarget(Player* target, StatusType statusType, int turns, float intensity) {
+static void applyStatusToPlayerTarget(Player* target, int targetIndex, StatusType statusType, int turns, float intensity) {
     if (target == NULL || statusType == STATUS_NONE) return;
 
     /* Defender: bloqueia apenas NOVAS condições sem limpar as existentes */
     if (target->defenseGuardActive) return;
 
     addStatusCondition(&target->statusList, statusType, turns, intensity);
+    bossAiQueuePlayerAfflictedMessage(targetIndex, statusType);
 }
 
 static void applyStatusToEnemyTarget(Enemy* target, StatusType statusType, int turns, float intensity) {
@@ -539,20 +541,20 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
             Player* target = &playerTargets[targetIndex];
 
             if (caster->characterID == CHARACTER_1_TANK && ability_index == 1) {
-                applyStatusToPlayerTarget(target, STATUS_DEFENSE_UP, ability->data.buff_action.turns_extra, 1.0f);
+                applyStatusToPlayerTarget(target, targetIndex, STATUS_DEFENSE_UP, ability->data.buff_action.turns_extra, 1.0f);
             } else if (caster->characterID == CHARACTER_1_TANK && ability_index == 3) {
-                applyStatusToPlayerTarget(caster, STATUS_DEFENSE_UP, ability->data.reflect.reflect_duration, 1.0f);
-                applyStatusToPlayerTarget(caster, STATUS_SPEED_UP, ability->data.reflect.reflect_duration, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_DEFENSE_UP, ability->data.reflect.reflect_duration, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_SPEED_UP, ability->data.reflect.reflect_duration, 1.0f);
             } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 2) {
-                applyStatusToPlayerTarget(caster, STATUS_DEFENSE_UP, 1, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_DEFENSE_UP, 1, 1.0f);
             } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 3) {
-                applyStatusToPlayerTarget(caster, STATUS_SPEED_UP, 3, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_SPEED_UP, 3, 1.0f);
             } else if (caster->characterID == CHARACTER_3_HEALER && ability_index == 2) {
-                applyStatusToPlayerTarget(target, blessingType, 3, 1.0f);
+                applyStatusToPlayerTarget(target, targetIndex, blessingType, 3, 1.0f);
             } else if (caster->characterID == CHARACTER_4_MAGE && ability_index == 3) {
-                applyStatusToPlayerTarget(caster, STATUS_STRENGTH_UP, -1, 0.05f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_STRENGTH_UP, -1, 0.05f);
             } else {
-                applyStatusToPlayerTarget(target, STATUS_DEFENSE_UP, 2, 1.0f);
+                applyStatusToPlayerTarget(target, targetIndex, STATUS_DEFENSE_UP, 2, 1.0f);
             }
         }
     }

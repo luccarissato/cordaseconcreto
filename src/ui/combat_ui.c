@@ -54,6 +54,28 @@ static int combatWasActive = 0;
 
 static Texture2D weaknessIcons[4];
 
+static void drawPlayerWeaknessIcon(int playerIndex, int x, int y, float spriteScale) {
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+
+    int weaknessElement = bossAiGetPlayerWeaknessElement(playerIndex);
+    if (weaknessElement < 0 || weaknessElement >= 4) return;
+    if (weaknessIcons[weaknessElement].id == 0) return;
+
+    float iconScale = 0.65f;
+    Vector2 iconSize = {
+        weaknessIcons[weaknessElement].width * iconScale,
+        weaknessIcons[weaknessElement].height * iconScale
+    };
+
+    float spriteWidth = party[playerIndex].front.width * spriteScale;
+    Vector2 iconPos = {
+        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
+        (float)y - iconSize.y - 12.0f
+    };
+
+    DrawTextureEx(weaknessIcons[weaknessElement], iconPos, 0.0f, iconScale, WHITE);
+}
+
 static void executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
     if (enemy == NULL || !enemy->isAlive) return;
 
@@ -440,6 +462,7 @@ static void confirmTargetAction() {
     if (combatUiState == COMBAT_UI_ITEM_TARGET) {
         InventoryItem* item = (InventoryItem*)selectedItemNode->data;
         if (item == NULL || item->baseItem == NULL) return;
+        Item* baseItem = item->baseItem;
 
         if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
             useItemOnEnemy(&enemyManager.enemies[targetIndex], item);
@@ -453,6 +476,9 @@ static void confirmTargetAction() {
 
         if (!targetIsEnemy && targetIndex >= 0 && targetIndex < PARTY_SIZE) {
             consumeItem(&playerInventory, selectedItemNode, &party[targetIndex]);
+            if (baseItem->type == ITEM_INFLICT_STATUS && baseItem->statusToApply != STATUS_NONE && !party[targetIndex].defenseGuardActive) {
+                bossAiQueuePlayerAfflictedMessage(targetIndex, baseItem->statusToApply);
+            }
             selectedItemNode = NULL;
             spendAndFinishTurn();
         }
@@ -520,10 +546,7 @@ static void drawPlayers() {
         DrawText(TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP), x + 145, y + 24, 20, GREEN);
         DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 145, y + 52, 20, SKYBLUE);
 
-        int weaknessElement = bossAiGetPlayerWeaknessElement(i);
-        if (weaknessElement >= 0 && weaknessElement < 4 && weaknessIcons[weaknessElement].id != 0) {
-            DrawTextureEx(weaknessIcons[weaknessElement], (Vector2){(float)x + 72.0f, (float)y - 24.0f}, 0.0f, 0.65f, WHITE);
-        }
+        drawPlayerWeaknessIcon(i, x, y, 0.25f);
     }
 }
 
