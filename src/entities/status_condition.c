@@ -38,7 +38,8 @@ void freeStatusList(StatusList* statusList) {
     if (statusList == NULL) return;
     
     ListNode* current = statusList->conditions.head;
-    while (current != NULL) {
+    int iterations = statusList->conditions.size;
+    for (int i = 0; i < iterations && current != NULL; i++) {
         ListNode* next = current->next;
         
         if (current->data != NULL) {
@@ -152,14 +153,15 @@ void removeAllBuffs(StatusList* statusList) {
     if (statusList == NULL) return;
     
     ListNode* current = statusList->conditions.head;
-    
-    while (current != NULL) {
+    int iterations = statusList->conditions.size;
+    for (int i = 0; i < iterations && current != NULL && statusList->conditions.size > 0; i++) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
         
         if (condition != NULL && isBuff(condition->type)) {
             free(condition);
             removeNode(&statusList->conditions, current);
+            if (statusList->conditions.size == 0) break;
         }
         
         current = next;

@@ -38,6 +38,9 @@ void drawGame();
 // closeGame - Finaliza e libera recursos do jogo
 void closeGame();
 
+// resetGameState - Reinicia o estado de jogo sem fechar a janela
+void resetGameState();
+
 // initEnemyManager - Inicializa o gerenciador de inimigos
 void initEnemyManager();
 

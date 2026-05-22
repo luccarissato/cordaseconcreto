@@ -2,6 +2,8 @@
 #include "../core/game.h"
 #include "../core/state.h"
 #include "../core/collision.h"
+#include "../entities/status_condition.h"
+#include "boss_ai.h"
 #include "raymath.h"
 #include <string.h>
 #include <stdlib.h>
@@ -14,6 +16,28 @@ extern Player party[PARTY_SIZE];
 extern EnemyManager enemyManager;
 extern Combat combat;
 extern GameState currentGameState;
+
+static void clearCombatStatusState(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        clearAllStatus(&party[i].statusList);
+        party[i].defenseGuardActive = 0;
+        party[i].defenseDamageReductionPending = 0;
+    }
+
+    for (int i = 0; i < enemyManager.count; i++) {
+        clearAllStatus(&enemyManager.enemies[i].statusList);
+        enemyManager.enemies[i].inCombat = 0;
+    }
+}
+
+static void restorePartyMinimumCombatHp(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (party[i].stats.currentHP <= 0) {
+            party[i].stats.currentHP = 1;
+            party[i].isAlive = 1;
+        }
+    }
+}
 
 //compareCombatSpeed - Compara a velocidade dos participantes
 static int compareCombatantSpeed(const void* a, const void* b) {
@@ -179,7 +203,14 @@ int getEnemyCombatCount() {
 void endCombat() {
     /* Verifica se foi vitória (todos inimigos derrotados) */
     int aliveEnemies = 0;
+    int alivePlayers = 0;
     
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (party[i].isAlive) {
+            alivePlayers++;
+        }
+    }
+
     for (int i = 0; i < combat.enemyCount; i++) {
         int enemyIndex = combat.enemyIndices[i];
         if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
@@ -200,11 +231,33 @@ void endCombat() {
             }
         }
     }
-    
+
+    bossAiOnCombatEnd();
+    clearCombatStatusState();
+
+     /* Garantir que qualquer personagem que terminou o combate com 0 HP volte para 1 HP
+         antes de qualquer teardown/transition (previne crashes durante unload). */
+     restorePartyMinimumCombatHp();
+
+     /* Recalcula quantos jogadores estão vivos depois da restauração para decidir
+         corretamente se devemos resetar o jogo (wipe) ou voltar à exploração. */
+     alivePlayers = 0;
+     for (int i = 0; i < PARTY_SIZE; i++) {
+          if (party[i].isAlive) {
+                alivePlayers++;
+          }
+     }
+
     combat.inCombat = 0;
     combat.enemyCount = 0;
     memset(combat.enemyIndices, 0, sizeof(combat.enemyIndices));
     endCombatBattle();
+
+    if (alivePlayers == 0) {
+        resetGameState();
+        return;
+    }
+
     currentGameState = STATE_EXPLORATION;
 }
 

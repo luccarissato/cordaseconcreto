@@ -722,7 +722,9 @@ void updateCombatUI() {
     if (!isCombatActive()) {
         bossAiOnCombatEnd();
         combatWasActive = 0;
-        currentGameState = STATE_EXPLORATION;
+        if (currentGameState == STATE_COMBAT) {
+            currentGameState = STATE_EXPLORATION;
+        }
         return;
     }
 
@@ -742,7 +744,9 @@ void updateCombatUI() {
     if (!isCombatActive()) {
         bossAiOnCombatEnd();
         combatWasActive = 0;
-        currentGameState = STATE_EXPLORATION;
+        if (currentGameState == STATE_COMBAT) {
+            currentGameState = STATE_EXPLORATION;
+        }
         return;
     }
 

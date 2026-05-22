@@ -3,32 +3,23 @@
 #include "game.h"
 #include "dialogue.h"
 #include "collision.h"
-#include "../items/game_items.h"
-#include "../items/inventory.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
 #include "../entities/npc.h"
 #include "../entities/enemy.h"
+#include "../items/inventory.h"
 #include "../ui/game_menu.h"
 #include "../interactables/interactable.h"
-#include "../interactables/chest.h"
-#include "../interactables/color_puzzle.h"
-#include "../interactables/door.h"
-#include "../interactables/trap.h"
-#include "../data/dialogues/door_questions.h"
 #include "../combat/combat.h"
 #include "../combat/ability.h"
 #include "../ui/combat_ui.h"
+#include "../worlds/worlds.h"
+#include "../worlds/test_world.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
-
-#include "../data/dialogues/teste_dialogue.h"
-
-extern Item gotaSangreMaldita;
-extern Item frascoMagicoCura;
 
 #define HISTORY_SIZE 1000
 
@@ -46,7 +37,7 @@ Camera2D camera;
 Player party[PARTY_SIZE];
 Inventory playerInventory;
 
-void initParty();
+void initParty(int applyGrowth);
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
@@ -70,118 +61,21 @@ void initGame() {
     SetTargetFPS(60);
     srand((unsigned int) time(NULL));  /* Seed para random number generator */
 
-    initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initMenu();
-    initParty();
     initGameMenu();
     initDialogue();
-    initInventory(&playerInventory);
-    initEnemyManager();
     initCombat();
     initCombatUI();
-
-
-    // teste
-    initInteractableManager(&interactableManager);
-    
-    Interactable testChest = createChest(
-        (Vector2){400, 400},
-        "assets/interagiveis/caixa_fechada_placeholder.png",
-        "assets/interagiveis/caixa_aberta_placeholder.png"
-    );
-    addInteractable(&interactableManager, &testChest);
-    
-    /* Cria porta teste com pergunta */
-    Interactable testDoor = createDoor(
-        (Vector2){0, 0},
-        "assets/interagiveis/porta_fechada_placeholder.png",
-        "assets/interagiveis/porta_aberta_placeholder.png",
-        &doorQuestion1,      /* Pergunta: "Quanto é 2 + 2?" */
-        1                    /* Node 1 = resposta correta */
-    );
-    addInteractable(&interactableManager, &testDoor);
-
-    Interactable testTrap = createTrap(
-        (Vector2){700, 400},
-        "assets/interagiveis/trap_escondida.png",
-        "assets/interagiveis/trap_descoberta.png",
-        50
-    );
-    addInteractable(&interactableManager, &testTrap);
-
-    Interactable colorPuzzle = createColorPuzzle(
-        (Vector2){500, 700},
-        "assets/interagiveis/chao_azul_placeholder.png",
-        "assets/interagiveis/chao_verde_placeholder.png",
-        "assets/interagiveis/chao_amarelo_placeholdert.png",
-        "assets/interagiveis/chao_vermelho_placeholder.png",
-        2.0f,
-        50
-    );
-    addInteractable(&interactableManager, &colorPuzzle);
-    
-    /* Itens de teste para status effects */
-    InventoryItem* pimentaMalagItem = malloc(sizeof(InventoryItem));
-    pimentaMalagItem->baseItem = &pimentaMalagueta;
-    pimentaMalagItem->quantity = 2;
-    addItemInventory(&playerInventory, pimentaMalagItem);
-    
-    InventoryItem* gotaSangueItem = malloc(sizeof(InventoryItem));
-    gotaSangueItem->baseItem = &gotaSangreMaldita;
-    gotaSangueItem->quantity = 2;
-    addItemInventory(&playerInventory, gotaSangueItem);
-    
-    InventoryItem* poEnvenenItem = malloc(sizeof(InventoryItem));
-    poEnvenenItem->baseItem = &poDeEnvenenar;
-    poEnvenenItem->quantity = 2;
-    addItemInventory(&playerInventory, poEnvenenItem);
-    
-    InventoryItem* pomadaItem = malloc(sizeof(InventoryItem));
-    pomadaItem->baseItem = &pomadaCicatrizante;
-    pomadaItem->quantity = 2;
-    addItemInventory(&playerInventory, pomadaItem);
-    
-    InventoryItem* antivenItem = malloc(sizeof(InventoryItem));
-    antivenItem->baseItem = &antiveneno;
-    antivenItem->quantity = 2;
-    addItemInventory(&playerInventory, antivenItem);
-    
-    InventoryItem* frascoMagicoItem = malloc(sizeof(InventoryItem));
-    frascoMagicoItem->baseItem = &frascoMagicoCura;
-    frascoMagicoItem->quantity = 2;
-    addItemInventory(&playerInventory, frascoMagicoItem);
-    
-    spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
-    
-    /* Configuração do Boss 1: 1000 HP, defesa física baixa, defesa elemental alta */
-    if (enemyManager.count > 0) {
-        setEnemyStats(
-            &enemyManager.enemies[enemyManager.count - 1],
-            1000,  /* HP */
-            32,    /* Força */
-            3,     /* Defesa física baixa */
-            0      /* Velocidade mínima para agir no fim da iniciativa */
-        );
-
-        setEnemyElementalResistances(
-            &enemyManager.enemies[enemyManager.count - 1],
-            85,   /* Calor */
-            80,   /* Vento */
-            90,   /* Maré */
-            75    /* Terra */
-        );
-    }
-
-
-    camera.target = party[0].position; /* segue o líder */
-    camera.offset = (Vector2){800, 540};
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
-
-    mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
+    initWorldRegistry();
+    RegisterTestWorld();
+    loadCurrentWorld();
 }
 
 void updateGame() {
+    if (currentGameState != STATE_COMBAT) {
+        processPendingWorldLoad();
+    }
+
     switch (currentGameState) {
         case STATE_MENU:
             updateMenu();
@@ -224,6 +118,9 @@ void updateGame() {
             camera.target = party[0].position;
             updateNPC(&testNPC, party[0].position);
             updateInteractables(&interactableManager, party[0].position);
+            if (processPendingWorldLoad()) {
+                break;
+            }
             
             updateEnemiesInteraction(party[0].position);
             
@@ -296,19 +193,15 @@ void drawGame() {
 }
 
 void closeGame() {
-    unloadNPC(&testNPC);
+    shutdownWorldRegistry();
     unloadMenu();
     closeDialogue();
-    unloadParty();
-    unloadEnemyManager();
     unloadCombatUI();
-    UnloadTexture(mapTexture);
     unloadGameMenu();
-    unloadInteractableManager(&interactableManager);
     CloseWindow();
 }
 
-void initParty() {
+void initParty(int applyGrowth) {
     initPlayer(&party[0], "p1", (Vector2){960, 540}, "1");
     initPlayer(&party[1], "p2", (Vector2){960, 540}, "2");
     initPlayer(&party[2], "p3", (Vector2){960, 540}, "3");
@@ -373,10 +266,12 @@ void initParty() {
         /* Personagem começa nível 1 */
         party[i].level = 1;
         
-        /* Aplica growth para atingir nível 4 (3 level ups: 1->2->3->4) */
-        for (int levelUp = 0; levelUp < 3; levelUp++) {
-            applyLevelGrowth(&party[i].stats);
-            party[i].level++;
+        if (applyGrowth) {
+            /* Aplica growth para atingir nível 4 (3 level ups: 1->2->3->4) */
+            for (int levelUp = 0; levelUp < 3; levelUp++) {
+                applyLevelGrowth(&party[i].stats);
+                party[i].level++;
+            }
         }
         
         /* Recalcula stats derivados com o nível final */
@@ -388,6 +283,12 @@ void initParty() {
         positionHistory[i] = party[0].position;
         directionHistory[i] = party[0].direction;
     }
+}
+
+void resetGameState() {
+    currentMenuState = MENU_MAIN;
+    currentGameState = STATE_MENU;
+    requestWorldLoadCurrent();
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {

@@ -1,9 +1,35 @@
 #include "door.h"
 #include "../core/state.h"
 #include "../core/dialogue.h"
+#include "../worlds/worlds.h"
 #include "raylib.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+static void queueDoorWorldTransition(DoorData* data) {
+    if (data == NULL) return;
+
+    switch (data->transitionMode) {
+        case DOOR_TRANSITION_NEXT:
+            requestWorldLoadNext();
+            break;
+
+        case DOOR_TRANSITION_PREVIOUS:
+            requestWorldLoadPrevious();
+            break;
+
+        case DOOR_TRANSITION_TARGET:
+            if (data->targetWorldName[0] != '\0') {
+                requestWorldLoadByName(data->targetWorldName);
+            }
+            break;
+
+        case DOOR_TRANSITION_NONE:
+        default:
+            break;
+    }
+}
 
 // door_on_interact() - Executado quando jogador pressiona Z próximo
 void door_on_interact(Interactable* self, void* playerData) {
@@ -38,6 +64,8 @@ void door_on_update(Interactable* self, Vector2 playerPos) {
             self->hasInteracted = 1;
             data->isOpen = 1;
             self->sprite = data->spriteOpen;
+
+            queueDoorWorldTransition(data);
             
             #ifdef DEBUG_DOOR
             printf("[DOOR] Resposta correta! Porta aberta.\n");
@@ -84,6 +112,19 @@ void door_on_unload(Interactable* self) {
     free(data);
 }
 
+void doorConfigureWorldTransition(Interactable* self, DoorTransitionMode mode, const char* targetWorldName) {
+    if (self == NULL || self->data == NULL) return;
+
+    DoorData* data = (DoorData*) self->data;
+    data->transitionMode = mode;
+    data->targetWorldName[0] = '\0';
+
+    if (targetWorldName != NULL) {
+        strncpy(data->targetWorldName, targetWorldName, sizeof(data->targetWorldName) - 1);
+        data->targetWorldName[sizeof(data->targetWorldName) - 1] = '\0';
+    }
+}
+
 Interactable createDoor(Vector2 position, const char* closedSpritePath, const char* openSpritePath, DialogueTree* questionTree, int correctAnswerNodeIndex) {
     DoorData* data = malloc(sizeof(DoorData));
     data->spriteClosed = LoadTexture(closedSpritePath);
@@ -92,6 +133,8 @@ Interactable createDoor(Vector2 position, const char* closedSpritePath, const ch
     data->questionTree = questionTree;
     data->dialogueWasActive = 0;
     data->correctAnswerNodeIndex = correctAnswerNodeIndex;
+    data->transitionMode = DOOR_TRANSITION_NONE;
+    data->targetWorldName[0] = '\0';
     
     Interactable door = {
         .type = INTERACTABLE_DOOR,
