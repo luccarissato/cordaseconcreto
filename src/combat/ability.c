@@ -345,7 +345,7 @@ static void clampPlayerCombatStats(Player* target) {
     target->isAlive = (target->stats.currentHP > 0);
 }
 
-static void damagePlayer(Player* target, int damage) {
+void applyCombatDamageToPlayer(Player* target, int damage) {
     if (target == NULL || !target->isAlive) return;
 
     float defenseModifier = getDefenseModifier(&target->statusList);
@@ -419,7 +419,7 @@ static void applyDamageToPlayerTarget(Player* target, Player* caster, Ability* a
     if (target == NULL || caster == NULL || ability == NULL) return;
 
     int damage = (int)getAbilityDamage(ability, caster);
-    damagePlayer(target, damage);
+    applyCombatDamageToPlayer(target, damage);
 }
 
 

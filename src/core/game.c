@@ -153,15 +153,22 @@ void initGame() {
     
     spawnEnemy("Boss 1", (Vector2){1400, 0}, "assets/antagonistas/boss1_placeholder.png", 32);
     
-    /* Configura resistências elementais diferentes para o Boss 1 */
-    /* Distribuição: Calor=100%, Maré=70%, Terra=50%, Vento=10% */
+    /* Configuração do Boss 1: 1000 HP, defesa física baixa, defesa elemental alta */
     if (enemyManager.count > 0) {
+        setEnemyStats(
+            &enemyManager.enemies[enemyManager.count - 1],
+            1000,  /* HP */
+            32,    /* Força */
+            3,     /* Defesa física baixa */
+            0      /* Velocidade mínima para agir no fim da iniciativa */
+        );
+
         setEnemyElementalResistances(
             &enemyManager.enemies[enemyManager.count - 1],
-            100,  /* Calor: 100% resistência */
-            10,   /* Vento: 10% resistência */
-            70,   /* Maré: 70% resistência */
-            50    /* Terra: 50% resistência */
+            85,   /* Calor */
+            80,   /* Vento */
+            90,   /* Maré */
+            75    /* Terra */
         );
     }
 

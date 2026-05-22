@@ -9,6 +9,7 @@
 #include "../core/state.h"
 #include "../combat/combat.h"
 #include "../combat/ability.h"
+#include "../combat/boss_ai.h"
 #include "../items/inventory.h"
 #include "../items/item.h"
 #include "../entities/status_condition.h"
@@ -50,6 +51,28 @@ static ListNode* selectedItemNode = NULL;
 static int combatTurnEpoch = 0;
 static int processedTurnEpoch = -1;
 static int combatWasActive = 0;
+
+static Texture2D weaknessIcons[4];
+
+static void executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
+    if (enemy == NULL || !enemy->isAlive) return;
+
+    if (bossAiHandleEnemyTurn(worldEnemyIndex, enemy)) {
+        return;
+    }
+
+    if (!canEnemyAct(enemy)) {
+        bossAiQueueMessage("%s falhou em agir.", enemy->name);
+        return;
+    }
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+        applyCombatDamageToPlayer(&party[i], 30);
+        bossAiQueueMessage("%s atacou %s.", enemy->name, party[i].name);
+        break;
+    }
+}
 
 static int isCombatItemVisible(InventoryItem* item) {
     if (item == NULL || item->baseItem == NULL) return 0;
@@ -225,7 +248,13 @@ static void advanceTurnFlow() {
         }
 
         if (combatant->type == COMBATANT_ENEMY) {
+            int worldEnemyIndex = combat.enemyIndices[combatant->enemyIndex];
+            if (worldEnemyIndex >= 0 && worldEnemyIndex < enemyManager.count) {
+                executeEnemyAction(&enemyManager.enemies[worldEnemyIndex], worldEnemyIndex);
+            }
+
             advanceCombatTurn();
+            finishCombatIfNeeded();
             safety++;
             continue;
         }
@@ -490,7 +519,21 @@ static void drawPlayers() {
         DrawText(party[i].name, x + 145, y + - 10, 24, RAYWHITE);
         DrawText(TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP), x + 145, y + 24, 20, GREEN);
         DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 145, y + 52, 20, SKYBLUE);
+
+        int weaknessElement = bossAiGetPlayerWeaknessElement(i);
+        if (weaknessElement >= 0 && weaknessElement < 4 && weaknessIcons[weaknessElement].id != 0) {
+            DrawTextureEx(weaknessIcons[weaknessElement], (Vector2){(float)x + 72.0f, (float)y - 24.0f}, 0.0f, 0.65f, WHITE);
+        }
     }
+}
+
+static void drawCombatMessageBox(void) {
+    const char* message = bossAiGetCurrentMessage();
+    if (message == NULL) return;
+
+    DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
+    DrawRectangleLines(220, 740, 1480, 180, GRAY);
+    DrawText(message, 260, 810, 30, RAYWHITE);
 }
 
 static void drawEnemyColumn() {
@@ -631,6 +674,12 @@ void initCombatUI() {
     combatUiTexture = LoadTexture("assets/interface/ui_combate_placeholder.png");
     turnArrowTexture = LoadTexture("assets/interface/seta_placeholder.png");
     targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
+
+    weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
+    weaknessIcons[1] = LoadTexture("assets/icones/vento_icon.png");
+    weaknessIcons[2] = LoadTexture("assets/icones/mare_icon.png");
+    weaknessIcons[3] = LoadTexture("assets/icones/terra_icon.png");
+
     resetCombatUiState();
 }
 
@@ -638,10 +687,17 @@ void unloadCombatUI() {
     UnloadTexture(combatUiTexture);
     UnloadTexture(turnArrowTexture);
     UnloadTexture(targetArrowTexture);
+
+    for (int i = 0; i < 4; i++) {
+        if (weaknessIcons[i].id != 0) {
+            UnloadTexture(weaknessIcons[i]);
+        }
+    }
 }
 
 void updateCombatUI() {
     if (!isCombatActive()) {
+        bossAiOnCombatEnd();
         combatWasActive = 0;
         currentGameState = STATE_EXPLORATION;
         return;
@@ -649,14 +705,25 @@ void updateCombatUI() {
 
     if (!combatWasActive) {
         resetCombatUiState();
+        bossAiOnCombatStart();
         combatWasActive = 1;
+    }
+
+    bossAiUpdateMessages(GetFrameTime());
+    if (bossAiHasActiveMessage()) {
+        return;
     }
 
     advanceTurnFlow();
 
     if (!isCombatActive()) {
+        bossAiOnCombatEnd();
         combatWasActive = 0;
         currentGameState = STATE_EXPLORATION;
+        return;
+    }
+
+    if (bossAiHasActiveMessage()) {
         return;
     }
 
@@ -800,5 +867,10 @@ void drawCombatUI() {
     drawTopInitiativeBar();
     drawPlayers();
     drawEnemyColumn();
-    drawBottomPanel();
+
+    if (bossAiHasActiveMessage()) {
+        drawCombatMessageBox();
+    } else {
+        drawBottomPanel();
+    }
 }

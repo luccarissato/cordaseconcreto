@@ -143,6 +143,9 @@ int getElementalDefense(Enemy* enemy, ElementType element);
 // applyElementalDamage - Aplica dano elemental considerando resistência do inimigo
 void applyElementalDamage(Enemy* target, Player* caster, Ability* ability);
 
+/* Aplica dano em jogador no contexto de combate (respeita estados defensivos) */
+void applyCombatDamageToPlayer(Player* target, int damage);
+
 /* ===== Sistema de Alternância de Modo/Elemento ===== */
 
 // toggleAbilityElement - Alterna elemento da habilidade (LEFT/RIGHT)
