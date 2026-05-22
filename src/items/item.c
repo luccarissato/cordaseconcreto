@@ -75,6 +75,11 @@ void useItem(Player* target, InventoryItem* item) {
     }
     
     Item* base = item->baseItem;
+
+    /* Defender: bloqueia novas condições de status (não remove status existentes) */
+    if ((base->type == ITEM_BUFF || base->type == ITEM_INFLICT_STATUS) && target->defenseGuardActive) {
+        return;
+    }
     
     applyItemEffectGeneric(&target->stats, &target->statusList, base);
     

@@ -165,6 +165,10 @@ static int currentEnemyCombatIndex() {
 static void processPlayerTurnStart(Player* player) {
     if (player == NULL || !player->isAlive) return;
 
+    /* Defender dura até o próximo turno próprio */
+    player->defenseGuardActive = 0;
+    player->defenseDamageReductionPending = 0;
+
     processStatusEffects(&player->statusList, &player->stats.currentHP, player->stats.maxHP);
     updateStatusDurations(&player->statusList);
 
@@ -277,6 +281,14 @@ static void spendAndFinishTurn() {
     selectedItemNode = NULL;
     advanceCombatTurn();
     finishCombatIfNeeded();
+}
+
+static void executeDefendAction(Player* player) {
+    if (player == NULL || !player->isAlive) return;
+
+    player->defenseGuardActive = 1;
+    player->defenseDamageReductionPending = 1;
+    spendAndFinishTurn();
 }
 
 static void executeSelectedAbility(Player* player) {
@@ -529,8 +541,9 @@ static void drawBottomPanel() {
     if (combatUiState == COMBAT_UI_MAIN) {
         //substituir por textura eventualmente ou só pela fonte com drawTextEx
         DrawText("ATACAR", 120, 790, 28, mainSelection == 0 ? YELLOW : RAYWHITE);
-        DrawText("HABILIDADES", 120, 850, 28, mainSelection == 1 ? YELLOW : RAYWHITE);
-        DrawText("ITENS", 120, 910, 28, mainSelection == 2 ? YELLOW : RAYWHITE);
+        DrawText("DEFENDER", 120, 850, 28, mainSelection == 1 ? YELLOW : RAYWHITE);
+        DrawText("HABILIDADES", 120, 910, 28, mainSelection == 2 ? YELLOW : RAYWHITE);
+        DrawText("ITENS", 120, 970, 28, mainSelection == 3 ? YELLOW : RAYWHITE);
         DrawTexture(turnArrowTexture, 58, 795 + (mainSelection * 60), WHITE);
     }
 
@@ -655,12 +668,12 @@ void updateCombatUI() {
     if (combatUiState == COMBAT_UI_MAIN) {
         if (IsKeyPressed(KEY_DOWN)) {
             mainSelection++;
-            if (mainSelection > 2) mainSelection = 0;
+            if (mainSelection > 3) mainSelection = 0;
         }
 
         if (IsKeyPressed(KEY_UP)) {
             mainSelection--;
-            if (mainSelection < 0) mainSelection = 2;
+            if (mainSelection < 0) mainSelection = 3;
         }
 
         if (IsKeyPressed(KEY_Z)) {
@@ -668,9 +681,11 @@ void updateCombatUI() {
                 buildEnemyTargetList();
                 combatUiState = COMBAT_UI_ATTACK_TARGET;
             } else if (mainSelection == 1) {
+                executeDefendAction(&party[combatant->playerIndex]);
+            } else if (mainSelection == 2) {
                 refreshAvailableAbilities(&party[combatant->playerIndex]);
                 combatUiState = COMBAT_UI_ABILITY_LIST;
-            } else if (mainSelection == 2) {
+            } else if (mainSelection == 3) {
                 refreshAvailableItems();
                 if (availableItemCount > 0) {
                     combatUiState = COMBAT_UI_ITEM_LIST;

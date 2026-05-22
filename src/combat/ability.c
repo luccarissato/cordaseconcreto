@@ -354,6 +354,12 @@ static void damagePlayer(Player* target, int damage) {
 
     if (effectiveDamage < 1) effectiveDamage = 1;
 
+    if (target->defenseDamageReductionPending) {
+        effectiveDamage = (int)(effectiveDamage * 0.70f);
+        if (effectiveDamage < 1) effectiveDamage = 1;
+        target->defenseDamageReductionPending = 0;
+    }
+
     target->stats.currentHP -= effectiveDamage;
     clampPlayerCombatStats(target);
 }
@@ -383,6 +389,10 @@ static void revivePlayerCombat(Player* target, float hpPercent) {
 
 static void applyStatusToPlayerTarget(Player* target, StatusType statusType, int turns, float intensity) {
     if (target == NULL || statusType == STATUS_NONE) return;
+
+    /* Defender: bloqueia apenas NOVAS condições sem limpar as existentes */
+    if (target->defenseGuardActive) return;
+
     addStatusCondition(&target->statusList, statusType, turns, intensity);
 }
 

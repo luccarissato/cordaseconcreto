@@ -51,6 +51,10 @@ typedef struct Player {
     /* === NOVO: Sistema de Habilidades === */
     int level;                  /* Nível do personagem (1-MAX) */
     int characterID;            /* ID do tipo de personagem (0-3) */
+
+    /* Estado temporário de defesa (combate) */
+    int defenseGuardActive;             /* Imune a NOVOS status até o próximo turno */
+    int defenseDamageReductionPending;  /* Reduz 30% do próximo ataque recebido */
 } Player;
 
 void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name);

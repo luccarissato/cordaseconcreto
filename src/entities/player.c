@@ -47,6 +47,10 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     /* Inicializa sistema de habilidades === */
     p->level = 1;
     p->characterID = 0;  /* Será alterado ao carregar o personagem específico */
+
+    /* Defesa desativada por padrão */
+    p->defenseGuardActive = 0;
+    p->defenseDamageReductionPending = 0;
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {
