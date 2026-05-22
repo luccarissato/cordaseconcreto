@@ -130,8 +130,9 @@ void removeAllDebuffs(StatusList* statusList) {
     if (statusList == NULL) return;
     
     ListNode* current = statusList->conditions.head;
+    int iterations = statusList->conditions.size;
     
-    while (current != NULL && statusList->conditions.size > 0) {
+    for (int i = 0; i < iterations && current != NULL && statusList->conditions.size > 0; i++) {
         ListNode* next = current->next;
         StatusCondition* condition = (StatusCondition*) current->data;
         
