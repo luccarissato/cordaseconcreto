@@ -1,6 +1,5 @@
 #ifndef DIALOGUE_H
 #define DIALOGUE_H
-
 #include "raylib.h"
 
 typedef struct {
@@ -19,7 +18,6 @@ typedef struct {
     int currentNode;
     int active;
     int selectedChoice;
-
 } DialogueTree;
 
 void initDialogue();

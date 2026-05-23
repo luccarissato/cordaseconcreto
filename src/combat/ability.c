@@ -454,6 +454,8 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     
     Ability* ability = getAbilityByIndex(caster->characterID, ability_index);
     if (ability == NULL) return;
+    int casterPartyIndex = getCasterPartyIndex(caster);
+    int abilityWasUsed = 0;
     
     /* Deduz mana */
     caster->stats.currentMana -= ability->mana_cost;
@@ -463,6 +465,8 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     
     if (ability->ability_type == ABILITY_TYPE_DAMAGE) {
         if (target_indices == NULL || selected_count <= 0) return;
+
+        abilityWasUsed = 1;
 
         if (ability->target_type == TARGET_AREA_ENEMIES || ability->target_type == TARGET_SINGLE_ENEMY) {
             Enemy* enemyTargets = (Enemy*)targets;
@@ -518,6 +522,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_HEAL) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Player* playerTargets = (Player*)targets;
         int healAmount = (int)getAbilityHeal(ability, caster);
 
@@ -531,6 +536,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_CLEANSE) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Player* playerTargets = (Player*)targets;
         for (int i = 0; i < selected_count; i++) {
             int targetIndex = target_indices[i];
@@ -542,6 +548,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_REVIVE) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Player* playerTargets = (Player*)targets;
         for (int i = 0; i < selected_count; i++) {
             int targetIndex = target_indices[i];
@@ -553,6 +560,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_BUFF) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Player* playerTargets = (Player*)targets;
         StatusType blessingType = STATUS_NONE;
 
@@ -589,6 +597,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_DEBUFF) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Enemy* enemyTargets = (Enemy*)targets;
         for (int i = 0; i < selected_count; i++) {
             int targetIndex = target_indices[i];
@@ -607,12 +616,17 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
     if (ability->ability_type == ABILITY_TYPE_SPECIAL) {
         if (target_indices == NULL || selected_count <= 0) return;
 
+        abilityWasUsed = 1;
         Enemy* enemyTargets = (Enemy*)targets;
         for (int i = 0; i < selected_count; i++) {
             int targetIndex = target_indices[i];
             if (targetIndex < 0 || targetIndex >= target_count) continue;
             applyStatusToEnemyTarget(&enemyTargets[targetIndex], STATUS_CONFUSION, 1, 1.0f);
         }
+    }
+
+    if (abilityWasUsed && casterPartyIndex >= 0) {
+        bossAiNotifyPlayerAbilityUsed(casterPartyIndex, ability_index);
     }
 
     caster->isAlive = (caster->stats.currentHP > 0);

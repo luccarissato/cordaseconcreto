@@ -140,6 +140,26 @@ void SetupTestWorldContent(int includeStarterItems) {
         );
     }
 
+    spawnEnemy("Boss 3", (Vector2){1760, 0}, "assets/antagonistas/boss3_placeholder.png", MAX_ENEMIES);
+
+    if (enemyManager.count > 1) {
+        setEnemyStats(
+            &enemyManager.enemies[enemyManager.count - 1],
+            1500,
+            40,
+            4,
+            10
+        );
+
+        setEnemyElementalResistances(
+            &enemyManager.enemies[enemyManager.count - 1],
+            -10,
+            -10,
+            -10,
+            -10
+        );
+    }
+
     camera.target = party[0].position;
     camera.offset = (Vector2){800, 540};
     camera.rotation = 0.0f;

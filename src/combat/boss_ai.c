@@ -12,7 +12,8 @@
 typedef enum {
     BOSS_KIND_NONE = 0,
     BOSS_KIND_1,
-    BOSS_KIND_2
+    BOSS_KIND_2,
+    BOSS_KIND_3
 } BossKind;
 
 typedef enum {
@@ -48,6 +49,13 @@ typedef struct {
     int displayedWeakness[PARTY_SIZE];
     Boss2TrapMark trapMarks[PARTY_SIZE];
     int boss2SpecialUsedThisRound;
+    int boss3OfferTurnUsedThisRound;
+    int boss3SpecialUsedThisRound;
+    int boss3Phase2SkipPending;
+    int boss3Debt;
+    int boss3OfferTargetIndex[2];
+    int boss3OfferType[2];
+    Boss2TrapMark boss3TemptationMarks[PARTY_SIZE];
 } BossEncounterState;
 
 static BossEncounterState bossState = {0};
@@ -55,6 +63,19 @@ static char bossMessageQueue[BOSS_AI_MAX_MESSAGES][BOSS_AI_MESSAGE_LEN];
 static int bossMessageCount = 0;
 static int bossMessageIndex = 0;
 static float bossMessageTimer = 0.0f;
+
+typedef struct {
+    int active;
+    int playerIndex;
+    int offerType;
+    char text[BOSS_AI_MESSAGE_LEN];
+} Boss3PromptEntry;
+
+static BossAiPrompt currentPromptView = {0};
+static Boss3PromptEntry boss3PromptQueue[2];
+static int boss3PromptCount = 0;
+static int boss3PromptIndex = 0;
+static int boss3PromptActive = 0;
 
 #define BOSS_STATUS_DURATION 3
 
@@ -82,7 +103,28 @@ static int findStatusTargetIndex(void) {
             return i;
         }
     }
+
     return -1;
+}
+
+static int boss3HasSpecialTarget(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+
+        if (hasStatusCondition(&party[i].statusList, STATUS_ENSOLACAO) ||
+            hasStatusCondition(&party[i].statusList, STATUS_DEFENSE_DOWN)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static void clearBoss3TemptationMarks(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        bossState.boss3TemptationMarks[i].active = 0;
+        bossState.boss3TemptationMarks[i].effect = BOSS2_TRAP_HIGH_DAMAGE;
+    }
 }
 
 static int chooseRandomAliveUnmarkedPlayer(void) {
@@ -108,6 +150,17 @@ static Boss2TrapEffect rollTrapEffect(void) {
 
 static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect);
 static void boss2UseSpecialAttack(void);
+static void boss3PrepareOfferQueue(void);
+static int boss3StartOfferTurn(void);
+static void boss3ApplyCurrentOffer(int accepted);
+static void boss3UseSpecialAttack(void);
+static void boss3UsePhase1AreaAttack(void);
+static void boss3EnterPhase2(void);
+static int boss3GetAbilityDebtValue(int abilityIndex);
+static void boss3UsePhase2ZeroDebtAttack(void);
+static void boss3UsePhase2DebtAttack(void);
+static int boss3ChooseRandomAliveTarget(void);
+static void boss3MarkTemptationTargets(int firstTargetIndex, int secondTargetIndex);
 
 static int boss2HasPendingTraps(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
@@ -370,6 +423,7 @@ static void shufflePartyWeaknessesForPhase2(void) {
 
 void bossAiOnCombatStart(void) {
     clearMessageQueue();
+    bossAiClearPromptQueue();
     memset(&bossState, 0, sizeof(bossState));
     bossState.kind = BOSS_KIND_NONE;
     for (int i = 0; i < PARTY_SIZE; i++) {
@@ -391,6 +445,26 @@ void bossAiOnCombatStart(void) {
             bossState.openingTurnPending = 0;
             bossState.cumulativeDamageBonus = 0.0f;
             bossState.boss2SpecialUsedThisRound = 0;
+            return;
+        }
+
+        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 3") == 0) {
+            bossState.active = 1;
+            bossState.kind = BOSS_KIND_3;
+            bossState.worldEnemyIndex = worldEnemyIndex;
+            bossState.phase = 1;
+            bossState.currentElementIndex = 0;
+            bossState.openingTurnPending = 0;
+            bossState.cumulativeDamageBonus = 0.0f;
+            bossState.boss3OfferTurnUsedThisRound = 0;
+            bossState.boss3SpecialUsedThisRound = 0;
+            bossState.boss3Phase2SkipPending = 0;
+            bossState.boss3Debt = 0;
+            bossState.boss3OfferTargetIndex[0] = -1;
+            bossState.boss3OfferTargetIndex[1] = -1;
+            bossState.boss3OfferType[0] = 0;
+            bossState.boss3OfferType[1] = 0;
+            clearBoss3TemptationMarks();
             return;
         }
     }
@@ -418,16 +492,46 @@ void bossAiOnCombatStart(void) {
 
 void bossAiOnCombatEnd(void) {
     clearMessageQueue();
+    bossAiClearPromptQueue();
     restoreOriginalPartyResistances();
     clearBoss2TrapMarks();
+    clearBoss3TemptationMarks();
     memset(&bossState, 0, sizeof(bossState));
 }
 
 void bossAiOnRoundWrap(void) {
-    if (!bossState.active || bossState.kind != BOSS_KIND_2) return;
+    if (!bossState.active) return;
 
-    boss2UseRoundWrapAction();
-    bossState.boss2SpecialUsedThisRound = 0;
+    if (bossState.kind == BOSS_KIND_2) {
+        boss2UseRoundWrapAction();
+        bossState.boss2SpecialUsedThisRound = 0;
+        return;
+    }
+
+    if (bossState.kind == BOSS_KIND_3) {
+        if (bossState.phase >= 2 && bossState.boss3Phase2SkipPending) {
+            bossState.boss3Phase2SkipPending = 0;
+            bossAiQueueMessage("Boss 3 perdeu um turno para reorganizar a divida.");
+            return;
+        }
+
+        if (bossState.phase < 2) {
+            if (!bossState.boss3SpecialUsedThisRound && boss3HasSpecialTarget()) {
+                boss3UseSpecialAttack();
+            } else {
+                boss3UsePhase1AreaAttack();
+            }
+        } else {
+            if (bossState.boss3Debt <= 0) {
+                boss3UsePhase2ZeroDebtAttack();
+            } else {
+                boss3UsePhase2DebtAttack();
+            }
+        }
+
+        bossState.boss3OfferTurnUsedThisRound = 0;
+        bossState.boss3SpecialUsedThisRound = 0;
+    }
 }
 
 int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
@@ -447,6 +551,31 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
 
     if (bossAiHasActiveMessage()) {
         return 1;
+    }
+
+    if (bossState.kind == BOSS_KIND_3) {
+        if (bossState.phase == 1 && enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) {
+            boss3EnterPhase2();
+        }
+
+        if (bossState.phase >= 2) {
+            if (!canEnemyAct(enemy)) {
+                bossAiQueueMessage("%s falhou em agir.", enemy->name);
+            }
+
+            return 1;
+        }
+
+        if (boss3PromptActive) {
+            return 2;
+        }
+
+        if (!canEnemyAct(enemy)) {
+            bossAiQueueMessage("%s falhou em agir.", enemy->name);
+            return 1;
+        }
+
+        return boss3StartOfferTurn();
     }
 
     if (bossState.openingTurnPending) {
@@ -524,6 +653,340 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     return 1;
 }
 
+static int boss3CountAlivePlayers(void) {
+    int count = 0;
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (party[i].isAlive) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+static int boss3ChooseRandomAlivePlayer(int excludedIndex) {
+    int candidates[PARTY_SIZE];
+    int candidateCount = 0;
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+        if (i == excludedIndex) continue;
+        candidates[candidateCount++] = i;
+    }
+
+    if (candidateCount <= 0) return -1;
+    return candidates[rand() % candidateCount];
+}
+
+static int boss3ChooseRandomAliveTarget(void) {
+    return boss3ChooseRandomAlivePlayer(-1);
+}
+
+static const char* boss3GetOfferName(int offerType) {
+    switch (offerType) {
+        case 0: return "Poder";
+        case 1: return "Folego";
+        case 2: return "Protecao";
+        default: return "Desconhecido";
+    }
+}
+
+static StatusType boss3GetPositiveStatus(int offerType) {
+    switch (offerType) {
+        case 0: return STATUS_STRENGTH_UP;
+        case 1: return STATUS_SPEED_UP;
+        case 2: return STATUS_DEFENSE_UP;
+        default: return STATUS_NONE;
+    }
+}
+
+static StatusType boss3GetNegativeStatus(int offerType) {
+    switch (offerType) {
+        case 0: return STATUS_ENSOLACAO;
+        case 1: return STATUS_DEFENSE_DOWN;
+        case 2: return STATUS_DEFENSE_DOWN;
+        default: return STATUS_NONE;
+    }
+}
+
+void bossAiClearPromptQueue(void) {
+    memset(boss3PromptQueue, 0, sizeof(boss3PromptQueue));
+    boss3PromptCount = 0;
+    boss3PromptIndex = 0;
+    boss3PromptActive = 0;
+    memset(&currentPromptView, 0, sizeof(currentPromptView));
+}
+
+int bossAiHasPendingPrompt(void) {
+    return boss3PromptActive && boss3PromptIndex < boss3PromptCount;
+}
+
+const BossAiPrompt* bossAiGetCurrentPrompt(void) {
+    if (!bossAiHasPendingPrompt()) return NULL;
+
+    currentPromptView.text = boss3PromptQueue[boss3PromptIndex].text;
+    currentPromptView.optionLeft = "SIM";
+    currentPromptView.optionRight = "NAO";
+    return &currentPromptView;
+}
+
+int bossAiResolveCurrentPrompt(int accepted) {
+    if (!bossAiHasPendingPrompt()) return 1;
+
+    if (accepted) {
+        Boss3PromptEntry* prompt = &boss3PromptQueue[boss3PromptIndex];
+        int playerIndex = prompt->playerIndex;
+
+        if (playerIndex >= 0 && playerIndex < PARTY_SIZE) {
+            Player* target = &party[playerIndex];
+            if (target->isAlive && !target->defenseGuardActive) {
+                StatusType positiveStatus = boss3GetPositiveStatus(prompt->offerType);
+                StatusType negativeStatus = boss3GetNegativeStatus(prompt->offerType);
+
+                if (positiveStatus != STATUS_NONE) {
+                    addStatusCondition(&target->statusList, positiveStatus, BOSS_STATUS_DURATION, 1.0f);
+                    bossAiQueuePlayerAfflictedMessage(playerIndex, positiveStatus);
+                }
+
+                if (negativeStatus != STATUS_NONE) {
+                    addStatusCondition(&target->statusList, negativeStatus, BOSS_STATUS_DURATION, 1.0f);
+                    bossAiQueuePlayerAfflictedMessage(playerIndex, negativeStatus);
+                }
+            }
+        }
+    }
+
+    boss3PromptIndex++;
+    if (boss3PromptIndex >= boss3PromptCount) {
+        bossAiClearPromptQueue();
+        return 1;
+    }
+
+    return 0;
+}
+
+void bossAiAdjustBoss3Debt(int delta) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_3 || bossState.phase < 2) return;
+
+    bossState.boss3Debt += delta;
+    if (bossState.boss3Debt < 0) {
+        bossState.boss3Debt = 0;
+    }
+}
+
+int bossAiGetBoss3Debt(void) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_3 || bossState.phase < 2) return 0;
+    return bossState.boss3Debt;
+}
+
+int bossAiIsBoss3Phase2(void) {
+    return bossState.active && bossState.kind == BOSS_KIND_3 && bossState.phase >= 2;
+}
+
+int bossAiHasTemptationMark(int playerIndex) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_3 || bossState.phase < 2) return 0;
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return 0;
+    return bossState.boss3TemptationMarks[playerIndex].active;
+}
+
+void bossAiNotifyPlayerAbilityUsed(int playerIndex, int abilityIndex) {
+    if (!bossState.active || bossState.kind != BOSS_KIND_3 || bossState.phase < 2) return;
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+    if (abilityIndex < 0 || abilityIndex >= 4) return;
+
+    int debtValue = boss3GetAbilityDebtValue(abilityIndex);
+    if (debtValue <= 0) return;
+
+    if (bossState.boss3TemptationMarks[playerIndex].active) {
+        debtValue += debtValue / 2;
+        bossState.boss3TemptationMarks[playerIndex].active = 0;
+    }
+
+    bossAiAdjustBoss3Debt(debtValue);
+}
+
+static int boss3GetAbilityDebtValue(int abilityIndex) {
+    switch (abilityIndex) {
+        case 0: return 40;
+        case 1: return 60;
+        case 2: return 80;
+        case 3: return 100;
+        default: return 0;
+    }
+}
+
+static void boss3MarkTemptationTargets(int firstTargetIndex, int secondTargetIndex) {
+    if (firstTargetIndex >= 0 && firstTargetIndex < PARTY_SIZE) {
+        bossState.boss3TemptationMarks[firstTargetIndex].active = 1;
+    }
+
+    if (secondTargetIndex >= 0 && secondTargetIndex < PARTY_SIZE) {
+        bossState.boss3TemptationMarks[secondTargetIndex].active = 1;
+    }
+}
+
+static void boss3PrepareOfferQueue(void) {
+    int aliveCount = boss3CountAlivePlayers();
+    int offerCount = (aliveCount >= 2) ? 2 : aliveCount;
+
+    bossAiClearPromptQueue();
+
+    if (offerCount <= 0) {
+        return;
+    }
+
+    boss3PromptQueue[0].active = 1;
+    boss3PromptQueue[0].playerIndex = boss3ChooseRandomAlivePlayer(-1);
+    boss3PromptQueue[0].offerType = rand() % 3;
+    snprintf(
+        boss3PromptQueue[0].text,
+        sizeof(boss3PromptQueue[0].text),
+        "Boss 3 oferece %s para Personagem %d. Aceita?",
+        boss3GetOfferName(boss3PromptQueue[0].offerType),
+        boss3PromptQueue[0].playerIndex + 1
+    );
+
+    if (offerCount >= 2) {
+        boss3PromptQueue[1].active = 1;
+        boss3PromptQueue[1].playerIndex = boss3ChooseRandomAlivePlayer(boss3PromptQueue[0].playerIndex);
+        boss3PromptQueue[1].offerType = rand() % 3;
+        snprintf(
+            boss3PromptQueue[1].text,
+            sizeof(boss3PromptQueue[1].text),
+            "Boss 3 oferece %s para Personagem %d. Aceita?",
+            boss3GetOfferName(boss3PromptQueue[1].offerType),
+            boss3PromptQueue[1].playerIndex + 1
+        );
+        boss3PromptCount = 2;
+    } else {
+        boss3PromptCount = 1;
+    }
+
+    boss3PromptIndex = 0;
+    boss3PromptActive = 1;
+}
+
+static int boss3StartOfferTurn(void) {
+    if (bossState.phase >= 2) {
+        bossAiClearPromptQueue();
+        bossState.boss3OfferTurnUsedThisRound = 1;
+        return 1;
+    }
+
+    boss3PrepareOfferQueue();
+    bossState.boss3OfferTurnUsedThisRound = 1;
+    return bossAiHasPendingPrompt() ? 2 : 1;
+}
+
+static void boss3EnterPhase2(void) {
+    if (bossState.phase >= 2) return;
+
+    bossState.phase = 2;
+    bossState.boss3Phase2SkipPending = 1;
+    bossState.boss3Debt = 0;
+    bossState.boss3OfferTurnUsedThisRound = 0;
+    bossAiClearPromptQueue();
+    bossAiQueueMessage("Boss 3 entrou na fase 2!");
+}
+
+static void boss3UseSpecialAttack(void) {
+    int targetIndex = -1;
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (!party[i].isAlive) continue;
+
+        if (hasStatusCondition(&party[i].statusList, STATUS_ENSOLACAO) ||
+            hasStatusCondition(&party[i].statusList, STATUS_DEFENSE_DOWN)) {
+            targetIndex = i;
+            break;
+        }
+    }
+
+    if (targetIndex < 0) return;
+
+    Player* target = &party[targetIndex];
+    bossAiQueueMessage("Boss 3 castigou %s com um ataque especial!", target->name);
+    applyCombatDamageToPlayer(target, 150);
+    healEnemy(&enemyManager.enemies[bossState.worldEnemyIndex], 50);
+    bossState.boss3SpecialUsedThisRound = 1;
+}
+
+static void boss3UsePhase1AreaAttack(void) {
+    int afflictedCount = 0;
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        Player* target = &party[i];
+        if (!target->isAlive) continue;
+
+        applyCombatDamageToPlayer(target, 90);
+
+        if (!target->defenseGuardActive && (rand() % 100) < 50) {
+            addStatusCondition(&target->statusList, STATUS_DEFENSE_DOWN, BOSS_STATUS_DURATION, 1.0f);
+            bossAiQueuePlayerAfflictedMessage(i, STATUS_DEFENSE_DOWN);
+            afflictedCount++;
+        }
+    }
+
+    bossAiQueueMessage("Boss 3 atingiu a party com um golpe de area.");
+    if (afflictedCount > 0) {
+        bossAiQueueMessage("A pressao abalou a defesa de alguns alvos.");
+    }
+}
+
+static void boss3UsePhase2ZeroDebtAttack(void) {
+    int firstTargetIndex = boss3ChooseRandomAliveTarget();
+    int secondTargetIndex = boss3ChooseRandomAliveTarget();
+
+    if (firstTargetIndex < 0) return;
+    if (secondTargetIndex == firstTargetIndex) {
+        secondTargetIndex = -1;
+    }
+
+    if (firstTargetIndex >= 0) {
+        Player* firstTarget = &party[firstTargetIndex];
+        bossAiQueueMessage("Boss 3 amarra %s em tentacao!", firstTarget->name);
+        applyCombatDamageToPlayer(firstTarget, 110);
+    }
+
+    if (secondTargetIndex < 0) {
+        secondTargetIndex = boss3ChooseRandomAlivePlayer(firstTargetIndex);
+    }
+
+    if (secondTargetIndex >= 0) {
+        Player* secondTarget = &party[secondTargetIndex];
+        bossAiQueueMessage("Boss 3 amarra %s em tentacao!", secondTarget->name);
+        applyCombatDamageToPlayer(secondTarget, 110);
+    }
+
+    boss3MarkTemptationTargets(firstTargetIndex, secondTargetIndex);
+    bossAiQueueMessage("Boss 3 deixou dois alvos tentados. A proxima habilidade deles vai custar mais.");
+}
+
+static void boss3UsePhase2DebtAttack(void) {
+    int debtValue = bossState.boss3Debt;
+    int damage = 45 + (debtValue / 2);
+    int afflictedCount = 0;
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        Player* target = &party[i];
+        if (!target->isAlive) continue;
+
+        applyCombatDamageToPlayer(target, damage);
+
+        if (!target->defenseGuardActive && (rand() % 100) < 50) {
+            addStatusCondition(&target->statusList, STATUS_DEFENSE_DOWN, BOSS_STATUS_DURATION, 1.0f);
+            bossAiQueuePlayerAfflictedMessage(i, STATUS_DEFENSE_DOWN);
+            afflictedCount++;
+        }
+    }
+
+    bossState.boss3Debt = 0;
+    bossAiQueueMessage("Boss 3 consumiu a divida e atingiu a party.");
+    if (afflictedCount > 0) {
+        bossAiQueueMessage("A pressao abalou a defesa de alguns alvos.");
+    }
+}
+
 int bossAiGetPlayerWeaknessElement(int playerIndex) {
     if (!bossState.active || bossState.phase < 2) return -1;
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return -1;
@@ -535,6 +998,8 @@ int bossAiHasTrapMark(int playerIndex) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return 0;
     return bossState.trapMarks[playerIndex].active;
 }
+
+int bossAiHasTemptationMark(int playerIndex);
 
 void bossAiNotifyPlayerPhysicalAction(int playerIndex, int isPhysicalAction) {
     if (!bossState.active || bossState.kind != BOSS_KIND_2) return;

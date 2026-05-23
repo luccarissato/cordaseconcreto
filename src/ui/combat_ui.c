@@ -24,13 +24,15 @@ typedef enum {
     COMBAT_UI_ABILITY_LIST,
     COMBAT_UI_ABILITY_TARGET,
     COMBAT_UI_ITEM_LIST,
-    COMBAT_UI_ITEM_TARGET
+    COMBAT_UI_ITEM_TARGET,
+    COMBAT_UI_SELL_LIST
 } CombatUiState;
 
 static Texture2D combatUiTexture;
 static Texture2D turnArrowTexture;
 static Texture2D targetArrowTexture;
 static Texture2D trapIconTexture;
+static Texture2D temptationIconTexture;
 
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
@@ -52,8 +54,12 @@ static ListNode* selectedItemNode = NULL;
 static int combatTurnEpoch = 0;
 static int processedTurnEpoch = -1;
 static int combatWasActive = 0;
+static int promptSelection = 0;
 
 static Texture2D weaknessIcons[4];
+
+static int isCombatItemVisible(InventoryItem* item, int includeKeyItems);
+static void removeItemNodeAndFree(InventoryItem* item);
 
 static void drawPlayerWeaknessIcon(int playerIndex, int x, int y, float spriteScale) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
@@ -97,16 +103,41 @@ static void drawPlayerTrapIcon(int playerIndex, int x, int y, float spriteScale)
     DrawTextureEx(trapIconTexture, iconPos, 0.0f, iconScale, WHITE);
 }
 
-static void executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
-    if (enemy == NULL || !enemy->isAlive) return;
+static void drawPlayerTemptationIcon(int playerIndex, int x, int y, float spriteScale) {
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
+    if (!bossAiHasTemptationMark(playerIndex)) return;
+    if (temptationIconTexture.id == 0) return;
 
-    if (bossAiHandleEnemyTurn(worldEnemyIndex, enemy)) {
-        return;
+    float iconScale = 0.65f;
+    Vector2 iconSize = {
+        temptationIconTexture.width * iconScale,
+        temptationIconTexture.height * iconScale
+    };
+
+    float spriteWidth = party[playerIndex].front.width * spriteScale;
+    Vector2 iconPos = {
+        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
+        (float)y - iconSize.y - 12.0f
+    };
+
+    DrawTextureEx(temptationIconTexture, iconPos, 0.0f, iconScale, WHITE);
+}
+
+static int executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
+    if (enemy == NULL || !enemy->isAlive) return 1;
+
+    int bossActionState = bossAiHandleEnemyTurn(worldEnemyIndex, enemy);
+    if (bossActionState == 2) {
+        return 0;
+    }
+
+    if (bossActionState == 1) {
+        return 1;
     }
 
     if (!canEnemyAct(enemy)) {
         bossAiQueueMessage("%s falhou em agir.", enemy->name);
-        return;
+        return 1;
     }
 
     for (int i = 0; i < PARTY_SIZE; i++) {
@@ -115,25 +146,8 @@ static void executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
         bossAiQueueMessage("%s atacou %s.", enemy->name, party[i].name);
         break;
     }
-}
 
-static int isCombatItemVisible(InventoryItem* item) {
-    if (item == NULL || item->baseItem == NULL) return 0;
-
-    switch (item->baseItem->type) {
-        case ITEM_HEAL:
-        case ITEM_MANA:
-        case ITEM_BUFF:
-        case ITEM_CURE:
-        case ITEM_REVIVE:
-        case ITEM_STAT_BOOST:
-        case ITEM_INFLICT_STATUS:
-            return 1;
-
-        case ITEM_KEY:
-        default:
-            return 0;
-    }
+    return 1;
 }
 
 static void clampItemSelection(void) {
@@ -155,6 +169,7 @@ static void resetCombatUiState() {
     abilitySelection = 0;
     itemSelection = 0;
     targetSelection = 0;
+    promptSelection = 0;
     targetCount = 0;
     targetIsEnemy = 1;
     selectedItemNode = NULL;
@@ -198,7 +213,7 @@ static void refreshAvailableAbilities(Player* player) {
     }
 }
 
-static void refreshAvailableItems() {
+static void refreshAvailableItems(int includeKeyItems) {
     availableItemCount = 0;
 
     if (playerInventory.items.head != NULL && playerInventory.items.size > 0) {
@@ -206,7 +221,7 @@ static void refreshAvailableItems() {
 
         for (int i = 0; i < playerInventory.items.size && availableItemCount < 64; i++) {
             InventoryItem* item = (InventoryItem*)node->data;
-            if (isCombatItemVisible(item)) {
+            if (isCombatItemVisible(item, includeKeyItems)) {
                 availableItemNodes[availableItemCount++] = node;
             }
 
@@ -231,6 +246,27 @@ static int currentEnemyCombatIndex() {
     Combatant* combatant = getCurrentCombatantSafe();
     if (combatant == NULL || combatant->type != COMBATANT_ENEMY) return -1;
     return combatant->enemyIndex;
+}
+
+static int isCombatItemVisible(InventoryItem* item, int includeKeyItems) {
+    if (item == NULL || item->baseItem == NULL) return 0;
+
+    switch (item->baseItem->type) {
+        case ITEM_HEAL:
+        case ITEM_MANA:
+        case ITEM_BUFF:
+        case ITEM_CURE:
+        case ITEM_REVIVE:
+        case ITEM_STAT_BOOST:
+        case ITEM_INFLICT_STATUS:
+            return 1;
+
+        case ITEM_KEY:
+            return includeKeyItems;
+
+        default:
+            return 0;
+    }
 }
 
 static void processPlayerTurnStart(Player* player) {
@@ -297,8 +333,13 @@ static void advanceTurnFlow() {
 
         if (combatant->type == COMBATANT_ENEMY) {
             int worldEnemyIndex = combat.enemyIndices[combatant->enemyIndex];
+            int actionResolved = 1;
             if (worldEnemyIndex >= 0 && worldEnemyIndex < enemyManager.count) {
-                executeEnemyAction(&enemyManager.enemies[worldEnemyIndex], worldEnemyIndex);
+                actionResolved = executeEnemyAction(&enemyManager.enemies[worldEnemyIndex], worldEnemyIndex);
+            }
+
+            if (!actionResolved) {
+                return;
             }
 
             advanceCombatTurn();
@@ -445,6 +486,23 @@ static void executeSelectedItem() {
     combatUiState = COMBAT_UI_ITEM_TARGET;
 }
 
+static void executeSelectedSellItem() {
+    if (availableItemCount <= 0) return;
+
+    selectedItemNode = availableItemNodes[itemSelection];
+    InventoryItem* item = (InventoryItem*)selectedItemNode->data;
+    if (item == NULL || item->baseItem == NULL) return;
+
+    item->quantity--;
+    bossAiAdjustBoss3Debt(-100);
+
+    if (item->quantity <= 0) {
+        removeItemNodeAndFree(item);
+    }
+
+    selectedItemNode = NULL;
+}
+
 static void removeItemNodeAndFree(InventoryItem* item) {
     if (selectedItemNode == NULL || item == NULL) return;
 
@@ -538,6 +596,10 @@ static void drawTopInitiativeBar() {
     }
 
     DrawText(TextFormat("PRÓXIMO TURNO: %s", nextTurnName), 790, 30, 28, RAYWHITE);
+    
+    if (bossAiIsBoss3Phase2()) {
+        DrawText(TextFormat("DIVIDA: %d", bossAiGetBoss3Debt()), 840, 56, 22, GOLD);
+    }
 }
 
 static void drawPlayers() {
@@ -575,6 +637,7 @@ static void drawPlayers() {
 
         drawPlayerWeaknessIcon(i, x, y, 0.25f);
         drawPlayerTrapIcon(i, x, y, 0.25f);
+        drawPlayerTemptationIcon(i, x, y, 0.25f);
     }
 }
 
@@ -585,6 +648,25 @@ static void drawCombatMessageBox(void) {
     DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
     DrawRectangleLines(220, 740, 1480, 180, GRAY);
     DrawText(message, 260, 810, 30, RAYWHITE);
+}
+
+static void drawBossPromptOverlay(void) {
+    if (!bossAiHasPendingPrompt()) return;
+
+    const BossAiPrompt* prompt = bossAiGetCurrentPrompt();
+    if (prompt == NULL || prompt->text == NULL) return;
+
+    DrawRectangle(250, 700, 1420, 220, ColorAlpha(BLACK, 0.92f));
+    DrawRectangleLines(250, 700, 1420, 220, GOLD);
+    DrawText(prompt->text, 290, 750, 30, RAYWHITE);
+
+    Rectangle leftBox = {720, 840, 180, 60};
+    Rectangle rightBox = {1020, 840, 180, 60};
+
+    DrawRectangleRec(leftBox, promptSelection == 0 ? DARKGREEN : DARKGRAY);
+    DrawRectangleRec(rightBox, promptSelection == 1 ? DARKGREEN : DARKGRAY);
+    DrawText(prompt->optionLeft != NULL ? prompt->optionLeft : "SIM", leftBox.x + 55, leftBox.y + 15, 24, RAYWHITE);
+    DrawText(prompt->optionRight != NULL ? prompt->optionRight : "NAO", rightBox.x + 45, rightBox.y + 15, 24, RAYWHITE);
 }
 
 static void drawEnemyColumn() {
@@ -638,7 +720,14 @@ static void drawBottomPanel() {
         DrawText("DEFENDER", 120, 850, 28, mainSelection == 1 ? YELLOW : RAYWHITE);
         DrawText("HABILIDADES", 120, 910, 28, mainSelection == 2 ? YELLOW : RAYWHITE);
         DrawText("ITENS", 120, 970, 28, mainSelection == 3 ? YELLOW : RAYWHITE);
-        DrawTexture(turnArrowTexture, 58, 795 + (mainSelection * 60), WHITE);
+        if (bossAiIsBoss3Phase2()) {
+            DrawText("VENDER", 420, 910, 28, mainSelection == 4 ? YELLOW : RAYWHITE);
+        }
+        if (bossAiIsBoss3Phase2() && mainSelection == 4) {
+            DrawTexture(turnArrowTexture, 360, 915, WHITE);
+        } else {
+            DrawTexture(turnArrowTexture, 58, 795 + (mainSelection * 60), WHITE);
+        }
     }
 
     if (combatUiState == COMBAT_UI_ABILITY_LIST) {
@@ -689,6 +778,28 @@ static void drawBottomPanel() {
         DrawTexture(turnArrowTexture, 58, 830 + (itemSelection * 42), WHITE);
     }
 
+    if (combatUiState == COMBAT_UI_SELL_LIST) {
+        DrawText("INVENTARIO", 120, 780, 26, RAYWHITE);
+        DrawText("DESCARTAR", 120, 810, 20, LIGHTGRAY);
+
+        for (int i = 0; i < availableItemCount; i++) {
+            InventoryItem* item = (InventoryItem*)availableItemNodes[i]->data;
+            if (item == NULL || item->baseItem == NULL) continue;
+
+            Color color = (i == itemSelection) ? YELLOW : RAYWHITE;
+            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), 120, 845 + (i * 42), 24, color);
+        }
+
+        if (availableItemCount > 0) {
+            InventoryItem* item = (InventoryItem*)availableItemNodes[itemSelection]->data;
+            if (item != NULL && item->baseItem != NULL) {
+                DrawText(item->baseItem->description, 840, 820, 22, LIGHTGRAY);
+            }
+        }
+
+        DrawTexture(turnArrowTexture, 58, 830 + (itemSelection * 42), WHITE);
+    }
+
     if (combatUiState == COMBAT_UI_ATTACK_TARGET || combatUiState == COMBAT_UI_ABILITY_TARGET || combatUiState == COMBAT_UI_ITEM_TARGET) {
         DrawText(targetIsEnemy ? "SELECIONE O INIMIGO" : "SELECIONE O ALIADO", 120, 780, 26, RAYWHITE);
 
@@ -726,6 +837,7 @@ void initCombatUI() {
     turnArrowTexture = LoadTexture("assets/interface/seta_placeholder.png");
     targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
     trapIconTexture = LoadTexture("assets/icones/trap.png");
+    temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
 
     weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
     weaknessIcons[1] = LoadTexture("assets/icones/vento_icon.png");
@@ -740,6 +852,7 @@ void unloadCombatUI() {
     UnloadTexture(turnArrowTexture);
     UnloadTexture(targetArrowTexture);
     UnloadTexture(trapIconTexture);
+    UnloadTexture(temptationIconTexture);
 
     for (int i = 0; i < 4; i++) {
         if (weaknessIcons[i].id != 0) {
@@ -751,6 +864,7 @@ void unloadCombatUI() {
 void updateCombatUI() {
     if (!isCombatActive()) {
         bossAiOnCombatEnd();
+        bossAiClearPromptQueue();
         combatWasActive = 0;
         if (currentGameState == STATE_COMBAT) {
             currentGameState = STATE_EXPLORATION;
@@ -766,6 +880,29 @@ void updateCombatUI() {
 
     bossAiUpdateMessages(GetFrameTime());
     if (bossAiHasActiveMessage()) {
+        return;
+    }
+
+    if (bossAiHasPendingPrompt()) {
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) {
+            promptSelection = 1 - promptSelection;
+        }
+
+        if (IsKeyPressed(KEY_Z)) {
+            int finishedPromptQueue = bossAiResolveCurrentPrompt(promptSelection == 0);
+            promptSelection = 0;
+
+            if (finishedPromptQueue) {
+                advanceCombatTurn();
+                finishCombatIfNeeded();
+            }
+        }
+
+        if (IsKeyPressed(KEY_X)) {
+            promptSelection = 0;
+        }
+
+        finishCombatIfNeeded();
         return;
     }
 
@@ -790,14 +927,24 @@ void updateCombatUI() {
     }
 
     if (combatUiState == COMBAT_UI_MAIN) {
+        int mainOptionCount = bossAiIsBoss3Phase2() ? 5 : 4;
+
         if (IsKeyPressed(KEY_DOWN)) {
             mainSelection++;
-            if (mainSelection > 3) mainSelection = 0;
+            if (mainSelection >= mainOptionCount) mainSelection = 0;
         }
 
         if (IsKeyPressed(KEY_UP)) {
             mainSelection--;
-            if (mainSelection < 0) mainSelection = 3;
+            if (mainSelection < 0) mainSelection = mainOptionCount - 1;
+        }
+
+        if (bossAiIsBoss3Phase2() && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) && mainSelection < 4) {
+            mainSelection = 4;
+        }
+
+        if (!bossAiIsBoss3Phase2() && mainSelection > 3) {
+            mainSelection = 0;
         }
 
         if (IsKeyPressed(KEY_Z)) {
@@ -810,9 +957,16 @@ void updateCombatUI() {
                 refreshAvailableAbilities(&party[combatant->playerIndex]);
                 combatUiState = COMBAT_UI_ABILITY_LIST;
             } else if (mainSelection == 3) {
-                refreshAvailableItems();
+                refreshAvailableItems(0);
                 if (availableItemCount > 0) {
                     combatUiState = COMBAT_UI_ITEM_LIST;
+                } else {
+                    combatUiState = COMBAT_UI_MAIN;
+                }
+            } else if (mainSelection == 4 && bossAiIsBoss3Phase2()) {
+                refreshAvailableItems(1);
+                if (availableItemCount > 0) {
+                    combatUiState = COMBAT_UI_SELL_LIST;
                 } else {
                     combatUiState = COMBAT_UI_MAIN;
                 }
@@ -880,6 +1034,25 @@ void updateCombatUI() {
         if (IsKeyPressed(KEY_X)) {
             combatUiState = COMBAT_UI_MAIN;
         }
+    } else if (combatUiState == COMBAT_UI_SELL_LIST) {
+        if (IsKeyPressed(KEY_DOWN)) {
+            itemSelection++;
+            clampItemSelection();
+        }
+
+        if (IsKeyPressed(KEY_UP)) {
+            itemSelection--;
+            clampItemSelection();
+        }
+
+        if (IsKeyPressed(KEY_Z)) {
+            executeSelectedSellItem();
+            spendAndFinishTurn();
+        }
+
+        if (IsKeyPressed(KEY_X)) {
+            combatUiState = COMBAT_UI_MAIN;
+        }
     } else if (combatUiState == COMBAT_UI_ATTACK_TARGET ||
                combatUiState == COMBAT_UI_ABILITY_TARGET ||
                combatUiState == COMBAT_UI_ITEM_TARGET) {
@@ -924,6 +1097,11 @@ void drawCombatUI() {
     drawTopInitiativeBar();
     drawPlayers();
     drawEnemyColumn();
+
+    if (bossAiHasPendingPrompt()) {
+        drawBossPromptOverlay();
+        return;
+    }
 
     if (bossAiHasActiveMessage()) {
         drawCombatMessageBox();
