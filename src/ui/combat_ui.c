@@ -56,10 +56,44 @@ static int processedTurnEpoch = -1;
 static int combatWasActive = 0;
 static int promptSelection = 0;
 
+//teste
+static int testEnemyNextTargetIndex = 0;
+
 static Texture2D weaknessIcons[4];
 
 static int isCombatItemVisible(InventoryItem* item, int includeKeyItems);
 static void removeItemNodeAndFree(InventoryItem* item);
+
+//teste
+static void applyFixedOneDamageToPlayer(Player* target) {
+    if (target == NULL || !target->isAlive) return;
+
+    target->stats.currentHP -= 10;
+    if (target->stats.currentHP <= 0) {
+        target->stats.currentHP = 0;
+        target->isAlive = 0;
+    }
+}
+
+static int executeTestEnemyAction(Enemy* enemy) {
+    if (enemy == NULL || !enemy->isAlive) return 1;
+
+    int targetIndex = testEnemyNextTargetIndex;
+    testEnemyNextTargetIndex = 1 - testEnemyNextTargetIndex;
+
+    if (targetIndex < 0 || targetIndex >= 2) {
+        targetIndex = 0;
+    }
+
+    if (targetIndex >= PARTY_SIZE) {
+        return 1;
+    }
+
+    Player* target = &party[targetIndex];
+    applyFixedOneDamageToPlayer(target);
+    bossAiQueueMessage("%s atacou %s.", enemy->name, target->name);
+    return 1;
+}
 
 static void drawPlayerWeaknessIcon(int playerIndex, int x, int y, float spriteScale) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
@@ -126,6 +160,10 @@ static void drawPlayerTemptationIcon(int playerIndex, int x, int y, float sprite
 static int executeEnemyAction(Enemy* enemy, int worldEnemyIndex) {
     if (enemy == NULL || !enemy->isAlive) return 1;
 
+    if (strcmp(enemy->name, "inimigoTeste") == 0) {
+        return executeTestEnemyAction(enemy);
+    }
+
     int bossActionState = bossAiHandleEnemyTurn(worldEnemyIndex, enemy);
     if (bossActionState == 2) {
         return 0;
@@ -175,6 +213,7 @@ static void resetCombatUiState() {
     selectedItemNode = NULL;
     combatTurnEpoch = 0;
     processedTurnEpoch = -1;
+    testEnemyNextTargetIndex = 0;
 }
 
 static void advanceCombatTurn() {

@@ -15,18 +15,18 @@ static int abilitiesInitialized = 0;
 
 // initCharacter1Abilities - Inicializa habilidades do Tanque/Suporte
 static void initCharacter1Abilities() {
-    /* Skill 1: Taunt - Força inimigos a atacarem ele */
+    /* Skill 1: Baque - Dano físico baixo com cura baseada no dano causado */
     abilities[0][0].level_unlocked = 1;
     abilities[0][0].mana_cost = 20;
     abilities[0][0].target_type = TARGET_SINGLE_ENEMY;
-    abilities[0][0].ability_type = ABILITY_TYPE_SPECIAL;
-    abilities[0][0].damage_base = 0;
-    abilities[0][0].scaling_type = SCALING_NONE;
+    abilities[0][0].ability_type = ABILITY_TYPE_DAMAGE;
+    abilities[0][0].damage_base = 10;
+    abilities[0][0].scaling_type = SCALING_FORCA;
+    abilities[0][0].scaling_mult = 0.3f;
     abilities[0][0].characterID = CHARACTER_1_TANK;
     abilities[0][0].ability_index = 0;
-    strcpy(abilities[0][0].name, "Provocar");
-    strcpy(abilities[0][0].description, "Força inimigos a atacarem você por 1 turno");
-    abilities[0][0].data.taunt.aggro_duration = 1;
+    strcpy(abilities[0][0].name, "Baque");
+    strcpy(abilities[0][0].description, "Ataque fisico leve que cura voce com base no dano causado");
     
     /* Skill 2: Protect - Absorve dano de aliado */
     abilities[0][1].level_unlocked = 2;
@@ -60,7 +60,7 @@ static void initCharacter1Abilities() {
     strcpy(abilities[0][3].name, "Bastião");
     strcpy(abilities[0][3].description, "Reduz dano e reflete parte como true damage por 3 turnos");
     abilities[0][3].data.reflect.reflect_duration = 3;
-    abilities[0][3].data.reflect.reflect_mult = 0.3f;
+    abilities[0][3].data.reflect.reflect_mult = 1.0f;
 }
 
 
@@ -406,8 +406,8 @@ static void applyStatusToEnemyTarget(Enemy* target, StatusType statusType, int t
     applyStatusToEnemy(target, statusType, turns, intensity);
 }
 
-static void applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* ability) {
-    if (target == NULL || caster == NULL || ability == NULL) return;
+static int applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* ability) {
+    if (target == NULL || caster == NULL || ability == NULL) return 0;
 
     int damage = (int)getAbilityDamage(ability, caster);
     
@@ -417,7 +417,7 @@ static void applyDamageToEnemyTarget(Enemy* target, Player* caster, Ability* abi
         damage = (int)(damage * strengthMod);
     }
     
-    damageEnemy(target, damage);
+    return damageEnemy(target, damage);
 }
 
     static int isPhysicalDamageAbility(Player* caster, int ability_index, Ability* ability) {
@@ -488,7 +488,11 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
                     /* Dano elemental que considera resistência */
                     applyElementalDamage(target, caster, ability);
                 } else {
-                    applyDamageToEnemyTarget(target, caster, ability);
+                    int damageDealt = applyDamageToEnemyTarget(target, caster, ability);
+
+                    if (caster->characterID == CHARACTER_1_TANK && ability_index == 0 && damageDealt > 0) {
+                        healPlayer(caster, damageDealt);
+                    }
                 }
 
                 if (isPhysicalDamageAbility(caster, ability_index, ability)) {
