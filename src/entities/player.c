@@ -7,29 +7,215 @@
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
 
+#define PLAYER2_FRONT_IDLE_PATH "assets/personagens/p2_frente_placeholder.png"
+#define PLAYER2_BACK_PATH "assets/personagens/MANGUEBEAT_COSTAS.png"
+#define PLAYER2_SIDE_PATH "assets/personagens/MANGUEBEAT_DIREITA.png"
+#define PLAYER2_SIDE_WALK_PATH "assets/personagens/MANGUEBEAT_ESQUERDA.png"
+#define PLAYER2_FRONT_WALK_PATH "assets/personagens/MANGUEBEAT_FRENTE.png"
+#define PLAYER2_FRONT_WALK_FRAME_COUNT 5
+#define PLAYER2_FRONT_WALK_FRAME_WIDTH 184
+#define PLAYER2_FRONT_WALK_FRAME_HEIGHT 184
+#define PLAYER2_WALK_MOVEMENT_FRAME_COUNT 4
+#define PLAYER2_WALK_IDLE_FRAME_INDEX 4
+
+static void initDirectionalPlayerAnimations(
+    Player* p,
+    const char* frontIdlePath,
+    const char* backPath,
+    const char* sidePath,
+    const char* sideWalkPath,
+    const char* walkDownPath,
+    const char* walkUpPath,
+    const char* walkRightPath,
+    const char* walkLeftPath
+) {
+    p->front = LoadTexture(frontIdlePath);
+    p->back = LoadTexture(backPath);
+    p->side = LoadTexture(sidePath);
+    p->side_walk = LoadTexture(sideWalkPath);
+
+    initSpriteSheetAnimation(&p->walkDown, walkDownPath, PLAYER2_FRONT_WALK_FRAME_COUNT, PLAYER2_FRONT_WALK_FRAME_WIDTH, PLAYER2_FRONT_WALK_FRAME_HEIGHT, 0, PLAYER2_WALK_MOVEMENT_FRAME_COUNT, PLAYER2_WALK_IDLE_FRAME_INDEX, 0.15f);
+    initSpriteSheetAnimation(&p->walkUp, walkUpPath, PLAYER2_FRONT_WALK_FRAME_COUNT, PLAYER2_FRONT_WALK_FRAME_WIDTH, PLAYER2_FRONT_WALK_FRAME_HEIGHT, 0, PLAYER2_WALK_MOVEMENT_FRAME_COUNT, PLAYER2_WALK_IDLE_FRAME_INDEX, 0.15f);
+    initSpriteSheetAnimation(&p->walkRight, walkRightPath, PLAYER2_FRONT_WALK_FRAME_COUNT, PLAYER2_FRONT_WALK_FRAME_WIDTH, PLAYER2_FRONT_WALK_FRAME_HEIGHT, 0, PLAYER2_WALK_MOVEMENT_FRAME_COUNT, PLAYER2_WALK_IDLE_FRAME_INDEX, 0.15f);
+    initSpriteSheetAnimation(&p->walkLeft, walkLeftPath, PLAYER2_FRONT_WALK_FRAME_COUNT, PLAYER2_FRONT_WALK_FRAME_WIDTH, PLAYER2_FRONT_WALK_FRAME_HEIGHT, 1, PLAYER2_WALK_MOVEMENT_FRAME_COUNT, 0, 0.15f);
+
+    resetSpriteSheetAnimation(&p->walkDown);
+    resetSpriteSheetAnimation(&p->walkUp);
+    resetSpriteSheetAnimation(&p->walkRight);
+    resetSpriteSheetAnimation(&p->walkLeft);
+}
+
+static void initSpriteSheetAnimationFromPath(SpriteSheetAnimation* animation, const char* texturePath, int frameCount, int frameWidth, int frameHeight, int movementFrameCount, int idleFrameIndex, float frameDuration) {
+    if (animation == NULL) return;
+
+    animation->texture = LoadTexture(texturePath);
+    animation->frameCount = frameCount;
+    animation->frameWidth = frameWidth;
+    animation->frameHeight = frameHeight;
+    animation->movementStartIndex = 0;
+    animation->movementFrameCount = movementFrameCount;
+    animation->idleFrameIndex = idleFrameIndex;
+    animation->currentFrame = 0;
+    animation->frameTimer = 0.0f;
+    animation->frameDuration = frameDuration;
+}
+
+void initSpriteSheetAnimation(SpriteSheetAnimation* animation, const char* texturePath, int frameCount, int frameWidth, int frameHeight, int movementStartIndex, int movementFrameCount, int idleFrameIndex, float frameDuration) {
+    initSpriteSheetAnimationFromPath(animation, texturePath, frameCount, frameWidth, frameHeight, movementFrameCount, idleFrameIndex, frameDuration);
+    animation->movementStartIndex = movementStartIndex;
+}
+
+void unloadSpriteSheetAnimation(SpriteSheetAnimation* animation) {
+    if (animation == NULL) return;
+
+    if (animation->texture.id != 0) {
+        UnloadTexture(animation->texture);
+    }
+
+    animation->texture = (Texture2D){0};
+    animation->frameCount = 0;
+    animation->frameWidth = 0;
+    animation->frameHeight = 0;
+    animation->movementStartIndex = 0;
+    animation->movementFrameCount = 0;
+    animation->idleFrameIndex = 0;
+    animation->currentFrame = 0;
+    animation->frameTimer = 0.0f;
+    animation->frameDuration = 0.0f;
+}
+
+void resetSpriteSheetAnimation(SpriteSheetAnimation* animation) {
+    if (animation == NULL) return;
+
+    if (animation->idleFrameIndex >= 0 && animation->idleFrameIndex < animation->frameCount) {
+        animation->currentFrame = animation->idleFrameIndex;
+    } else {
+        animation->currentFrame = 0;
+    }
+    animation->frameTimer = 0.0f;
+}
+
+void updateSpriteSheetAnimation(SpriteSheetAnimation* animation, int isMoving) {
+    if (animation == NULL) return;
+
+    if (animation->texture.id == 0 || animation->frameCount <= 0 || animation->frameDuration <= 0.0f) {
+        return;
+    }
+
+    if (!isMoving) {
+        if (animation->idleFrameIndex >= 0 && animation->idleFrameIndex < animation->frameCount) {
+            animation->currentFrame = animation->idleFrameIndex;
+        } else {
+            animation->currentFrame = 0;
+        }
+        animation->frameTimer = 0.0f;
+        return;
+    }
+
+    int movementStartIndex = animation->movementStartIndex;
+    int movementFrameCount = animation->movementFrameCount;
+    if (movementStartIndex < 0 || movementStartIndex >= animation->frameCount) {
+        movementStartIndex = 0;
+    }
+    if (movementFrameCount <= 0 || movementStartIndex + movementFrameCount > animation->frameCount) {
+        movementFrameCount = animation->frameCount - movementStartIndex;
+    }
+
+    if (movementFrameCount <= 0) {
+        animation->currentFrame = animation->idleFrameIndex;
+        animation->frameTimer = 0.0f;
+        return;
+    }
+
+    if (animation->currentFrame < movementStartIndex || animation->currentFrame >= movementStartIndex + movementFrameCount) {
+        animation->currentFrame = movementStartIndex;
+    }
+
+    animation->frameTimer += GetFrameTime();
+
+    while (animation->frameTimer >= animation->frameDuration) {
+        animation->currentFrame++;
+        if (animation->currentFrame >= movementStartIndex + movementFrameCount) {
+            animation->currentFrame = movementStartIndex;
+        }
+        animation->frameTimer -= animation->frameDuration;
+    }
+}
+
+Rectangle getSpriteSheetFrameRect(const SpriteSheetAnimation* animation) {
+    if (animation == NULL || animation->texture.id == 0 || animation->frameCount <= 0 || animation->frameWidth <= 0 || animation->frameHeight <= 0) {
+        return (Rectangle){0, 0, 0, 0};
+    }
+
+    int safeFrameIndex = animation->currentFrame;
+    if (safeFrameIndex < 0 || safeFrameIndex >= animation->frameCount) {
+        safeFrameIndex = animation->idleFrameIndex;
+        if (safeFrameIndex < 0 || safeFrameIndex >= animation->frameCount) {
+            safeFrameIndex = 0;
+        }
+    }
+
+    return (Rectangle){
+        (float)(safeFrameIndex * animation->frameWidth),
+        0.0f,
+        (float)animation->frameWidth,
+        (float)animation->frameHeight
+    };
+}
+
 void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     strcpy(p->name, name);
     p->position = startPos;
     p->direction = DIR_DOWN;
+    p->walkDown = (SpriteSheetAnimation){0};
+    p->walkUp = (SpriteSheetAnimation){0};
+    p->walkRight = (SpriteSheetAnimation){0};
+    p->walkLeft = (SpriteSheetAnimation){0};
 
-    char path[128];
+    if (strcmp(prefix, "p1") == 0) {
+        initDirectionalPlayerAnimations(
+            p,
+            "assets/personagens/MARACATU_FRENTE.png",
+            "assets/personagens/MARACATU_COSTAS.png",
+            "assets/personagens/MARACATU_DIREITA.png",
+            "assets/personagens/MARACATU_ESQUERDA.png",
+            "assets/personagens/MARACATU_FRENTE.png",
+            "assets/personagens/MARACATU_COSTAS.png",
+            "assets/personagens/MARACATU_DIREITA.png",
+            "assets/personagens/MARACATU_ESQUERDA.png"
+        );
+    } else if (strcmp(prefix, "p2") == 0) {
+        initDirectionalPlayerAnimations(
+            p,
+            PLAYER2_FRONT_IDLE_PATH,
+            PLAYER2_BACK_PATH,
+            PLAYER2_SIDE_PATH,
+            PLAYER2_SIDE_WALK_PATH,
+            PLAYER2_FRONT_WALK_PATH,
+            PLAYER2_BACK_PATH,
+            PLAYER2_SIDE_PATH,
+            PLAYER2_SIDE_WALK_PATH
+        );
+    } else {
+        char path[128];
 
-    /* Carrega as texturas do personagem */
-    sprintf(path, "assets/personagens/%s_frente_placeholder.png", prefix);
-    p->front = LoadTexture(path);
+        /* Carrega as texturas do personagem */
+        snprintf(path, sizeof(path), "assets/personagens/%s_frente_placeholder.png", prefix);
+        p->front = LoadTexture(path);
 
-    sprintf(path, "assets/personagens/%s_costas_placeholder.png", prefix);
-    p->back = LoadTexture(path);
+        snprintf(path, sizeof(path), "assets/personagens/%s_costas_placeholder.png", prefix);
+        p->back = LoadTexture(path);
 
-    sprintf(path, "assets/personagens/%s_lado_placeholder.png", prefix);
-    p->side = LoadTexture(path);
+        snprintf(path, sizeof(path), "assets/personagens/%s_lado_placeholder.png", prefix);
+        p->side = LoadTexture(path);
 
-    sprintf(path, "assets/personagens/%s_lado_andando_placeholder.png", prefix);
-    p->side_walk = LoadTexture(path);
+        snprintf(path, sizeof(path), "assets/personagens/%s_lado_andando_placeholder.png", prefix);
+        p->side_walk = LoadTexture(path);
+    }
 
     /* Configura o colisor */
     p->collider.offset = (Vector2){ 75.0f, 0.0f };
-    p->collider.size = (Vector2){ 150.0f, 300.0f };
+    p->collider.size = (Vector2){ 150.0f, 200.0f };
 
     /* Inicializa animação */
     p->animFrame = 0;
@@ -55,17 +241,21 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {
-    // só anima se estiver andando E na horizontal
+    updateSpriteSheetAnimation(&p->walkDown, isMoving && p->direction == DIR_DOWN);
+    updateSpriteSheetAnimation(&p->walkUp, isMoving && p->direction == DIR_UP);
+    updateSpriteSheetAnimation(&p->walkRight, isMoving && p->direction == DIR_RIGHT);
+    updateSpriteSheetAnimation(&p->walkLeft, isMoving && p->direction == DIR_LEFT);
+
     if (isMoving && (p->direction == DIR_LEFT || p->direction == DIR_RIGHT)) {
         p->animTimer += GetFrameTime();
 
         if (p->animTimer >= ANIM_SPEED) {
-            p->animFrame = !p->animFrame;
-            p->animTimer = 0;
+            p->animFrame = (p->animFrame + 1) % 2;
+            p->animTimer = 0.0f;
         }
     } else {
         p->animFrame = 0;
-        p->animTimer = 0;
+        p->animTimer = 0.0f;
     }
 }
 
@@ -95,39 +285,62 @@ void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount) {
     p->position.x += resolvedMove.x;
     p->position.y += resolvedMove.y;
 
-    int isMoving = (resolvedMove.x != 0 || resolvedMove.y != 0);
+    int isMoving = (move.x != 0 || move.y != 0);
 
     updatePlayerAnimation(p, isMoving);
 }
 
 void drawPlayer(Player* p) {
     Texture2D tex;
+    Rectangle src = {0, 0, 0, 0};
 
     switch (p->direction) {
         case DIR_UP: 
-            tex = p->back; 
+            if (p->walkUp.texture.id != 0) {
+                tex = p->walkUp.texture;
+                src = getSpriteSheetFrameRect(&p->walkUp);
+            } else {
+                tex = p->back; 
+                src = (Rectangle){0, 0, (float)tex.width, (float)tex.height};
+            }
             break;
 
         case DIR_DOWN: 
-            tex = p->front; 
+            if (p->walkDown.texture.id != 0) {
+                tex = p->walkDown.texture;
+                src = getSpriteSheetFrameRect(&p->walkDown);
+            } else {
+                tex = p->front;
+                src = (Rectangle){0, 0, (float)tex.width, (float)tex.height};
+            }
+            break;
+
+        case DIR_RIGHT:
+            if (p->walkRight.texture.id != 0) {
+                tex = p->walkRight.texture;
+                src = getSpriteSheetFrameRect(&p->walkRight);
+            } else {
+                tex = (p->animFrame % 2 == 0) ? p->side : p->side_walk;
+                src = (Rectangle){0, 0, (float)tex.width, (float)tex.height};
+            }
             break;
 
         case DIR_LEFT:
-        case DIR_RIGHT:
-            tex = (p->animFrame == 0) ? p->side : p->side_walk;
+            if (p->walkLeft.texture.id != 0) {
+                tex = p->walkLeft.texture;
+                src = getSpriteSheetFrameRect(&p->walkLeft);
+            } else {
+                tex = (p->animFrame % 2 == 0) ? p->side_walk : p->side;
+                src = (Rectangle){0, 0, (float)tex.width, (float)tex.height};
+                src.width = -tex.width;
+            }
             break;
-    }
-
-    Rectangle src = {0, 0, tex.width, tex.height};
-
-    // espelhamento horizontal
-    if (p->direction == DIR_LEFT) {
-        src.width = -tex.width;
     }
 
     renderStatusAura(tex, src, p->position, (Vector2){0, 0}, 1.0f, &p->statusList);
 
-    DrawTextureRec(tex, src, p->position, WHITE);
+    Vector2 drawPos = { p->position.x + 50.0f, p->position.y };
+    DrawTextureRec(tex, src, drawPos, WHITE);
 
     Vector2 spriteSize = {fabsf((float)src.width), (float)src.height};
     renderStatusBuffs(&p->statusList, p->position, spriteSize);
@@ -144,10 +357,14 @@ void drawPlayer(Player* p) {
  */
 void unloadPlayer(Player* p) {
     /* Descarrega as texturas */
-    UnloadTexture(p->front);
-    UnloadTexture(p->back);
-    UnloadTexture(p->side);
-    UnloadTexture(p->side_walk);
+    if (p->front.id != 0) UnloadTexture(p->front);
+    if (p->back.id != 0) UnloadTexture(p->back);
+    if (p->side.id != 0) UnloadTexture(p->side);
+    if (p->side_walk.id != 0) UnloadTexture(p->side_walk);
+    unloadSpriteSheetAnimation(&p->walkDown);
+    unloadSpriteSheetAnimation(&p->walkUp);
+    unloadSpriteSheetAnimation(&p->walkRight);
+    unloadSpriteSheetAnimation(&p->walkLeft);
     
     /* === NOVO: Libera a lista de condições de status === */
     freeStatusList(&p->statusList);

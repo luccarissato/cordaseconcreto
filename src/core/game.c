@@ -336,9 +336,11 @@ void updateParty(const Rectangle* blockers, int blockerCount) {
 }
 
 void drawParty() {
-    for (int i = 0; i < PARTY_SIZE; i++) {
+    for (int i = 1; i < PARTY_SIZE; i++) {
         drawPlayer(&party[i]);
     }
+
+    drawPlayer(&party[0]);
 }
 
 void unloadParty() {
