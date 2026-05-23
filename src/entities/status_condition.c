@@ -121,6 +121,7 @@ static int isRemovableByDebuffRemoval(StatusType type) {
         case STATUS_SLOW:
         case STATUS_DEFENSE_DOWN:
         case STATUS_ENCHARCADO:
+        case STATUS_ARCANE_MARK:
             return 1;
         default:
             return 0;
@@ -221,6 +222,7 @@ int isDebuff(StatusType type) {
         case STATUS_SLOW:
         case STATUS_DEFENSE_DOWN:
         case STATUS_ENCHARCADO:
+        case STATUS_ARCANE_MARK:
             return 1;
         default:
             return 0;
@@ -233,6 +235,11 @@ int isBuff(StatusType type) {
         case STATUS_STRENGTH_UP:
         case STATUS_DEFENSE_UP:
         case STATUS_SPEED_UP:
+        case STATUS_PROTECT:
+        case STATUS_COUNTER:
+        case STATUS_REFLECT:
+        case STATUS_ASCENSAO_MAGICA:
+        case STATUS_HASTE:
             return 1;
         default:
             return 0;
@@ -428,6 +435,12 @@ const char* getStatusName(StatusType type) {
         case STATUS_STRENGTH_UP:    return "Forca Aumentada";
         case STATUS_DEFENSE_UP:     return "Defesa Aumentada";
         case STATUS_SPEED_UP:       return "Velocidade Aumentada";
+        case STATUS_PROTECT:        return "Protecao";
+        case STATUS_COUNTER:        return "Contra-Ataque";
+        case STATUS_REFLECT:        return "Bastiao";
+        case STATUS_ARCANE_MARK:    return "Marca Arcana";
+        case STATUS_ASCENSAO_MAGICA: return "Ascensao Magica";
+        case STATUS_HASTE:          return "Aceleracao";
         default:                    return "Desconhecido";
     }
 }
@@ -460,6 +473,18 @@ const char* getStatusDescription(StatusType type) {
             return "Defesa aumentada em 50%%.";
         case STATUS_SPEED_UP:
             return "Velocidade aumentada em 50%%.";
+        case STATUS_PROTECT:
+            return "Redireciona dano recebido para o Tank.";
+        case STATUS_COUNTER:
+            return "Devolve 50%% do dano recebido. Aumenta sangramento do atacante.";
+        case STATUS_REFLECT:
+            return "Reduz dano recebido e reflete como true damage.";
+        case STATUS_ARCANE_MARK:
+            return "Dobra o proximo dano elemental recebido.";
+        case STATUS_ASCENSAO_MAGICA:
+            return "Dano elemental aumentado em 10%% por round.";
+        case STATUS_HASTE:
+            return "Garante um turno extra a cada rodada.";
         default:
             return "Efeito desconhecido.";
     }

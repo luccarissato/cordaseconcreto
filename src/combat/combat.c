@@ -22,6 +22,7 @@ static void clearCombatStatusState(void) {
         clearAllStatus(&party[i].statusList);
         party[i].defenseGuardActive = 0;
         party[i].defenseDamageReductionPending = 0;
+        party[i].extraTurnsPending = 0;
     }
 
     for (int i = 0; i < enemyManager.count; i++) {

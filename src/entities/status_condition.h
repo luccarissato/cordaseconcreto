@@ -22,6 +22,14 @@ typedef enum {
     STATUS_DEFENSE_UP,          /* Defesa Up: +50% defesa */
     STATUS_SPEED_UP,            /* Velocidade Up: +50% velocidade */
     
+    /* NEW STATUSES FOR CORRECTED ABILITIES */
+    STATUS_PROTECT,             /* Proteção: Redireciona dano recebido para o Tank */
+    STATUS_COUNTER,             /* Contra-ataque: Retalia com 50% do dano e bleed */
+    STATUS_REFLECT,             /* Bastião: Reduz dano e reflete como true damage */
+    STATUS_ARCANE_MARK,         /* Marca Arcana: Dobra o próximo dano elemental */
+    STATUS_ASCENSAO_MAGICA,     /* Ascensão Mágica: +10% dano elemental cumulativo por round */
+    STATUS_HASTE,               /* Aceleração: Concede turno extra por round */
+    
     STATUS_COUNT
 } StatusType;
 

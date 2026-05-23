@@ -48,6 +48,7 @@ static Color getStatusAuraColor(StatusType type) {
         case STATUS_WEAKEN:         return (Color){100, 100, 100, 255};    // Cinza escuro
         case STATUS_DEFENSE_DOWN:   return (Color){255, 100, 0, 255};      // Laranja intenso
         case STATUS_ENCHARCADO:     return (Color){100, 150, 255, 255};    // Azul claro
+        case STATUS_ARCANE_MARK:    return (Color){186, 85, 211, 255};     // Medium Orchid
         default:                    return (Color){255, 255, 255, 0};      // Transparente
     }
 }
@@ -58,6 +59,11 @@ static Color getStatusBuffColor(StatusType type) {
         case STATUS_STRENGTH_UP:    return (Color){255, 200, 0, 255};      // Ouro forte
         case STATUS_DEFENSE_UP:     return (Color){65, 105, 225, 255};     // Azul royal
         case STATUS_SPEED_UP:       return (Color){200, 200, 255, 255};    // Branco-prata
+        case STATUS_PROTECT:        return (Color){255, 215, 0, 255};      // Gold
+        case STATUS_COUNTER:        return (Color){255, 69, 0, 255};       // Orange-Red
+        case STATUS_REFLECT:        return (Color){135, 206, 250, 255};    // Light Sky Blue
+        case STATUS_ASCENSAO_MAGICA: return (Color){255, 105, 180, 255};   // Hot Pink
+        case STATUS_HASTE:          return (Color){255, 255, 0, 255};      // Amarelo
         default:                    return (Color){255, 255, 255, 0};      // Transparente
     }
 }

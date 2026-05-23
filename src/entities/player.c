@@ -51,6 +51,7 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     /* Defesa desativada por padrão */
     p->defenseGuardActive = 0;
     p->defenseDamageReductionPending = 0;
+    p->extraTurnsPending = 0;
 }
 
 void updatePlayerAnimation(Player* p, int isMoving) {

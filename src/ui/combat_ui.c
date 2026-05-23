@@ -55,6 +55,7 @@ static int combatTurnEpoch = 0;
 static int processedTurnEpoch = -1;
 static int combatWasActive = 0;
 static int promptSelection = 0;
+static int isExtraTurn = 0;
 
 //teste
 static int testEnemyNextTargetIndex = 0;
@@ -63,16 +64,15 @@ static Texture2D weaknessIcons[4];
 
 static int isCombatItemVisible(InventoryItem* item, int includeKeyItems);
 static void removeItemNodeAndFree(InventoryItem* item);
+static Combatant* getCurrentCombatantSafe(void);
 
 //teste
 static void applyFixedOneDamageToPlayer(Player* target) {
     if (target == NULL || !target->isAlive) return;
 
-    target->stats.currentHP -= 10;
-    if (target->stats.currentHP <= 0) {
-        target->stats.currentHP = 0;
-        target->isAlive = 0;
-    }
+    float defenseModifier = getDefenseModifier(&target->statusList);
+    int effectiveDefense = (int)(target->stats.defesa * defenseModifier);
+    applyCombatDamageToPlayer(target, 10 + effectiveDefense);
 }
 
 static int executeTestEnemyAction(Enemy* enemy) {
@@ -214,9 +214,23 @@ static void resetCombatUiState() {
     combatTurnEpoch = 0;
     processedTurnEpoch = -1;
     testEnemyNextTargetIndex = 0;
+    isExtraTurn = 0;
 }
 
 static void advanceCombatTurn() {
+    Combatant* combatant = getCurrentCombatantSafe();
+    if (combatant != NULL && combatant->type == COMBATANT_PLAYER) {
+        Player* player = &party[combatant->playerIndex];
+        if (player->extraTurnsPending > 0) {
+            player->extraTurnsPending--;
+            isExtraTurn = 1;
+            combatTurnEpoch++;
+            processedTurnEpoch = -1;
+            bossAiQueueMessage("%s ganha um turno extra!", player->name);
+            return;
+        }
+    }
+
     int wrapped = (combatState.currentTurn + 1 >= combatState.combatantCount);
     nextTurn();
     combatTurnEpoch++;
@@ -311,9 +325,24 @@ static int isCombatItemVisible(InventoryItem* item, int includeKeyItems) {
 static void processPlayerTurnStart(Player* player) {
     if (player == NULL || !player->isAlive) return;
 
+    if (isExtraTurn) {
+        isExtraTurn = 0;
+        return;
+    }
+
     /* Defender dura até o próximo turno próprio */
     player->defenseGuardActive = 0;
     player->defenseDamageReductionPending = 0;
+
+    StatusCondition* ascensao = getStatusCondition(&player->statusList, STATUS_ASCENSAO_MAGICA);
+    if (ascensao != NULL) {
+        ascensao->intensity += 0.10f;
+        bossAiQueueMessage("%s concentra energia! Ascensao Magica +10%% de dano.", player->name);
+    }
+
+    if (hasStatusCondition(&player->statusList, STATUS_HASTE)) {
+        player->extraTurnsPending = 1;
+    }
 
     processStatusEffects(&player->statusList, &player->stats.currentHP, player->stats.maxHP);
     updateStatusDurations(&player->statusList);

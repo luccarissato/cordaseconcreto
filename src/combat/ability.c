@@ -6,6 +6,7 @@
 #include "../core/game.h"
 #include "../entities/status_condition.h"
 #include "boss_ai.h"
+#include "combat.h"
 
 extern Player party[PARTY_SIZE];
 
@@ -36,8 +37,8 @@ static void initCharacter1Abilities() {
     abilities[0][1].damage_base = 0;
     abilities[0][1].scaling_type = SCALING_NONE;
     strcpy(abilities[0][1].name, "Proteção");
-    strcpy(abilities[0][1].description, "Absorve dano de um aliado por 2 turnos");
-    abilities[0][1].data.buff_action.turns_extra = 2;
+    strcpy(abilities[0][1].description, "Absorve dano de um aliado por 3 turnos");
+    abilities[0][1].data.buff_action.turns_extra = 3;
     
     /* Skill 3: Debilitating Strike - Dano físico + debuffs */
     abilities[0][2].level_unlocked = 3;
@@ -189,7 +190,9 @@ static void initCharacter4Abilities() {
     abilities[3][1].scaling_type = SCALING_NONE;
     strcpy(abilities[3][1].name, "Marca Arcana");
     strcpy(abilities[3][1].description, "Marca alvo. Próximo dano elemental recebe 2x multiplicador");
-    abilities[3][1].data.status.duration = 1;
+    abilities[3][1].data.status.status_type = STATUS_ARCANE_MARK;
+    abilities[3][1].data.status.duration = 3;
+    abilities[3][1].data.status.intensity = 1.0f;
     
     /* Skill 3: Area Element Spell - Área com troca de elemento */
     abilities[3][2].level_unlocked = 3;
@@ -212,7 +215,7 @@ static void initCharacter4Abilities() {
     abilities[3][3].damage_base = 0;
     abilities[3][3].scaling_type = SCALING_NONE;
     strcpy(abilities[3][3].name, "Ascensão Mágica");
-    strcpy(abilities[3][3].description, "Buff permanente: +5% dano elemental por turno até morte");
+    strcpy(abilities[3][3].description, "Buff permanente: +10% dano elemental por round ate morte");
     abilities[3][3].data.buff_action.turns_extra = -1;
 }
 
@@ -352,6 +355,14 @@ static void clampPlayerCombatStats(Player* target) {
 void applyCombatDamageToPlayer(Player* target, int damage) {
     if (target == NULL || !target->isAlive) return;
 
+    // Proteção redirection
+    if (target != &party[0] && hasStatusCondition(&target->statusList, STATUS_PROTECT)) {
+        if (party[0].isAlive) {
+            bossAiQueueMessage("Protecao! Dano em %s redirecionado para %s.", target->name, party[0].name);
+            target = &party[0];
+        }
+    }
+
     float defenseModifier = getDefenseModifier(&target->statusList);
     int effectiveDefense = (int)(target->stats.defesa * defenseModifier);
     int effectiveDamage = damage - effectiveDefense;
@@ -362,6 +373,50 @@ void applyCombatDamageToPlayer(Player* target, int damage) {
         effectiveDamage = (int)(effectiveDamage * 0.70f);
         if (effectiveDamage < 1) effectiveDamage = 1;
         target->defenseDamageReductionPending = 0;
+    }
+
+    // Retaliation (Contra-ataque) & Bastião logic (applied before subtracting HP so reduction is effective)
+    Combatant* active = getCurrentCombatant();
+    Enemy* attacker = NULL;
+    if (active != NULL && active->type == COMBATANT_ENEMY) {
+        int idx = combat.enemyIndices[active->enemyIndex];
+        if (idx >= 0 && idx < enemyManager.count) {
+            attacker = &enemyManager.enemies[idx];
+        }
+    }
+
+    if (attacker != NULL && attacker->isAlive) {
+        if (hasStatusCondition(&target->statusList, STATUS_COUNTER)) {
+            int counterDamage = (int)(effectiveDamage * 0.50f);
+            if (counterDamage < 1) counterDamage = 1;
+            
+            // Redirect 50% of the damage: reduce damage taken by 50%, and deal 50% to attacker
+            effectiveDamage -= counterDamage;
+            if (effectiveDamage < 1) effectiveDamage = 1;
+            
+            damageEnemy(attacker, counterDamage);
+            
+            // Consume the counter-attack status (only works on next valid damage instance)
+            removeStatusCondition(&target->statusList, STATUS_COUNTER);
+            
+            bossAiQueueMessage("Contra-ataque! %s redirecionou %d de dano a %s.", target->name, counterDamage, attacker->name);
+        }
+
+        if (hasStatusCondition(&target->statusList, STATUS_REFLECT)) {
+            // Bastião: reduces damage received by 50%
+            effectiveDamage = (int)(effectiveDamage * 0.50f);
+            if (effectiveDamage < 1) effectiveDamage = 1;
+            
+            // Returns the received damage to attacker, ignoring resistances (true damage)
+            int reflectDamage = effectiveDamage;
+            
+            attacker->stats.currentHP -= reflectDamage;
+            if (attacker->stats.currentHP <= 0) {
+                attacker->stats.currentHP = 0;
+                attacker->isAlive = 0;
+            }
+            bossAiQueueMessage("Bastiao! %s reduziu o dano e refletiu %d de dano real a %s.", target->name, reflectDamage, attacker->name);
+        }
     }
 
     target->stats.currentHP -= effectiveDamage;
@@ -580,18 +635,21 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
             Player* target = &playerTargets[targetIndex];
 
             if (caster->characterID == CHARACTER_1_TANK && ability_index == 1) {
-                applyStatusToPlayerTarget(target, targetIndex, STATUS_DEFENSE_UP, ability->data.buff_action.turns_extra, 1.0f);
+                applyStatusToPlayerTarget(target, targetIndex, STATUS_PROTECT, ability->data.buff_action.turns_extra, 1.0f);
             } else if (caster->characterID == CHARACTER_1_TANK && ability_index == 3) {
                 applyStatusToPlayerTarget(caster, targetIndex, STATUS_DEFENSE_UP, ability->data.reflect.reflect_duration, 1.0f);
                 applyStatusToPlayerTarget(caster, targetIndex, STATUS_SPEED_UP, ability->data.reflect.reflect_duration, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_REFLECT, ability->data.reflect.reflect_duration, 1.0f);
             } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 2) {
-                applyStatusToPlayerTarget(caster, targetIndex, STATUS_DEFENSE_UP, 1, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_COUNTER, 3, 1.0f);
             } else if (caster->characterID == CHARACTER_2_DPS && ability_index == 3) {
                 applyStatusToPlayerTarget(caster, targetIndex, STATUS_SPEED_UP, 3, 1.0f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_HASTE, 3, 1.0f);
+                caster->extraTurnsPending = 1;
             } else if (caster->characterID == CHARACTER_3_HEALER && ability_index == 2) {
                 applyStatusToPlayerTarget(target, targetIndex, blessingType, 3, 1.0f);
             } else if (caster->characterID == CHARACTER_4_MAGE && ability_index == 3) {
-                applyStatusToPlayerTarget(caster, targetIndex, STATUS_STRENGTH_UP, -1, 0.05f);
+                applyStatusToPlayerTarget(caster, targetIndex, STATUS_ASCENSAO_MAGICA, -1, 0.10f);
             } else {
                 applyStatusToPlayerTarget(target, targetIndex, STATUS_DEFENSE_UP, 2, 1.0f);
             }
@@ -610,7 +668,7 @@ void useAbility(Player* caster, int ability_index, void* targets, int target_cou
             Enemy* target = &enemyTargets[targetIndex];
 
             if (caster->characterID == CHARACTER_4_MAGE && ability_index == 1) {
-                applyStatusToEnemyTarget(target, STATUS_DEFENSE_DOWN, 2, 1.0f);
+                applyStatusToEnemyTarget(target, STATUS_ARCANE_MARK, ability->data.status.duration, 1.0f);
             } else {
                 applyStatusToEnemyTarget(target, ability->data.status.status_type, ability->data.status.duration, ability->data.status.intensity);
             }
@@ -736,6 +794,12 @@ void applyElementalDamage(Enemy* target, Player* caster, Ability* ability) {
         damage = (int)(damage * strengthMod);
     }
     
+    /* Aplica modificador de Ascensão Mágica se ativo */
+    StatusCondition* ascensao = getStatusCondition(&caster->statusList, STATUS_ASCENSAO_MAGICA);
+    if (ascensao != NULL) {
+        damage = (int)(damage * (1.0f + ascensao->intensity));
+    }
+    
     /* Aplica defesa elemental se a habilidade tem elemento */
     if (ability->current_element != ELEMENT_NONE) {
         int elementalDefense = getElementalDefense(target, ability->current_element);
@@ -746,6 +810,13 @@ void applyElementalDamage(Enemy* target, Player* caster, Ability* ability) {
         int reduced_damage = (int)(damage * (1.0f - resistance_percent));
         if (reduced_damage < 1) reduced_damage = 1;  /* Mínimo 1 de dano */
         damage = reduced_damage;
+    }
+    
+    /* Marca Arcana doubles the damage and is consumed */
+    if (hasStatusCondition(&target->statusList, STATUS_ARCANE_MARK)) {
+        damage *= 2;
+        removeStatusCondition(&target->statusList, STATUS_ARCANE_MARK);
+        bossAiQueueMessage("Marca Arcana consumida! Dano elemental dobrado.");
     }
     
     damageEnemy(target, damage);
