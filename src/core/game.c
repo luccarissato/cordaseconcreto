@@ -14,7 +14,7 @@
 #include "../combat/ability.h"
 #include "../ui/combat_ui.h"
 #include "../worlds/worlds.h"
-#include "../worlds/test_world.h"
+#include "../worlds/world_mc.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -37,7 +37,7 @@ Camera2D camera;
 Player party[PARTY_SIZE];
 Inventory playerInventory;
 
-void initParty(int applyGrowth);
+void initParty(int applyGrowth, Vector2 spawnPosition);
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
@@ -67,7 +67,7 @@ void initGame() {
     initCombat();
     initCombatUI();
     initWorldRegistry();
-    RegisterTestWorld();
+    RegisterWorldMC();
     loadCurrentWorld();
 }
 
@@ -87,7 +87,9 @@ void updateGame() {
             }
 
             /* Coleta blockers de NPC, interagíveis e inimigos */
+            int worldBlockerCount = 0;
             int interactableBlockerCount = 0;
+            collectCurrentWorldBlockers(NULL, &worldBlockerCount);
             Rectangle* interactableBlockers = getInteractableBlockers(
                 &interactableManager, 
                 &interactableBlockerCount
@@ -98,15 +100,22 @@ void updateGame() {
             int enemyBlockerCount = 0;
             getEnemyBlockers(enemyBlockers, &enemyBlockerCount);
             
-            /* Monta array com todos os blockers (NPC + interactables + enemies) */
-            int totalBlockerCount = 1 + interactableBlockerCount + enemyBlockerCount;
+            /* Monta array com todos os blockers (NPC + mundo + interactables + enemies) */
+            int totalBlockerCount = 1 + worldBlockerCount + interactableBlockerCount + enemyBlockerCount;
             Rectangle* allBlockers = malloc(sizeof(Rectangle) * totalBlockerCount);
             allBlockers[0] = getColliderRect(testNPC.position, testNPC.collider);
+            int blockerOffset = 1;
+
+            if (worldBlockerCount > 0) {
+                collectCurrentWorldBlockers(&allBlockers[blockerOffset], &worldBlockerCount);
+                blockerOffset += worldBlockerCount;
+            }
+
             for (int i = 0; i < interactableBlockerCount; i++) {
-                allBlockers[1 + i] = interactableBlockers[i];
+                allBlockers[blockerOffset + i] = interactableBlockers[i];
             }
             for (int i = 0; i < enemyBlockerCount; i++) {
-                allBlockers[1 + interactableBlockerCount + i] = enemyBlockers[i];
+                allBlockers[blockerOffset + interactableBlockerCount + i] = enemyBlockers[i];
             }
             
             updateParty(allBlockers, totalBlockerCount);
@@ -155,6 +164,7 @@ void drawGame() {
         case STATE_EXPLORATION:
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
+            drawCurrentWorldOverlay();
             drawNPC(&testNPC);
             drawInteractables(&interactableManager);
             drawEnemies();
@@ -165,6 +175,7 @@ void drawGame() {
         case STATE_DIALOGUE:
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
+            drawCurrentWorldOverlay();
             drawNPC(&testNPC);
             drawInteractables(&interactableManager);
             drawEnemies();
@@ -180,6 +191,7 @@ void drawGame() {
         case STATE_GAME_MENU:
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
+            drawCurrentWorldOverlay();
             drawNPC(&testNPC);
             drawInteractables(&interactableManager);
             drawEnemies();
@@ -201,11 +213,11 @@ void closeGame() {
     CloseWindow();
 }
 
-void initParty(int applyGrowth) {
-    initPlayer(&party[0], "p1", (Vector2){960, 540}, "1");
-    initPlayer(&party[1], "p2", (Vector2){960, 540}, "2");
-    initPlayer(&party[2], "p3", (Vector2){960, 540}, "3");
-    initPlayer(&party[3], "p4", (Vector2){960, 540}, "4");
+void initParty(int applyGrowth, Vector2 spawnPosition) {
+    initPlayer(&party[0], "p1", spawnPosition, "1");
+    initPlayer(&party[1], "p2", spawnPosition, "2");
+    initPlayer(&party[2], "p3", spawnPosition, "3");
+    initPlayer(&party[3], "p4", spawnPosition, "4");
 
     //maracatu
     party[0].stats.baseHP = 60;
@@ -278,9 +290,11 @@ void initParty(int applyGrowth) {
         calculateStats(&party[i].stats);
     }
 
+    historyIndex = 0;
+
     // inicializa histórico com posição inicial
     for (int i = 0; i < HISTORY_SIZE; i++) {
-        positionHistory[i] = party[0].position;
+        positionHistory[i] = spawnPosition;
         directionHistory[i] = party[0].direction;
     }
 }

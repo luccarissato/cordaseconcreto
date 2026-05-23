@@ -25,6 +25,11 @@ typedef struct {
 extern Player party[PARTY_SIZE];
 extern EnemyManager enemyManager;
 extern Combat combat;
+extern Texture2D mapTexture;
+extern Camera2D camera;
+
+void initParty(int applyGrowth, Vector2 spawnPosition);
+void unloadParty(void);
 
 // initGame - Inicializa o jogo
 void initGame();

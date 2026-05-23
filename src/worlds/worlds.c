@@ -72,6 +72,26 @@ WorldNode* getCurrentWorldNode(void) {
     return worldCurrent;
 }
 
+void collectCurrentWorldBlockers(Rectangle* outBlockers, int* outCount) {
+    if (outCount != NULL) {
+        *outCount = 0;
+    }
+
+    if (worldCurrent == NULL || worldCurrent->collectBlockers == NULL) {
+        return;
+    }
+
+    worldCurrent->collectBlockers(outBlockers, outCount);
+}
+
+void drawCurrentWorldOverlay(void) {
+    if (worldCurrent == NULL || worldCurrent->drawOverlay == NULL) {
+        return;
+    }
+
+    worldCurrent->drawOverlay();
+}
+
 int loadCurrentWorld(void) {
     if (worldCurrent == NULL) {
         worldCurrent = worldHead;

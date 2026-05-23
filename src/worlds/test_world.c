@@ -32,7 +32,7 @@ extern Texture2D mapTexture;
 extern Camera2D camera;
 extern Inventory playerInventory;
 
-void initParty(int applyGrowth);
+void initParty(int applyGrowth, Vector2 spawnPosition);
 void unloadParty(void);
 
 static int testWorldIncludeStarterItems = 1;
@@ -70,7 +70,7 @@ static void addStarterItem(Item* baseItem, int quantity) {
 }
 
 void SetupTestWorldContent(int includeStarterItems) {
-    initParty(1);
+    initParty(1, (Vector2){960.0f, 540.0f});
     initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initInventory(&playerInventory);
     initEnemyManager();
@@ -177,6 +177,8 @@ void RegisterTestWorld(void) {
         .name = "Test World",
         .setup = setupTestWorldNode,
         .teardown = teardownTestWorldNode,
+        .collectBlockers = NULL,
+        .drawOverlay = NULL,
         .userData = &testWorldIncludeStarterItems,
         .prev = NULL,
         .next = NULL
