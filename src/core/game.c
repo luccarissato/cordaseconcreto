@@ -17,6 +17,7 @@
 #include "../worlds/world_mc.h"
 #include "../worlds/world_cs.h"
 #include "../worlds/world_pc.h"
+#include "../worlds/world_1andar.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -125,6 +126,7 @@ void initGame() {
     RegisterWorldMC();
     RegisterWorldCS();
     RegisterWorldPC();
+    RegisterWorld1Andar();
     loadCurrentWorld();
 }
 

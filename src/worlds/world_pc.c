@@ -11,18 +11,23 @@ static const Vector2 WORLD_CS_RETURN_SPAWN = {860.0f, 850.0f};
 static const char* WORLD_PC_MAP_PATH = "assets/cenarios/PC_ARSENAL_ATUALIZADO.png";
 static const char* WORLD_PC_CAR_PATH = "assets/cenarios/CARRO_PCARSENAL.png";
 static const float WORLD_PC_BORDER_THICKNESS = 128.0f;
-static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 850.0f};
+static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 800.0f};
 
 /* Faixa horizontal interpretada como um retangulo fino em y=240. */
-static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 190.0f, 250.0f, 12.0f};
+static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 200.0f, 250.0f, 12.0f};
+/* Faixa horizontal interpretada como um retangulo fino em y=200. */
+static const Rectangle WORLD_PC_NEXT_WORLD_TRIGGER = {1370.0f, 200.0f, 180.0f, 12.0f};
 static const WorldTransitionZone WORLD_PC_TRANSITIONS[] = {
-    {WORLD_PC_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_CS_RETURN_SPAWN}
+    {WORLD_PC_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_CS_RETURN_SPAWN},
+    {WORLD_PC_NEXT_WORLD_TRIGGER, WORLD_TRANSITION_NEXT, {30.0f, 380.0f}}
 };
 
 static Rectangle WORLD_PC_EDGE_BLOCKERS[4];
 static int WORLD_PC_EDGE_BLOCKER_COUNT = 0;
 static Texture2D WORLD_PC_CAR_TEXTURE = {0};
 static Rectangle WORLD_PC_CAR_BLOCKER = {0.0f, 0.0f, 0.0f, 0.0f};
+static Rectangle WORLD_PC_CUSTOM_BLOCKERS[3];
+static int WORLD_PC_CUSTOM_BLOCKER_COUNT = 0;
 
 static void drawTriggerRect(Rectangle rect, Color color) {
     DrawRectangleLinesEx(rect, 2.0f, color);
@@ -59,7 +64,7 @@ static void rebuildWorldPCBorderBlockers(void) {
 
 static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
     if (outCount != NULL) {
-        *outCount = WORLD_PC_EDGE_BLOCKER_COUNT + ((WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) ? 1 : 0);
+        *outCount = WORLD_PC_EDGE_BLOCKER_COUNT + WORLD_PC_CUSTOM_BLOCKER_COUNT + ((WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) ? 1 : 0);
     }
 
     if (outBlockers == NULL) {
@@ -71,6 +76,10 @@ static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
         outBlockers[idx++] = WORLD_PC_EDGE_BLOCKERS[i];
     }
 
+    for (int i = 0; i < WORLD_PC_CUSTOM_BLOCKER_COUNT; i++) {
+        outBlockers[idx++] = WORLD_PC_CUSTOM_BLOCKERS[i];
+    }
+
     if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
         outBlockers[idx++] = WORLD_PC_CAR_BLOCKER;
     }
@@ -78,9 +87,14 @@ static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
 
 static void drawWorldPCOverlay(void) {
     drawTriggerRect(WORLD_PC_PREVIOUS_WORLD_TRIGGER, ORANGE);
+    drawTriggerRect(WORLD_PC_NEXT_WORLD_TRIGGER, ORANGE);
 
     for (int i = 0; i < WORLD_PC_EDGE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_PC_EDGE_BLOCKERS[i], 2.0f, GREEN);
+    }
+
+    for (int i = 0; i < WORLD_PC_CUSTOM_BLOCKER_COUNT; i++) {
+        DrawRectangleLinesEx(WORLD_PC_CUSTOM_BLOCKERS[i], 2.0f, RED);
     }
 
     if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
@@ -136,6 +150,14 @@ static void setupWorldPCNode(void* userData) {
     } else {
         WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
     }
+
+    /* Custom horizontal blockers requested by user */
+    WORLD_PC_CUSTOM_BLOCKERS[0] = (Rectangle){0.0f, 220.0f, 776.0f - 0.0f, 12.0f};
+    /* Split second blocker into two ranges: 1035..1360 and 1560..1870 */
+    WORLD_PC_CUSTOM_BLOCKERS[1] = (Rectangle){1035.0f, 220.0f, 1360.0f - 1035.0f, 12.0f};
+    WORLD_PC_CUSTOM_BLOCKERS[2] = (Rectangle){1560.0f, 220.0f, 1870.0f - 1560.0f, 12.0f};
+    WORLD_PC_CUSTOM_BLOCKER_COUNT = 3;
+
     rebuildWorldPCBorderBlockers();
     configureCameraForCurrentWorld();
 }
@@ -153,6 +175,7 @@ static void teardownWorldPCNode(void) {
 
     WORLD_PC_EDGE_BLOCKER_COUNT = 0;
     WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
+    WORLD_PC_CUSTOM_BLOCKER_COUNT = 0;
 
     unloadParty();
 }

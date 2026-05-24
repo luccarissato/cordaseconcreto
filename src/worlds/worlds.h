@@ -15,6 +15,7 @@ typedef void (*WorldCameraBoundsCallback)(Rectangle* outBounds);
 
 #define WORLD_NAME_MC "MZERO_ATUALIZADO"
 #define WORLD_NAME_CS "CS_FRENTE"
+#define WORLD_NAME_1ANDAR "1ANDAR_PCFREVO"
 
 typedef enum {
     WORLD_TRANSITION_NEXT = 0,
