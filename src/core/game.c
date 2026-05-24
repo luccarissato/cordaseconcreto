@@ -15,6 +15,8 @@
 #include "../ui/combat_ui.h"
 #include "../worlds/worlds.h"
 #include "../worlds/world_mc.h"
+#include "../worlds/world_cs.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -56,6 +58,58 @@ Enemy** getEnemiesInCombat();
 int getEnemyCombatCount();
 void endCombat();
 
+static Rectangle getCurrentWorldBounds(void) {
+    Rectangle worldBounds = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    getCurrentWorldCameraBounds(&worldBounds);
+    if (worldBounds.width <= 0.0f || worldBounds.height <= 0.0f) {
+        if (mapTexture.id != 0 && mapTexture.width > 0 && mapTexture.height > 0) {
+            worldBounds = (Rectangle){0.0f, 0.0f, (float)mapTexture.width, (float)mapTexture.height};
+        }
+    }
+
+    return worldBounds;
+}
+
+static float getWorldFitZoom(Rectangle worldBounds) {
+    if (worldBounds.width <= 0.0f || worldBounds.height <= 0.0f) {
+        return 1.0f;
+    }
+
+    float viewportWidth = (float)GetScreenWidth();
+    float viewportHeight = (float)GetScreenHeight();
+    float zoomX = viewportWidth / worldBounds.width;
+    float zoomY = viewportHeight / worldBounds.height;
+    float zoom = (zoomX < zoomY) ? zoomX : zoomY;
+
+    if (zoom <= 0.0f) {
+        return 1.0f;
+    }
+
+    return zoom;
+}
+
+void configureCameraForCurrentWorld(void) {
+    Rectangle worldBounds = getCurrentWorldBounds();
+
+    camera.offset = (Vector2){ (float)GetScreenWidth() * 0.5f, (float)GetScreenHeight() * 0.5f };
+    camera.rotation = 0.0f;
+
+    if (worldBounds.width > 0.0f && worldBounds.height > 0.0f) {
+        camera.target = (Vector2){ worldBounds.x + (worldBounds.width * 0.5f), worldBounds.y + (worldBounds.height * 0.5f) };
+        camera.zoom = getWorldFitZoom(worldBounds);
+        return;
+    }
+
+    camera.target = (Vector2){ 0.0f, 0.0f };
+    camera.zoom = 1.0f;
+}
+
+void updateCameraTarget(Vector2 target) {
+    (void)target;
+    configureCameraForCurrentWorld();
+}
+
 void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
     SetTargetFPS(60);
@@ -68,6 +122,7 @@ void initGame() {
     initCombatUI();
     initWorldRegistry();
     RegisterWorldMC();
+    RegisterWorldCS();
     loadCurrentWorld();
 }
 
@@ -124,9 +179,15 @@ void updateGame() {
             free(allBlockers);
             free(interactableBlockers);
             
-            camera.target = party[0].position;
             updateNPC(&testNPC, party[0].position);
             updateInteractables(&interactableManager, party[0].position);
+            /*
+             * As zonas de transicao ja existiam nos mundos, mas nao eram
+             * chamadas no loop de exploracao. A checagem fica depois da
+             * movimentacao para usar o colisor atualizado do jogador e antes
+             * do combate para nao processar eventos do mapa antigo.
+             */
+            processCurrentWorldTriggers(party[0].position);
             if (processPendingWorldLoad()) {
                 break;
             }

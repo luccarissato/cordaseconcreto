@@ -196,6 +196,30 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
             PLAYER2_SIDE_PATH,
             PLAYER2_SIDE_WALK_PATH
         );
+    } else if (strcmp(prefix, "p3") == 0) {
+        initDirectionalPlayerAnimations(
+            p,
+            "assets/personagens/CIRANDEIRA_FRENTE.png",
+            "assets/personagens/CIRANDEIRA_COSTAS.png",
+            "assets/personagens/CIRANDEIRA_DIREITA.png",
+            "assets/personagens/CIRANDEIRA_ESQUERDA.png",
+            "assets/personagens/CIRANDEIRA_FRENTE.png",
+            "assets/personagens/CIRANDEIRA_COSTAS.png",
+            "assets/personagens/CIRANDEIRA_DIREITA.png",
+            "assets/personagens/CIRANDEIRA_ESQUERDA.png"
+        );
+    } else if (strcmp(prefix, "p4") == 0) {
+        initDirectionalPlayerAnimations(
+            p,
+            "assets/personagens/COCODERODA_FRENTE.png",
+            "assets/personagens/COCODERODA_COSTAS.png",
+            "assets/personagens/COCODERODA_DIREITA.png",
+            "assets/personagens/COCODERODA_ESQUERDA.png",
+            "assets/personagens/COCODERODA_FRENTE.png",
+            "assets/personagens/COCODERODA_COSTAS.png",
+            "assets/personagens/COCODERODA_DIREITA.png",
+            "assets/personagens/COCODERODA_ESQUERDA.png"
+        );
     } else {
         char path[128];
 

@@ -58,6 +58,14 @@ static void clearInventoryContents(void) {
     clearList(&playerInventory.items);
 }
 
+static void getTestWorldBounds(Rectangle* outBounds) {
+    if (outBounds == NULL) {
+        return;
+    }
+
+    *outBounds = (Rectangle){0.0f, 0.0f, (float)mapTexture.width, (float)mapTexture.height};
+}
+
 static void addStarterItem(Item* baseItem, int quantity) {
     InventoryItem* item = malloc(sizeof(InventoryItem));
     if (item == NULL) {
@@ -132,15 +140,12 @@ void SetupTestWorldContent(int includeStarterItems) {
         );
     }
 
-    camera.target = party[0].position;
-    camera.offset = (Vector2){800, 540};
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
-
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);
     }
     mapTexture = LoadTexture("assets/cenarios/bg_placeholder.png");
+
+    configureCameraForCurrentWorld();
 
     testWorldIncludeStarterItems = includeStarterItems;
 }
@@ -179,6 +184,7 @@ void RegisterTestWorld(void) {
         .teardown = teardownTestWorldNode,
         .collectBlockers = NULL,
         .drawOverlay = NULL,
+        .getCameraBounds = getTestWorldBounds,
         .userData = &testWorldIncludeStarterItems,
         .prev = NULL,
         .next = NULL

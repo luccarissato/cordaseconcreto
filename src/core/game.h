@@ -28,6 +28,9 @@ extern Combat combat;
 extern Texture2D mapTexture;
 extern Camera2D camera;
 
+void configureCameraForCurrentWorld(void);
+void updateCameraTarget(Vector2 target);
+
 void initParty(int applyGrowth, Vector2 spawnPosition);
 void unloadParty(void);
 

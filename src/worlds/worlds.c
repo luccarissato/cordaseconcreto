@@ -17,6 +17,10 @@ typedef enum {
 
 static PendingWorldLoadType pendingType = PENDING_NONE;
 static char pendingWorldName[32];
+static int pendingHasSpawnOverride = 0;
+static Vector2 pendingSpawnPosition = {0.0f, 0.0f};
+static int setupHasSpawnOverride = 0;
+static Vector2 setupSpawnPosition = {0.0f, 0.0f};
 
 static int loadWorldNode(WorldNode* node) {
     if (node == NULL || node->setup == NULL) {
@@ -31,7 +35,11 @@ static int loadWorldNode(WorldNode* node) {
     }
 
     worldCurrent = node;
+    setupHasSpawnOverride = pendingHasSpawnOverride;
+    setupSpawnPosition = pendingSpawnPosition;
+    pendingHasSpawnOverride = 0;
     worldCurrent->setup(worldCurrent->userData);
+    setupHasSpawnOverride = 0;
     worldLoaded = 1;
     return 1;
 }
@@ -43,6 +51,8 @@ void initWorldRegistry(void) {
     worldLoaded = 0;
     pendingType = PENDING_NONE;
     pendingWorldName[0] = '\0';
+    pendingHasSpawnOverride = 0;
+    setupHasSpawnOverride = 0;
 }
 
 WorldNode* registerWorldNode(WorldNode* node) {
@@ -92,6 +102,26 @@ void drawCurrentWorldOverlay(void) {
     worldCurrent->drawOverlay();
 }
 
+int processCurrentWorldTriggers(Vector2 playerPos) {
+    if (worldCurrent == NULL || worldCurrent->processTriggers == NULL) {
+        return 0;
+    }
+
+    return worldCurrent->processTriggers(playerPos);
+}
+
+void getCurrentWorldCameraBounds(Rectangle* outBounds) {
+    if (outBounds != NULL) {
+        *outBounds = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
+    }
+
+    if (outBounds == NULL || worldCurrent == NULL || worldCurrent->getCameraBounds == NULL) {
+        return;
+    }
+
+    worldCurrent->getCameraBounds(outBounds);
+}
+
 int loadCurrentWorld(void) {
     if (worldCurrent == NULL) {
         worldCurrent = worldHead;
@@ -105,31 +135,27 @@ int loadCurrentWorld(void) {
 }
 
 int loadNextWorld(void) {
-    if (worldCurrent == NULL) {
-        worldCurrent = worldHead;
-    } else {
-        worldCurrent = worldCurrent->next;
-    }
+    /* Nao avance worldCurrent antes do load: isso fazia o teardown atingir o
+     * mundo novo, deixando o mapa antigo vivo durante a troca circular. */
+    WorldNode* target = (worldCurrent == NULL) ? worldHead : worldCurrent->next;
 
-    if (worldCurrent == NULL) {
+    if (target == NULL) {
         return 0;
     }
 
-    return loadWorldNode(worldCurrent);
+    return loadWorldNode(target);
 }
 
 int loadPreviousWorld(void) {
-    if (worldCurrent == NULL) {
-        worldCurrent = worldHead;
-    } else {
-        worldCurrent = worldCurrent->prev;
-    }
+    /* Mesmo cuidado de loadNextWorld: calculamos o alvo sem perder a referencia
+     * do mundo atual, para teardown/setup atualizarem ponteiro e recursos certos. */
+    WorldNode* target = (worldCurrent == NULL) ? worldHead : worldCurrent->prev;
 
-    if (worldCurrent == NULL) {
+    if (target == NULL) {
         return 0;
     }
 
-    return loadWorldNode(worldCurrent);
+    return loadWorldNode(target);
 }
 
 int loadWorldByName(const char* name) {
@@ -148,20 +174,28 @@ int loadWorldByName(const char* name) {
     return 0;
 }
 
+Vector2 getWorldSpawnPosition(Vector2 fallbackPosition) {
+    return setupHasSpawnOverride ? setupSpawnPosition : fallbackPosition;
+}
+
 void requestWorldLoadCurrent(void) {
     pendingType = PENDING_CURRENT;
+    pendingHasSpawnOverride = 0;
 }
 
 void requestWorldLoadNext(void) {
     pendingType = PENDING_NEXT;
+    pendingHasSpawnOverride = 0;
 }
 
 void requestWorldLoadPrevious(void) {
     pendingType = PENDING_PREVIOUS;
+    pendingHasSpawnOverride = 0;
 }
 
 void requestWorldLoadByName(const char* name) {
     pendingType = PENDING_BY_NAME;
+    pendingHasSpawnOverride = 0;
     if (name == NULL) {
         pendingWorldName[0] = '\0';
         return;
@@ -169,6 +203,12 @@ void requestWorldLoadByName(const char* name) {
 
     strncpy(pendingWorldName, name, sizeof(pendingWorldName) - 1);
     pendingWorldName[sizeof(pendingWorldName) - 1] = '\0';
+}
+
+void requestWorldTransitionByName(const char* name, Vector2 spawnPosition) {
+    requestWorldLoadByName(name);
+    pendingHasSpawnOverride = (name != NULL);
+    pendingSpawnPosition = spawnPosition;
 }
 
 int processPendingWorldLoad(void) {
@@ -195,6 +235,25 @@ int processPendingWorldLoad(void) {
     }
 }
 
+int processWorldTransitionZones(Rectangle playerRect, const WorldTransitionZone* zones, int zoneCount) {
+    if (zones == NULL || zoneCount <= 0) {
+        return 0;
+    }
+
+    for (int i = 0; i < zoneCount; i++) {
+        if (zones[i].targetWorldName == NULL) {
+            continue;
+        }
+
+        if (CheckCollisionRecs(playerRect, zones[i].bounds)) {
+            requestWorldTransitionByName(zones[i].targetWorldName, zones[i].targetSpawnPosition);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void shutdownWorldRegistry(void) {
     if (worldLoaded && worldCurrent != NULL && worldCurrent->teardown != NULL) {
         worldLoaded = 0;
@@ -207,4 +266,6 @@ void shutdownWorldRegistry(void) {
     worldLoaded = 0;
     pendingType = PENDING_NONE;
     pendingWorldName[0] = '\0';
+    pendingHasSpawnOverride = 0;
+    setupHasSpawnOverride = 0;
 }
