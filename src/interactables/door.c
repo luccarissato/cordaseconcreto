@@ -19,12 +19,6 @@ static void queueDoorWorldTransition(DoorData* data) {
             requestWorldLoadPrevious();
             break;
 
-        case DOOR_TRANSITION_TARGET:
-            if (data->targetWorldName[0] != '\0') {
-                requestWorldLoadByName(data->targetWorldName);
-            }
-            break;
-
         case DOOR_TRANSITION_NONE:
         default:
             break;
@@ -112,17 +106,11 @@ void door_on_unload(Interactable* self) {
     free(data);
 }
 
-void doorConfigureWorldTransition(Interactable* self, DoorTransitionMode mode, const char* targetWorldName) {
+void doorConfigureWorldTransition(Interactable* self, DoorTransitionMode mode) {
     if (self == NULL || self->data == NULL) return;
 
     DoorData* data = (DoorData*) self->data;
     data->transitionMode = mode;
-    data->targetWorldName[0] = '\0';
-
-    if (targetWorldName != NULL) {
-        strncpy(data->targetWorldName, targetWorldName, sizeof(data->targetWorldName) - 1);
-        data->targetWorldName[sizeof(data->targetWorldName) - 1] = '\0';
-    }
 }
 
 Interactable createDoor(Vector2 position, const char* closedSpritePath, const char* openSpritePath, DialogueTree* questionTree, int correctAnswerNodeIndex) {
@@ -134,7 +122,6 @@ Interactable createDoor(Vector2 position, const char* closedSpritePath, const ch
     data->dialogueWasActive = 0;
     data->correctAnswerNodeIndex = correctAnswerNodeIndex;
     data->transitionMode = DOOR_TRANSITION_NONE;
-    data->targetWorldName[0] = '\0';
     
     Interactable door = {
         .type = INTERACTABLE_DOOR,

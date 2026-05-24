@@ -16,9 +16,12 @@ static const Vector2 WORLD_CS_TREE_POSITION = {1750.0f, 780.0f};
 static const char* WORLD_CS_POST_PATH = "assets/cenarios/POSTE_CSFRENTE.png";
 static const Vector2 WORLD_CS_POST_POSITION = {90.0f, 780.0f};
 
+/* Faixa horizontal interpretada como um retangulo fino em y=1075. */
+static const Rectangle WORLD_CS_NEXT_WORLD_TRIGGER = {740.0f, 1075.0f, 285.0f, 12.0f};
 static const Rectangle WORLD_CS_PREVIOUS_WORLD_TRIGGER = {1835.0f, 800.0f, 160.0f, 270.0f};
 static const WorldTransitionZone WORLD_CS_TRANSITIONS[] = {
-    {WORLD_CS_PREVIOUS_WORLD_TRIGGER, WORLD_NAME_MC, WORLD_MC_LEFT_EDGE_SPAWN}
+    {WORLD_CS_NEXT_WORLD_TRIGGER, WORLD_TRANSITION_NEXT, {760.0f, 300.0f}},
+    {WORLD_CS_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_MC_LEFT_EDGE_SPAWN}
 };
 
 static Rectangle WORLD_CS_EDGE_BLOCKERS[4];
@@ -103,7 +106,7 @@ static Rectangle getWorldCSPostRect(Vector2 baseCenter) {
     return (Rectangle){
         baseCenter.x - ((float)WORLD_CS_POST_TEXTURE.width * 0.25f),
         baseCenter.y - (float)WORLD_CS_POST_TEXTURE.height,
-        (float)WORLD_CS_POST_TEXTURE.width * 0.5f,
+        (float)WORLD_CS_POST_TEXTURE.width * 0.7f,
         (float)WORLD_CS_POST_TEXTURE.height * 0.9f
     };
 }
@@ -162,6 +165,7 @@ static void collectWorldCSBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorldCSOverlay(void) {
+    DrawRectangleLinesEx(WORLD_CS_NEXT_WORLD_TRIGGER, 2.0f, ORANGE);
     DrawRectangleLinesEx(WORLD_CS_PREVIOUS_WORLD_TRIGGER, 2.0f, ORANGE);
 
     drawWorldCSTreeAtBaseCenter(WORLD_CS_TREE_POSITION);

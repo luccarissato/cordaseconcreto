@@ -7,8 +7,7 @@
 typedef enum {
     DOOR_TRANSITION_NONE = 0,
     DOOR_TRANSITION_NEXT,
-    DOOR_TRANSITION_PREVIOUS,
-    DOOR_TRANSITION_TARGET
+    DOOR_TRANSITION_PREVIOUS
 } DoorTransitionMode;
 
 typedef struct {
@@ -16,10 +15,9 @@ typedef struct {
     Texture2D spriteOpen;
     int isOpen;                         /* 1 = aberta, 0 = fechada */
     DialogueTree* questionTree;         /* Pergunta/resposta */
-    int dialogueWasActive;              /* Detectar se diálogo terminou */
+    int dialogueWasActive;              /* Detectar se dialogo terminou */
     int correctAnswerNodeIndex;         /* Node que indica resposta correta */
-    DoorTransitionMode transitionMode;  /* Tipo de transição de mundo */
-    char targetWorldName[32];           /* Mundo alvo para transição direta */
+    DoorTransitionMode transitionMode;  /* Tipo de transicao de mundo */
 } DoorData;
 
 Interactable createDoor(
@@ -34,6 +32,6 @@ void door_on_interact(Interactable* self, void* playerData);
 void door_on_update(Interactable* self, Vector2 playerPos);
 void door_on_draw(Interactable* self);
 void door_on_unload(Interactable* self);
-void doorConfigureWorldTransition(Interactable* self, DoorTransitionMode mode, const char* targetWorldName);
+void doorConfigureWorldTransition(Interactable* self, DoorTransitionMode mode);
 
 #endif

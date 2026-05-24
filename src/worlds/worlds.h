@@ -16,9 +16,14 @@ typedef void (*WorldCameraBoundsCallback)(Rectangle* outBounds);
 #define WORLD_NAME_MC "MZERO_ATUALIZADO"
 #define WORLD_NAME_CS "CS_FRENTE"
 
+typedef enum {
+    WORLD_TRANSITION_NEXT = 0,
+    WORLD_TRANSITION_PREVIOUS
+} WorldTransitionDirection;
+
 typedef struct {
     Rectangle bounds;
-    const char* targetWorldName;
+    WorldTransitionDirection direction;
     Vector2 targetSpawnPosition;
 } WorldTransitionZone;
 
@@ -46,14 +51,13 @@ void getCurrentWorldCameraBounds(Rectangle* outBounds);
 int loadCurrentWorld(void);
 int loadNextWorld(void);
 int loadPreviousWorld(void);
-int loadWorldByName(const char* name);
 
 Vector2 getWorldSpawnPosition(Vector2 fallbackPosition);
 void requestWorldLoadCurrent(void);
 void requestWorldLoadNext(void);
 void requestWorldLoadPrevious(void);
-void requestWorldLoadByName(const char* name);
-void requestWorldTransitionByName(const char* name, Vector2 spawnPosition);
+void requestWorldTransitionNext(Vector2 spawnPosition);
+void requestWorldTransitionPrevious(Vector2 spawnPosition);
 int processPendingWorldLoad(void);
 int processWorldTransitionZones(Rectangle playerRect, const WorldTransitionZone* zones, int zoneCount);
 

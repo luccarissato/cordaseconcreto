@@ -1,6 +1,6 @@
 #include "worlds.h"
 
-#include <string.h>
+#include <stddef.h>
 
 static WorldNode* worldHead = NULL;
 static WorldNode* worldCurrent = NULL;
@@ -11,12 +11,10 @@ typedef enum {
     PENDING_NONE = 0,
     PENDING_CURRENT,
     PENDING_NEXT,
-    PENDING_PREVIOUS,
-    PENDING_BY_NAME
+    PENDING_PREVIOUS
 } PendingWorldLoadType;
 
 static PendingWorldLoadType pendingType = PENDING_NONE;
-static char pendingWorldName[32];
 static int pendingHasSpawnOverride = 0;
 static Vector2 pendingSpawnPosition = {0.0f, 0.0f};
 static int setupHasSpawnOverride = 0;
@@ -50,7 +48,6 @@ void initWorldRegistry(void) {
     worldCount = 0;
     worldLoaded = 0;
     pendingType = PENDING_NONE;
-    pendingWorldName[0] = '\0';
     pendingHasSpawnOverride = 0;
     setupHasSpawnOverride = 0;
 }
@@ -158,22 +155,6 @@ int loadPreviousWorld(void) {
     return loadWorldNode(target);
 }
 
-int loadWorldByName(const char* name) {
-    if (name == NULL || worldHead == NULL) {
-        return 0;
-    }
-
-    WorldNode* current = worldHead;
-    for (int i = 0; i < worldCount; i++) {
-        if (current->name != NULL && strcmp(current->name, name) == 0) {
-            return loadWorldNode(current);
-        }
-        current = current->next;
-    }
-
-    return 0;
-}
-
 Vector2 getWorldSpawnPosition(Vector2 fallbackPosition) {
     return setupHasSpawnOverride ? setupSpawnPosition : fallbackPosition;
 }
@@ -193,21 +174,15 @@ void requestWorldLoadPrevious(void) {
     pendingHasSpawnOverride = 0;
 }
 
-void requestWorldLoadByName(const char* name) {
-    pendingType = PENDING_BY_NAME;
-    pendingHasSpawnOverride = 0;
-    if (name == NULL) {
-        pendingWorldName[0] = '\0';
-        return;
-    }
-
-    strncpy(pendingWorldName, name, sizeof(pendingWorldName) - 1);
-    pendingWorldName[sizeof(pendingWorldName) - 1] = '\0';
+void requestWorldTransitionNext(Vector2 spawnPosition) {
+    pendingType = PENDING_NEXT;
+    pendingHasSpawnOverride = 1;
+    pendingSpawnPosition = spawnPosition;
 }
 
-void requestWorldTransitionByName(const char* name, Vector2 spawnPosition) {
-    requestWorldLoadByName(name);
-    pendingHasSpawnOverride = (name != NULL);
+void requestWorldTransitionPrevious(Vector2 spawnPosition) {
+    pendingType = PENDING_PREVIOUS;
+    pendingHasSpawnOverride = 1;
     pendingSpawnPosition = spawnPosition;
 }
 
@@ -225,10 +200,6 @@ int processPendingWorldLoad(void) {
             pendingType = PENDING_NONE;
             return loadPreviousWorld();
 
-        case PENDING_BY_NAME:
-            pendingType = PENDING_NONE;
-            return loadWorldByName(pendingWorldName);
-
         case PENDING_NONE:
         default:
             return 0;
@@ -241,12 +212,17 @@ int processWorldTransitionZones(Rectangle playerRect, const WorldTransitionZone*
     }
 
     for (int i = 0; i < zoneCount; i++) {
-        if (zones[i].targetWorldName == NULL) {
-            continue;
-        }
-
         if (CheckCollisionRecs(playerRect, zones[i].bounds)) {
-            requestWorldTransitionByName(zones[i].targetWorldName, zones[i].targetSpawnPosition);
+            /*
+             * Portais usam exclusivamente os ponteiros da lista circular.
+             * A zona apenas escolhe a direcao; o mundo alvo vem de current->next
+             * ou current->prev dentro de loadNextWorld/loadPreviousWorld.
+             */
+            if (zones[i].direction == WORLD_TRANSITION_PREVIOUS) {
+                requestWorldTransitionPrevious(zones[i].targetSpawnPosition);
+            } else {
+                requestWorldTransitionNext(zones[i].targetSpawnPosition);
+            }
             return 1;
         }
     }
@@ -265,7 +241,6 @@ void shutdownWorldRegistry(void) {
     worldCount = 0;
     worldLoaded = 0;
     pendingType = PENDING_NONE;
-    pendingWorldName[0] = '\0';
     pendingHasSpawnOverride = 0;
     setupHasSpawnOverride = 0;
 }
