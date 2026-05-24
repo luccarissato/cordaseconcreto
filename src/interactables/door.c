@@ -1,4 +1,5 @@
 #include "door.h"
+#include "../core/game.h"
 #include "../core/state.h"
 #include "../core/dialogue.h"
 #include "../worlds/worlds.h"
@@ -66,6 +67,7 @@ void door_on_update(Interactable* self, Vector2 playerPos) {
             #endif
         } else {
             /* Resposta errada: mantém fechada */
+            applyPartyDamage(50);
             #ifdef DEBUG_DOOR
             printf("[DOOR] Resposta errada. Porta continua fechada.\n");
             #endif
@@ -128,7 +130,7 @@ Interactable createDoor(Vector2 position, const char* closedSpritePath, const ch
         .position = position,
         .collider = {
             .offset = {0.0f, 0.0f},
-            .size = {400.0f, 400.0f}
+            .size = {60.0f, 480.0f}
         },
         .hasInteracted = 0,
         .interactionDistance = 80.0f,

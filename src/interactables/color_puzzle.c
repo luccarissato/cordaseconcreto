@@ -25,16 +25,17 @@ static ColorPuzzle* getPuzzleData(Interactable* self) {
     return (ColorPuzzle*)self->data;
 }
 
-static void rotateSlotsLeft(ColorPuzzle* puzzle) {
+static void shuffleSlots(ColorPuzzle* puzzle) {
     if (puzzle == NULL || puzzle->tileCount <= 1) {
         return;
     }
 
-    int first = puzzle->slotOrder[0];
-    for (int i = 0; i < puzzle->tileCount - 1; i++) {
-        puzzle->slotOrder[i] = puzzle->slotOrder[i + 1];
+    for (int i = puzzle->tileCount - 1; i > 0; i--) {
+        int swapIndex = GetRandomValue(0, i);
+        int temp = puzzle->slotOrder[i];
+        puzzle->slotOrder[i] = puzzle->slotOrder[swapIndex];
+        puzzle->slotOrder[swapIndex] = temp;
     }
-    puzzle->slotOrder[puzzle->tileCount - 1] = first;
 }
 
 static Rectangle getTileRect(const ColorPuzzle* puzzle, int tileIndex) {
@@ -114,6 +115,7 @@ void colorPuzzle_init_from_assets(
     puzzle->lastRedTileIndex = -1;
     puzzle->tileWidth = (int)puzzle->tileTextures[0].width;
     puzzle->tileHeight = (int)puzzle->tileTextures[0].height;
+    shuffleSlots(puzzle);
 
     puzzle->base.type = INTERACTABLE_COLOR_PUZZLE;
     puzzle->base.position = position;
@@ -144,7 +146,7 @@ void colorPuzzle_on_update(Interactable* self, Vector2 playerPos) {
     puzzle->swapTimer += GetFrameTime();
     while (puzzle->swapTimer >= puzzle->swapInterval) {
         puzzle->swapTimer -= puzzle->swapInterval;
-        rotateSlotsLeft(puzzle);
+        shuffleSlots(puzzle);
     }
 
     Player* leader = &partyMembers[0];

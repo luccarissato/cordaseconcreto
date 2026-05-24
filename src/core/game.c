@@ -18,6 +18,7 @@
 #include "../worlds/world_cs.h"
 #include "../worlds/world_pc.h"
 #include "../worlds/world_1andar.h"
+#include "../worlds/world_2andar.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,8 @@ void initParty(int applyGrowth, Vector2 spawnPosition);
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
 void unloadParty();
+
+void applyPartyDamage(int damage);
 
 
 void initEnemyManager();
@@ -114,6 +117,9 @@ void updateCameraTarget(Vector2 target) {
 
 void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
+    Image windowIcon = LoadImage("assets/icones/window_icon.png");
+    SetWindowIcon(windowIcon);
+    UnloadImage(windowIcon);
     SetTargetFPS(60);
     srand((unsigned int) time(NULL));  /* Seed para random number generator */
 
@@ -127,6 +133,7 @@ void initGame() {
     RegisterWorldCS();
     RegisterWorldPC();
     RegisterWorld1Andar();
+    RegisterWorld2Andar();
     loadCurrentWorld();
 }
 
@@ -425,6 +432,28 @@ void drawParty() {
 void unloadParty() {
     for (int i = 0; i < PARTY_SIZE; i++) {
         unloadPlayer(&party[i]);
+    }
+}
+
+void applyPartyDamage(int damage) {
+    if (damage <= 0) {
+        return;
+    }
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        Player* member = &party[i];
+
+        if (member->stats.currentHP <= 0) {
+            member->stats.currentHP = 0;
+            member->isAlive = 0;
+            continue;
+        }
+
+        member->stats.currentHP -= damage;
+        if (member->stats.currentHP <= 0) {
+            member->stats.currentHP = 0;
+            member->isAlive = 0;
+        }
     }
 }
 

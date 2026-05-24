@@ -112,3 +112,108 @@ DialogueTree doorQuestion3 = {
     0,
     0
 };
+
+DialogueNode doorQuestion4Nodes[] = {
+    {
+        "O frevo surgiu em Pernambuco?",
+        1,
+        "Sim",
+        "Nao",
+        1,
+        2
+    },
+    {
+        "Correto! A porta se abre...",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    },
+    {
+        "Errado! A porta continua fechada.",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    }
+};
+
+DialogueTree doorQuestion4 = {
+    doorQuestion4Nodes,
+    3,
+    0,
+    0,
+    0
+};
+
+DialogueNode doorQuestion5Nodes[] = {
+    {
+        "O frevo usa instrumento de sopro?",
+        1,
+        "Sim",
+        "Nao",
+        1,
+        2
+    },
+    {
+        "Correto! A porta se abre...",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    },
+    {
+        "Errado! A porta continua fechada.",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    }
+};
+
+DialogueTree doorQuestion5 = {
+    doorQuestion5Nodes,
+    3,
+    0,
+    0,
+    0
+};
+
+DialogueNode doorQuestion6Nodes[] = {
+    {
+        "O frevo e danado em pares?",
+        1,
+        "Nao",
+        "Sim",
+        1,
+        2
+    },
+    {
+        "Correto! A porta se abre...",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    },
+    {
+        "Errado! A porta continua fechada.",
+        0,
+        NULL,
+        NULL,
+        -1,
+        -1
+    }
+};
+
+DialogueTree doorQuestion6 = {
+    doorQuestion6Nodes,
+    3,
+    0,
+    0,
+    0
+};

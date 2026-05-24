@@ -33,6 +33,7 @@ void updateCameraTarget(Vector2 target);
 
 void initParty(int applyGrowth, Vector2 spawnPosition);
 void unloadParty(void);
+void applyPartyDamage(int damage);
 
 // initGame - Inicializa o jogo
 void initGame();

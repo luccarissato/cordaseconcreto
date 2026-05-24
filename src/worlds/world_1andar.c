@@ -11,13 +11,17 @@
 extern InteractableManager interactableManager;
 
 static const Vector2 WORLD_1ANDAR_PARTY_SPAWN = {500.0f, 1000.0f};
-static const Vector2 WORLD_PC_RETURN_SPAWN = {1325.0f, 240.0f};
+static const Vector2 WORLD_PC_RETURN_SPAWN = {1225.0f, 240.0f};
+static const Vector2 WORLD_2ANDAR_RETURN_SPAWN = {1690.0f, 740.0f};
 static const char* WORLD_1ANDAR_MAP_PATH = "assets/cenarios/1ANDAR_PCFREVO.png";
 static const float WORLD_1ANDAR_BORDER_THICKNESS = 128.0f;
 
 /* A faixa de retorno foi interpretada como um retangulo fino vertical em x=35. */
 static const Rectangle WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER = {35.0f, 405.0f, 12.0f, 155.0f};
+/* Small square trigger interpreted as a 12x12 area centered on the requested point. */
+static const Rectangle WORLD_1ANDAR_NEXT_WORLD_TRIGGER = {1755.0f, 900.0f, 12.0f, 12.0f};
 static const WorldTransitionZone WORLD_1ANDAR_TRANSITIONS[] = {
+    {WORLD_1ANDAR_NEXT_WORLD_TRIGGER, WORLD_TRANSITION_NEXT, WORLD_2ANDAR_RETURN_SPAWN},
     {WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_PC_RETURN_SPAWN}
 };
 
@@ -85,6 +89,7 @@ static void collectWorld1AndarBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorld1AndarOverlay(void) {
+    drawTriggerRect(WORLD_1ANDAR_NEXT_WORLD_TRIGGER, ORANGE);
     drawTriggerRect(WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER, ORANGE);
 
     for (int i = 0; i < WORLD_1ANDAR_EDGE_BLOCKER_COUNT; i++) {

@@ -33,6 +33,7 @@ static Texture2D turnArrowTexture;
 static Texture2D targetArrowTexture;
 static Texture2D trapIconTexture;
 static Texture2D temptationIconTexture;
+static Texture2D boss1CombatBgTexture;
 
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
@@ -215,6 +216,21 @@ static void resetCombatUiState() {
     processedTurnEpoch = -1;
     testEnemyNextTargetIndex = 0;
     isExtraTurn = 0;
+}
+
+static int isBoss1CombatActive(void) {
+    for (int i = 0; i < combat.enemyCount; i++) {
+        int worldEnemyIndex = combat.enemyIndices[i];
+        if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) {
+            continue;
+        }
+
+        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 1") == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 static void advanceCombatTurn() {
@@ -906,6 +922,7 @@ void initCombatUI() {
     targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
     trapIconTexture = LoadTexture("assets/icones/trap.png");
     temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
+    boss1CombatBgTexture = LoadTexture("assets/cenarios/LUTA_PCFREVO.png");
 
     weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
     weaknessIcons[1] = LoadTexture("assets/icones/vento_icon.png");
@@ -921,6 +938,10 @@ void unloadCombatUI() {
     UnloadTexture(targetArrowTexture);
     UnloadTexture(trapIconTexture);
     UnloadTexture(temptationIconTexture);
+    if (boss1CombatBgTexture.id != 0) {
+        UnloadTexture(boss1CombatBgTexture);
+        boss1CombatBgTexture = (Texture2D){0};
+    }
 
     for (int i = 0; i < 4; i++) {
         if (weaknessIcons[i].id != 0) {
@@ -1161,7 +1182,14 @@ void updateCombatUI() {
 }
 
 void drawCombatUI() {
-    ClearBackground((Color){ 20, 20, 26, 255 });
+    if (isBoss1CombatActive() && boss1CombatBgTexture.id != 0) {
+        Rectangle source = {0.0f, 0.0f, (float)boss1CombatBgTexture.width, (float)boss1CombatBgTexture.height};
+        Rectangle destination = {0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight()};
+        DrawTexturePro(boss1CombatBgTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+    } else {
+        ClearBackground((Color){ 20, 20, 26, 255 });
+    }
+
     drawTopInitiativeBar();
     drawPlayers();
     drawEnemyColumn();
