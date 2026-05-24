@@ -9,19 +9,36 @@
 static const Vector2 WORLD_PC_PARTY_SPAWN = {900.0f, 560.0f};
 static const Vector2 WORLD_CS_RETURN_SPAWN = {860.0f, 850.0f};
 static const char* WORLD_PC_MAP_PATH = "assets/cenarios/PC_ARSENAL_ATUALIZADO.png";
+static const char* WORLD_PC_CAR_PATH = "assets/cenarios/CARRO_PCARSENAL.png";
 static const float WORLD_PC_BORDER_THICKNESS = 128.0f;
+static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 850.0f};
 
 /* Faixa horizontal interpretada como um retangulo fino em y=240. */
-static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 240.0f, 250.0f, 12.0f};
+static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 190.0f, 250.0f, 12.0f};
 static const WorldTransitionZone WORLD_PC_TRANSITIONS[] = {
     {WORLD_PC_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_CS_RETURN_SPAWN}
 };
 
 static Rectangle WORLD_PC_EDGE_BLOCKERS[4];
 static int WORLD_PC_EDGE_BLOCKER_COUNT = 0;
+static Texture2D WORLD_PC_CAR_TEXTURE = {0};
+static Rectangle WORLD_PC_CAR_BLOCKER = {0.0f, 0.0f, 0.0f, 0.0f};
 
 static void drawTriggerRect(Rectangle rect, Color color) {
     DrawRectangleLinesEx(rect, 2.0f, color);
+}
+
+static void drawWorldPCCar(void) {
+    if (WORLD_PC_CAR_TEXTURE.id == 0) {
+        return;
+    }
+
+    Vector2 drawPosition = {
+        WORLD_PC_CAR_BASE_CENTER.x - ((float)WORLD_PC_CAR_TEXTURE.width * 0.5f),
+        WORLD_PC_CAR_BASE_CENTER.y - (float)WORLD_PC_CAR_TEXTURE.height
+    };
+
+    DrawTextureV(WORLD_PC_CAR_TEXTURE, drawPosition, WHITE);
 }
 
 static void rebuildWorldPCBorderBlockers(void) {
@@ -42,15 +59,20 @@ static void rebuildWorldPCBorderBlockers(void) {
 
 static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
     if (outCount != NULL) {
-        *outCount = WORLD_PC_EDGE_BLOCKER_COUNT;
+        *outCount = WORLD_PC_EDGE_BLOCKER_COUNT + ((WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) ? 1 : 0);
     }
 
-    if (outBlockers == NULL || WORLD_PC_EDGE_BLOCKER_COUNT <= 0) {
+    if (outBlockers == NULL) {
         return;
     }
 
+    int idx = 0;
     for (int i = 0; i < WORLD_PC_EDGE_BLOCKER_COUNT; i++) {
-        outBlockers[i] = WORLD_PC_EDGE_BLOCKERS[i];
+        outBlockers[idx++] = WORLD_PC_EDGE_BLOCKERS[i];
+    }
+
+    if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
+        outBlockers[idx++] = WORLD_PC_CAR_BLOCKER;
     }
 }
 
@@ -60,6 +82,12 @@ static void drawWorldPCOverlay(void) {
     for (int i = 0; i < WORLD_PC_EDGE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_PC_EDGE_BLOCKERS[i], 2.0f, GREEN);
     }
+
+    if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
+        DrawRectangleLinesEx(WORLD_PC_CAR_BLOCKER, 2.0f, RED);
+    }
+
+    drawWorldPCCar();
 }
 
 static void getWorldPCBounds(Rectangle* outBounds) {
@@ -93,6 +121,21 @@ static void setupWorldPCNode(void* userData) {
     }
 
     mapTexture = LoadTexture(WORLD_PC_MAP_PATH);
+    if (WORLD_PC_CAR_TEXTURE.id != 0) {
+        UnloadTexture(WORLD_PC_CAR_TEXTURE);
+    }
+
+    WORLD_PC_CAR_TEXTURE = LoadTexture(WORLD_PC_CAR_PATH);
+    if (WORLD_PC_CAR_TEXTURE.id != 0 && WORLD_PC_CAR_TEXTURE.width > 0 && WORLD_PC_CAR_TEXTURE.height > 0) {
+        WORLD_PC_CAR_BLOCKER = (Rectangle){
+            WORLD_PC_CAR_BASE_CENTER.x - ((float)WORLD_PC_CAR_TEXTURE.width * 0.5f),
+            WORLD_PC_CAR_BASE_CENTER.y - (float)WORLD_PC_CAR_TEXTURE.height,
+            (float)WORLD_PC_CAR_TEXTURE.width,
+            (float)WORLD_PC_CAR_TEXTURE.height * 0.92f
+        };
+    } else {
+        WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
+    }
     rebuildWorldPCBorderBlockers();
     configureCameraForCurrentWorld();
 }
@@ -103,7 +146,13 @@ static void teardownWorldPCNode(void) {
         mapTexture.id = 0;
     }
 
+    if (WORLD_PC_CAR_TEXTURE.id != 0) {
+        UnloadTexture(WORLD_PC_CAR_TEXTURE);
+        WORLD_PC_CAR_TEXTURE = (Texture2D){0};
+    }
+
     WORLD_PC_EDGE_BLOCKER_COUNT = 0;
+    WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
 
     unloadParty();
 }
