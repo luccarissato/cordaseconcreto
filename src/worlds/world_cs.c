@@ -3,6 +3,8 @@
 #include "worlds.h"
 #include "../core/game.h"
 #include "../core/collision.h"
+#include "../entities/npc.h"
+#include "../data/dialogues/npc_dialogues.h"
 #include "raylib.h"
 #include <stddef.h>
 
@@ -10,6 +12,8 @@ static const Vector2 WORLD_CS_PARTY_SPAWN = {120.0f, 820.0f};
 static const Vector2 WORLD_MC_LEFT_EDGE_SPAWN = {120.0f, 680.0f};
 static const char* WORLD_CS_MAP_PATH = "assets/cenarios/CS_FRENTE.png";
 static const float WORLD_CS_BORDER_THICKNESS = 128.0f;
+
+NPC worldCSNpc;
 
 static const char* WORLD_CS_TREE_PATH = "assets/cenarios/ARVORE_CSFRENTE.png";
 static const Vector2 WORLD_CS_TREE_POSITION = {1750.0f, 780.0f};
@@ -211,6 +215,7 @@ static void setupWorldCSNode(void* userData) {
     (void)userData;
 
     initParty(1, getWorldSpawnPosition(WORLD_CS_PARTY_SPAWN));
+    initNPC(&worldCSNpc, (Vector2){1220.0f, 520.0f}, "assets/NPCs/npc_placeholder.png", &npc1Dialogue);
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);
@@ -249,6 +254,8 @@ static void teardownWorldCSNode(void) {
         UnloadTexture(WORLD_CS_POST_TEXTURE);
         WORLD_CS_POST_TEXTURE = (Texture2D){0};
     }
+
+    unloadNPC(&worldCSNpc);
 
     WORLD_CS_EDGE_BLOCKER_COUNT = 0;
     WORLD_CS_TREE_BLOCKER_COUNT = 0;

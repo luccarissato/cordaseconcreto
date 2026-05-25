@@ -3,6 +3,8 @@
 #include "../core/state.h"
 #include "../core/collision.h"
 #include "../entities/status_condition.h"
+#include "../items/inventory.h"
+#include "../items/game_items.h"
 #include "boss_ai.h"
 #include "raymath.h"
 #include <string.h>
@@ -16,6 +18,36 @@ extern Player party[PARTY_SIZE];
 extern EnemyManager enemyManager;
 extern Combat combat;
 extern GameState currentGameState;
+extern Inventory playerInventory;
+
+static int inventoryHasItem(Item* item) {
+    if (item == NULL) return 0;
+
+    ListNode* node = playerInventory.items.head;
+    int count = playerInventory.items.size;
+
+    for (int i = 0; i < count && node != NULL; i++) {
+        InventoryItem* invItem = (InventoryItem*)node->data;
+        if (invItem != NULL && invItem->baseItem == item) {
+            return 1;
+        }
+        node = node->next;
+    }
+
+    return 0;
+}
+
+static void grantKeyItem(Item* item) {
+    if (item == NULL) return;
+    if (inventoryHasItem(item)) return;
+    
+    InventoryItem* newItem = malloc(sizeof(InventoryItem));
+    if (newItem == NULL) return;
+
+    newItem->baseItem = item;
+    newItem->quantity = 1;
+    addItemInventory(&playerInventory, newItem);
+}
 
 static void clearCombatStatusState(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
@@ -205,6 +237,8 @@ void endCombat() {
     /* Verifica se foi vitória (todos inimigos derrotados) */
     int aliveEnemies = 0;
     int alivePlayers = 0;
+    int defeatedBoss1 = 0;
+    int defeatedBoss2 = 0;
     
     for (int i = 0; i < PARTY_SIZE; i++) {
         if (party[i].isAlive) {
@@ -215,16 +249,33 @@ void endCombat() {
     for (int i = 0; i < combat.enemyCount; i++) {
         int enemyIndex = combat.enemyIndices[i];
         if (enemyIndex >= 0 && enemyIndex < enemyManager.count) {
-            if (enemyManager.enemies[enemyIndex].isAlive) {
+            Enemy* enemy = &enemyManager.enemies[enemyIndex];
+
+            if (enemy->isAlive) {
                 aliveEnemies++;
+            } else {
+                if (strcmp(enemy->name, "Boss 1") == 0) {
+                    defeatedBoss1 = 1;
+                }
+                if (strcmp(enemy->name, "Boss 2") == 0) {
+                    defeatedBoss2 = 1;
+                }
             }
             /* Remove inimigos do combate */
-            enemyManager.enemies[enemyIndex].inCombat = 0;
+            enemy->inCombat = 0;
         }
     }
     
     /* Se nenhum inimigo vivo = jogadores venceram */
     if (aliveEnemies == 0) {
+        if (defeatedBoss1) {
+            grantKeyItem(&pedaçoDeChave1);
+        }
+
+        if (defeatedBoss2) {
+            grantKeyItem(&pedaçoDeChave2);
+        }
+
         /* Aplica level up a todos os jogadores vivos */
         for (int i = 0; i < PARTY_SIZE; i++) {
             if (party[i].isAlive) {

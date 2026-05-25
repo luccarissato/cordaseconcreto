@@ -184,7 +184,7 @@ static int processWorld2AndarTriggers(Vector2 playerPos) {
 
             spawnEnemy("Boss 1", WORLD_2ANDAR_BOSS1_SPAWN, WORLD_2ANDAR_BOSS1_TEXTURE_PATH, MAX_ENEMIES);
             if (enemyManager.count > bossIndex) {
-                setEnemyStats(&enemyManager.enemies[bossIndex], 600, 40, 20, 12);
+                setEnemyStats(&enemyManager.enemies[bossIndex], 1, 40, 20, 12);
             }
 
             WORLD_2ANDAR_BOSS1_TRIGGER_USED = 1;

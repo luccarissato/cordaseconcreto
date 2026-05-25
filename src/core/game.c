@@ -42,6 +42,22 @@ Camera2D camera;
 Player party[PARTY_SIZE];
 Inventory playerInventory;
 
+static void clearPlayerInventory(void) {
+    ListNode* current = playerInventory.items.head;
+    int count = playerInventory.items.size;
+
+    for (int i = 0; i < count && current != NULL; i++) {
+        ListNode* next = current->next;
+        InventoryItem* item = (InventoryItem*)current->data;
+        if (item != NULL) {
+            free(item);
+        }
+        current = next;
+    }
+
+    clearList(&playerInventory.items);
+}
+
 void initParty(int applyGrowth, Vector2 spawnPosition);
 void updateParty(const Rectangle* blockers, int blockerCount);
 void drawParty();
@@ -126,6 +142,8 @@ void initGame() {
     initMenu();
     initGameMenu();
     initDialogue();
+    initInventory(&playerInventory);
+    clearPlayerInventory();
     initCombat();
     initCombatUI();
     initWorldRegistry();
@@ -160,6 +178,8 @@ void updateGame() {
                 &interactableManager, 
                 &interactableBlockerCount
             );
+            int npcBlockerCount = 0;
+            collectLoadedNpcBlockers(NULL, &npcBlockerCount);
             
             /* Coleta blockers de inimigos */
             Rectangle enemyBlockers[MAX_ENEMIES];
@@ -167,10 +187,14 @@ void updateGame() {
             getEnemyBlockers(enemyBlockers, &enemyBlockerCount);
             
             /* Monta array com todos os blockers (NPC + mundo + interactables + enemies) */
-            int totalBlockerCount = 1 + worldBlockerCount + interactableBlockerCount + enemyBlockerCount;
+            int totalBlockerCount = npcBlockerCount + worldBlockerCount + interactableBlockerCount + enemyBlockerCount;
             Rectangle* allBlockers = malloc(sizeof(Rectangle) * totalBlockerCount);
-            allBlockers[0] = getColliderRect(testNPC.position, testNPC.collider);
-            int blockerOffset = 1;
+            int blockerOffset = 0;
+
+            if (npcBlockerCount > 0) {
+                collectLoadedNpcBlockers(&allBlockers[blockerOffset], &npcBlockerCount);
+                blockerOffset += npcBlockerCount;
+            }
 
             if (worldBlockerCount > 0) {
                 collectCurrentWorldBlockers(&allBlockers[blockerOffset], &worldBlockerCount);
@@ -190,7 +214,7 @@ void updateGame() {
             free(allBlockers);
             free(interactableBlockers);
             
-            updateNPC(&testNPC, party[0].position);
+            updateLoadedNpcs(party[0].position);
             updateInteractables(&interactableManager, party[0].position);
             /*
              * As zonas de transicao ja existiam nos mundos, mas nao eram
@@ -237,7 +261,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawCurrentWorldOverlay();
-            drawNPC(&testNPC);
+            drawLoadedNpcs();
             drawInteractables(&interactableManager);
             drawEnemies();
             drawParty();
@@ -248,7 +272,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawCurrentWorldOverlay();
-            drawNPC(&testNPC);
+            drawLoadedNpcs();
             drawInteractables(&interactableManager);
             drawEnemies();
             drawParty();
@@ -264,7 +288,7 @@ void drawGame() {
             BeginMode2D(camera);
             DrawTexture(mapTexture, 0, 0, WHITE);
             drawCurrentWorldOverlay();
-            drawNPC(&testNPC);
+            drawLoadedNpcs();
             drawInteractables(&interactableManager);
             drawEnemies();
             drawParty();
@@ -374,6 +398,7 @@ void initParty(int applyGrowth, Vector2 spawnPosition) {
 void resetGameState() {
     currentMenuState = MENU_MAIN;
     currentGameState = STATE_MENU;
+    clearPlayerInventory();
     requestWorldLoadCurrent();
 }
 

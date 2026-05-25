@@ -35,7 +35,7 @@ extern Inventory playerInventory;
 void initParty(int applyGrowth, Vector2 spawnPosition);
 void unloadParty(void);
 
-static int testWorldIncludeStarterItems = 1;
+static int testWorldIncludeStarterItems = 0;
 
 static void clearInventoryContents(void) {
     if (playerInventory.items.head == NULL || playerInventory.items.size == 0) {

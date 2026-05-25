@@ -3,6 +3,8 @@
 #include "worlds.h"
 #include "../core/game.h"
 #include "../core/collision.h"
+#include "../entities/npc.h"
+#include "../data/dialogues/npc_dialogues.h"
 #include "raylib.h"
 #include <stddef.h>
 
@@ -12,6 +14,9 @@ static const char* WORLD_PC_MAP_PATH = "assets/cenarios/PC_ARSENAL_ATUALIZADO.pn
 static const char* WORLD_PC_CAR_PATH = "assets/cenarios/CARRO_PCARSENAL.png";
 static const float WORLD_PC_BORDER_THICKNESS = 128.0f;
 static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 800.0f};
+
+NPC worldPCNpc1;
+NPC worldPCNpc2;
 
 /* Faixa horizontal interpretada como um retangulo fino em y=240. */
 static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 200.0f, 250.0f, 12.0f};
@@ -129,6 +134,8 @@ static void setupWorldPCNode(void* userData) {
     (void)userData;
 
     initParty(1, getWorldSpawnPosition(WORLD_PC_PARTY_SPAWN));
+    initNPC(&worldPCNpc1, (Vector2){500.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc2Dialogue);
+    initNPC(&worldPCNpc2, (Vector2){1750.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc3Dialogue);
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);
@@ -172,6 +179,9 @@ static void teardownWorldPCNode(void) {
         UnloadTexture(WORLD_PC_CAR_TEXTURE);
         WORLD_PC_CAR_TEXTURE = (Texture2D){0};
     }
+
+    unloadNPC(&worldPCNpc1);
+    unloadNPC(&worldPCNpc2);
 
     WORLD_PC_EDGE_BLOCKER_COUNT = 0;
     WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};

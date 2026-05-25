@@ -18,4 +18,8 @@ void updateNPC(NPC* npc, Vector2 playerPos);
 void drawNPC(NPC* npc);
 void unloadNPC(NPC* npc);
 
+int collectLoadedNpcBlockers(Rectangle* outBlockers, int* outCount);
+void updateLoadedNpcs(Vector2 playerPos);
+void drawLoadedNpcs(void);
+
 #endif
