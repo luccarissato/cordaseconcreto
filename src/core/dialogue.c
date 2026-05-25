@@ -7,7 +7,7 @@ static DialogueTree* currentTree = NULL;
 
     void initDialogue() {
         dialogueBg = LoadTexture(
-            "assets/interface/dialogo_background_placeholder.png"
+            "assets/interface/dialogo_background.png"
         );
     }
 
@@ -70,10 +70,10 @@ void drawDialogue() {
 
     DrawText(
         node->text,
-        bgX + 80,
-        bgY + 60,
+        bgX + 160,
+        bgY + 160,
         32,
-        WHITE
+        BLACK
     );
 
     if (node->hasChoice) {

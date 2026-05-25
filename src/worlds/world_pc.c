@@ -23,9 +23,7 @@ static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 800.0f};
 NPC worldPCNpc1;
 NPC worldPCNpc2;
 
-/* Faixa horizontal interpretada como um retangulo fino em y=240. */
 static const Rectangle WORLD_PC_PREVIOUS_WORLD_TRIGGER = {780.0f, 200.0f, 250.0f, 12.0f};
-/* Faixa horizontal interpretada como um retangulo fino em y=200. */
 static const Rectangle WORLD_PC_NEXT_WORLD_TRIGGER = {1370.0f, 200.0f, 180.0f, 12.0f};
 static const WorldTransitionZone WORLD_PC_TRANSITIONS[] = {
     {WORLD_PC_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_CS_RETURN_SPAWN},
@@ -156,7 +154,6 @@ static int processWorldPCTriggers(Vector2 playerPos) {
     if (IsKeyPressed(KEY_Z)) {
         Rectangle coinArea = getWorldPCCoinPickupArea();
         if (CheckCollisionRecs(playerRect, coinArea)) {
-            /* check if already in inventory */
             ListNode* cur = playerInventory.items.head;
             int found = 0;
             for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
@@ -211,9 +208,7 @@ static void setupWorldPCNode(void* userData) {
         WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
     }
 
-    /* Custom horizontal blockers requested by user */
     WORLD_PC_CUSTOM_BLOCKERS[0] = (Rectangle){0.0f, 220.0f, 776.0f - 0.0f, 12.0f};
-    /* Split second blocker into two ranges: 1035..1360 and 1560..1870 */
     WORLD_PC_CUSTOM_BLOCKERS[1] = (Rectangle){1035.0f, 220.0f, 1360.0f - 1035.0f, 12.0f};
     WORLD_PC_CUSTOM_BLOCKERS[2] = (Rectangle){1560.0f, 220.0f, 1870.0f - 1560.0f, 12.0f};
     WORLD_PC_CUSTOM_BLOCKER_COUNT = 3;

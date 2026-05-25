@@ -25,7 +25,6 @@ static const char* WORLD_2ANDAR_BOSS1_TEXTURE_PATH = "assets/antagonistas/boss1_
 static const float WORLD_2ANDAR_BORDER_THICKNESS = 128.0f;
 static const float WORLD_2ANDAR_DOOR_HALF_WIDTH = 200.0f;
 
-/* Small square trigger interpreted as a 12x12 area centered on the requested point. */
 static const Rectangle WORLD_2ANDAR_PREVIOUS_WORLD_TRIGGER = {1755.0f, 1020.0f, 12.0f, 12.0f};
 static const Rectangle WORLD_2ANDAR_BOSS1_TRIGGER = {150.0f, 900.0f, 12.0f, 12.0f};
 static const Vector2 WORLD_2ANDAR_BOSS1_SPAWN = {150.0f, 900.0f};

@@ -21,9 +21,7 @@ static const Vector2 WORLD_2ANDAR_RETURN_SPAWN = {1690.0f, 740.0f};
 static const char* WORLD_1ANDAR_MAP_PATH = "assets/cenarios/1ANDAR_PCFREVO.png";
 static const float WORLD_1ANDAR_BORDER_THICKNESS = 128.0f;
 
-/* A faixa de retorno foi interpretada como um retangulo fino vertical em x=35. */
 static const Rectangle WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER = {35.0f, 405.0f, 12.0f, 155.0f};
-/* Small square trigger interpreted as a 12x12 area centered on the requested point. */
 static const Rectangle WORLD_1ANDAR_NEXT_WORLD_TRIGGER = {1755.0f, 900.0f, 12.0f, 12.0f};
 static const WorldTransitionZone WORLD_1ANDAR_TRANSITIONS[] = {
     {WORLD_1ANDAR_NEXT_WORLD_TRIGGER, WORLD_TRANSITION_NEXT, WORLD_2ANDAR_RETURN_SPAWN},
@@ -56,19 +54,14 @@ static void rebuildWorld1AndarBorderBlockers(void) {
 }
 
 static void rebuildWorld1AndarCustomBlockers(void) {
-    /* 1) vertical at x=1080 from y=840..1075 */
     WORLD_1ANDAR_CUSTOM_BLOCKERS[0] = (Rectangle){1080.0f, 840.0f, 12.0f, 1075.0f - 840.0f};
 
-    /* 2) horizontal at y=825 from x=1080..1745 */
     WORLD_1ANDAR_CUSTOM_BLOCKERS[1] = (Rectangle){1080.0f, 825.0f, 1745.0f - 1080.0f, 12.0f};
 
-    /* 3) horizontal at y=600 from x=35..720 */
     WORLD_1ANDAR_CUSTOM_BLOCKERS[2] = (Rectangle){35.0f, 600.0f, 720.0f - 35.0f, 12.0f};
 
-    /* 4) horizontal at y=705 from x=60..720 */
     WORLD_1ANDAR_CUSTOM_BLOCKERS[3] = (Rectangle){60.0f, 705.0f, 720.0f - 60.0f, 12.0f};
 
-    /* 5) horizontal at y=225 from x=5..1895 */
     WORLD_1ANDAR_CUSTOM_BLOCKERS[4] = (Rectangle){5.0f, 225.0f, 1895.0f - 5.0f, 12.0f};
 
     WORLD_1ANDAR_CUSTOM_BLOCKER_COUNT = 5;
@@ -104,7 +97,6 @@ static void drawWorld1AndarOverlay(void) {
         DrawRectangleLinesEx(WORLD_1ANDAR_CUSTOM_BLOCKERS[i], 2.0f, RED);
     }
 
-    /* Debug: draw pickup area for Coracao de Barro */
     Rectangle heartArea = {70.0f - 6.0f, 835.0f - 6.0f, 12.0f, 12.0f};
     DrawRectangleLinesEx(heartArea, 2.0f, YELLOW);
     DrawText("Coracao de Barro", (int)heartArea.x, (int)(heartArea.y - 14.0f), 10, WHITE);
@@ -127,11 +119,9 @@ static int processWorld1AndarTriggers(Vector2 playerPos) {
     extern Inventory playerInventory;
 
     Rectangle playerRect = getColliderRect(playerPos, playerCollider);
-    /* Pickup: Coracao de Barro at ~70,835 */
     if (IsKeyPressed(KEY_Z)) {
         Rectangle heartArea = {70.0f - 6.0f, 835.0f - 6.0f, 12.0f, 12.0f};
         if (CheckCollisionRecs(playerRect, heartArea)) {
-            /* check if already in inventory */
             ListNode* cur = playerInventory.items.head;
             int found = 0;
             for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
@@ -163,7 +153,6 @@ static void setupWorld1AndarNode(void* userData) {
 
     initParty(0, getWorldSpawnPosition(WORLD_1ANDAR_PARTY_SPAWN));
 
-    /* Initialize interactables for this world and add the color puzzle */
     initInteractableManager(&interactableManager);
 
     Interactable colorPuzzle = createColorPuzzle(

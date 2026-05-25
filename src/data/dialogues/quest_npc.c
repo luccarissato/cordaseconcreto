@@ -5,7 +5,7 @@ DialogueNode questIntroNodes[] = {
     { "Ah, eu reconheco voces.", 0, NULL, NULL, 1, -1 },
     { "Vocês vieram se livrar das criaturas que estão assolando esse lugar, não é?", 0, NULL, NULL, 2, -1 },
     { "Eu posso ajudar vocês, mas primeiro preciso saber se estão aptos para a tarefa.", 0, NULL, NULL, 3, -1 },
-    { "Existem três itens escondidos pela região, mas a sua localização está escondida por uma charada:", 0, NULL, NULL, 4, -1 },
+    { "Existem três itens escondidos pela região, mas a sua localização\n\nestá escondida por uma charada:", 0, NULL, NULL, 4, -1 },
     { "O primeiro descansa atrás do aço esquecido.", 0, NULL, NULL, 5, -1 },
     { "O segundo se esconde no peito de carne e memória.", 0, NULL, NULL, 6, -1 },
     { "O terceiro espera aonde a quarta raiz encosta o chão.", 0, NULL, NULL, 7, -1 },

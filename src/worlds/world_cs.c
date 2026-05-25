@@ -20,7 +20,6 @@ static const Vector2 WORLD_CS_TREE_POSITION = {1750.0f, 780.0f};
 static const char* WORLD_CS_POST_PATH = "assets/cenarios/POSTE_CSFRENTE.png";
 static const Vector2 WORLD_CS_POST_POSITION = {90.0f, 780.0f};
 
-/* Faixa horizontal interpretada como um retangulo fino em y=1075. */
 static const Rectangle WORLD_CS_NEXT_WORLD_TRIGGER = {740.0f, 1075.0f, 285.0f, 12.0f};
 static const Rectangle WORLD_CS_PREVIOUS_WORLD_TRIGGER = {1835.0f, 800.0f, 160.0f, 270.0f};
 static const WorldTransitionZone WORLD_CS_TRANSITIONS[] = {
@@ -77,13 +76,10 @@ static void rebuildWorldCSTreeBlockers(void) {
 }
 
 static void rebuildWorldCSCustomBlockers(void) {
-    /* Horizontal blocker from 1145 x 500 to 1915 x 500 (thin horizontal band) */
     WORLD_CS_CUSTOM_BLOCKERS[0] = (Rectangle){1145.0f, 520.0f, 1915.0f - 1145.0f, 12.0f};
 
-    /* Horizontal blocker from 0 x 245 to 1080 x 245 */
     WORLD_CS_CUSTOM_BLOCKERS[1] = (Rectangle){0.0f, 245.0f, 1080.0f, 12.0f};
 
-    /* Square with top-left at 1085 x 300 to 1140 x 360 */
     WORLD_CS_CUSTOM_BLOCKERS[2] = (Rectangle){1085.0f, 300.0f, 1140.0f - 1085.0f, 360.0f - 300.0f};
 
     WORLD_CS_CUSTOM_BLOCKER_COUNT = 3;

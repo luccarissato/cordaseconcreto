@@ -132,8 +132,6 @@ int loadCurrentWorld(void) {
 }
 
 int loadNextWorld(void) {
-    /* Nao avance worldCurrent antes do load: isso fazia o teardown atingir o
-     * mundo novo, deixando o mapa antigo vivo durante a troca circular. */
     WorldNode* target = (worldCurrent == NULL) ? worldHead : worldCurrent->next;
 
     if (target == NULL) {
@@ -144,8 +142,6 @@ int loadNextWorld(void) {
 }
 
 int loadPreviousWorld(void) {
-    /* Mesmo cuidado de loadNextWorld: calculamos o alvo sem perder a referencia
-     * do mundo atual, para teardown/setup atualizarem ponteiro e recursos certos. */
     WorldNode* target = (worldCurrent == NULL) ? worldHead : worldCurrent->prev;
 
     if (target == NULL) {
@@ -213,11 +209,6 @@ int processWorldTransitionZones(Rectangle playerRect, const WorldTransitionZone*
 
     for (int i = 0; i < zoneCount; i++) {
         if (CheckCollisionRecs(playerRect, zones[i].bounds)) {
-            /*
-             * Portais usam exclusivamente os ponteiros da lista circular.
-             * A zona apenas escolhe a direcao; o mundo alvo vem de current->next
-             * ou current->prev dentro de loadNextWorld/loadPreviousWorld.
-             */
             if (zones[i].direction == WORLD_TRANSITION_PREVIOUS) {
                 requestWorldTransitionPrevious(zones[i].targetSpawnPosition);
             } else {

@@ -14,7 +14,6 @@
 #include <stddef.h>
 
 static const Vector2 WORLD_MC_PARTY_SPAWN = {1680.0f, 680.0f};
-/* Spawn fica na borda direita do CS, mas fora do trigger de retorno para evitar troca imediata. */
 static const Vector2 WORLD_CS_RIGHT_EDGE_SPAWN = {1600.0f, 820.0f};
 static const char* WORLD_MC_MAP_PATH = "assets/cenarios/MZERO_ATUALIZADO.png";
 static const char* WORLD_MC_TREE_PATH = "assets/cenarios/ARVORE2_MZERO.png";
@@ -128,7 +127,6 @@ static int worldMCQuestPreInteract(NPC* npc) {
         npc->dialogueTree = &questNpcCompleteDialogue;
         startDialogue(npc->dialogueTree);
 
-        /* reward: increase all party members by 1 level */
         for (int i = 0; i < PARTY_SIZE; i++) {
             playerLevelUp(&party[i]);
         }
@@ -213,7 +211,6 @@ static void drawWorldMCOverlay(void) {
     if (treeRect.width > 0 && treeRect.height > 0) {
         pickArea = (Rectangle){ treeRect.x - 24.0f, treeRect.y, treeRect.width + 48.0f, treeRect.height };
     } else {
-        /* fallback box centered on the known base center */
         Vector2 base = WORLD_MC_TREE_POSITIONS_RD[1];
         pickArea = (Rectangle){ base.x - 36.0f, base.y - 120.0f, 72.0f, 120.0f };
     }
@@ -237,20 +234,16 @@ static int processWorldMCTriggers(Vector2 playerPos) {
 
     Rectangle playerRect = getColliderRect(playerPos, playerCollider);
 
-    /* Pickup: Casca do Mangue logo embaixo da caixa de colisão da árvore RD index 1 (intencionalmente RD[1]) */
     if (IsKeyPressed(KEY_Z)) {
         Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
         Rectangle pickArea;
-        /* Place pickup just below the collision rect: small gap (6px) and height 40px */
         if (treeRect.width > 0 && treeRect.height > 0) {
             pickArea = (Rectangle){ treeRect.x, treeRect.y + treeRect.height + 6.0f, treeRect.width, 40.0f };
         } else {
-            /* fallback when texture not loaded: box below base center */
             Vector2 base = WORLD_MC_TREE_POSITIONS_RD[1];
             pickArea = (Rectangle){ base.x - 36.0f, base.y + 6.0f, 72.0f, 40.0f };
         }
         if (CheckCollisionRecs(playerRect, pickArea)) {
-            /* check inventory */
             ListNode* cur = playerInventory.items.head;
             int found = 0;
             for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
@@ -282,7 +275,6 @@ static void setupWorldMCNode(void* userData) {
 
     initParty(0, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
 
-    /* Initialize quest NPC */
     initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 445.0f}, "assets/NPCs/npc_placeholder.png", &questNpcIntroDialogue);
     worldMCQuestNpc.preInteract = worldMCQuestPreInteract;
 
