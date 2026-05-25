@@ -21,7 +21,7 @@ typedef struct {
 } DialogueTree;
 
 void initDialogue();
-void startDialogue(DialogueTree* tree);
+void startDialogue(DialogueTree* tree, const char* speaker);
 void updateDialogue();
 void drawDialogue();
 int isDialogueActive();

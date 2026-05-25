@@ -133,6 +133,7 @@ void updateCameraTarget(Vector2 target) {
 }
 
 void initGame() {
+    SetConfigFlags(FLAG_FULLSCREEN_MODE);
     InitWindow(1920, 1080, "Cordas & Concreto");
     Image windowIcon = LoadImage("assets/icones/window_icon.png");
     SetWindowIcon(windowIcon);
@@ -324,10 +325,10 @@ void closeGame() {
 }
 
 void initParty(int applyGrowth, Vector2 spawnPosition) {
-    initPlayer(&party[0], "p1", spawnPosition, "1");
-    initPlayer(&party[1], "p2", spawnPosition, "2");
-    initPlayer(&party[2], "p3", spawnPosition, "3");
-    initPlayer(&party[3], "p4", spawnPosition, "4");
+    initPlayer(&party[0], "p1", spawnPosition, "O Mestre");
+    initPlayer(&party[1], "p2", spawnPosition, "O Arauto");
+    initPlayer(&party[2], "p3", spawnPosition, "A Cirandeira");
+    initPlayer(&party[3], "p4", spawnPosition, "O Repentista");
 
     //maracatu
     party[0].stats.baseHP = 60;

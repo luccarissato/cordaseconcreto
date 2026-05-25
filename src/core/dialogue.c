@@ -4,6 +4,7 @@
 
 static Texture2D dialogueBg;
 static DialogueTree* currentTree = NULL;
+static const char* currentSpeaker = NULL;
 
     void initDialogue() {
         dialogueBg = LoadTexture(
@@ -11,8 +12,9 @@ static DialogueTree* currentTree = NULL;
         );
     }
 
-    void startDialogue(DialogueTree* tree) {
+    void startDialogue(DialogueTree* tree, const char* speaker) {
         currentTree = tree;
+        currentSpeaker = speaker;
         currentTree->currentNode = 0;
         currentTree->active = 1;
         currentTree->selectedChoice = 0;
@@ -47,11 +49,12 @@ static DialogueTree* currentTree = NULL;
                 nextNode = node->nextLeft;
             }
 
-            if (nextNode == -1) {
-                currentTree->active = 0;
-                currentGameState = STATE_EXPLORATION;
-                return;
-            }
+                    if (nextNode == -1) {
+                        currentTree->active = 0;
+                        currentGameState = STATE_EXPLORATION;
+                        currentSpeaker = NULL;
+                        return;
+                    }
 
             currentTree->currentNode = nextNode;
             currentTree->selectedChoice = 0;
@@ -64,9 +67,13 @@ void drawDialogue() {
     DialogueNode* node = &currentTree->nodes[currentTree->currentNode];
 
     int bgX = 160;
-    int bgY = 700;
+    int bgY = 650;
 
     DrawTexture(dialogueBg, bgX, bgY, WHITE);
+
+    if (currentSpeaker != NULL) {
+        DrawText(currentSpeaker, bgX + 110, bgY + 70, 30, WHITE);
+    }
 
     DrawText(
         node->text,
@@ -105,4 +112,5 @@ int isDialogueActive() {
 
 void closeDialogue() {
     UnloadTexture(dialogueBg);
+    currentSpeaker = NULL;
 }

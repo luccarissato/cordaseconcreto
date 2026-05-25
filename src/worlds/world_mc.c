@@ -125,7 +125,7 @@ static int worldMCQuestPreInteract(NPC* npc) {
         removeItemFromInventoryByName("Casca do Mangue");
 
         npc->dialogueTree = &questNpcCompleteDialogue;
-        startDialogue(npc->dialogueTree);
+        startDialogue(npc->dialogueTree, npc->name);
 
         for (int i = 0; i < PARTY_SIZE; i++) {
             playerLevelUp(&party[i]);
@@ -275,7 +275,7 @@ static void setupWorldMCNode(void* userData) {
 
     initParty(0, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
 
-    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 445.0f}, "assets/NPCs/npc_placeholder.png", &questNpcIntroDialogue);
+    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 445.0f}, "assets/NPCs/npc_placeholder.png", &questNpcIntroDialogue, "Natacha");
     worldMCQuestNpc.preInteract = worldMCQuestPreInteract;
 
     if (mapTexture.id != 0) {

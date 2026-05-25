@@ -34,7 +34,7 @@ void door_on_interact(Interactable* self, void* playerData) {
         return;
     }
     
-    startDialogue(data->questionTree);
+    startDialogue(data->questionTree, NULL);
     data->dialogueWasActive = 1;
 }
 
