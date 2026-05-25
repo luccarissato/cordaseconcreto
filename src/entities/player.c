@@ -361,13 +361,13 @@ void drawPlayer(Player* p) {
             break;
     }
 
-    renderStatusAura(tex, src, p->position, (Vector2){0, 0}, 1.0f, &p->statusList);
-
     Vector2 drawPos = { p->position.x + 50.0f, p->position.y };
+    renderStatusAura(tex, src, drawPos, (Vector2){0, 0}, 1.0f, &p->statusList);
+
     DrawTextureRec(tex, src, drawPos, WHITE);
 
     Vector2 spriteSize = {fabsf((float)src.width), (float)src.height};
-    renderStatusBuffs(&p->statusList, p->position, spriteSize);
+    renderStatusBuffs(&p->statusList, drawPos, spriteSize);
 
     // colision debug
     Rectangle colliderRect = getColliderRect(p->position, p->collider);

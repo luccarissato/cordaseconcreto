@@ -143,9 +143,9 @@ void renderStatusAura(
     float spriteWidth = fabsf(srcRect.width);
     float spriteHeight = fabsf(srcRect.height);
     float maxDim = (spriteWidth > spriteHeight) ? spriteWidth : spriteHeight;
-    float adaptiveOffset = maxDim * 0.015f;  // 1.5% do tamanho
-    if (adaptiveOffset < 2.0f) adaptiveOffset = 2.0f;    // mínimo 2px
-    if (adaptiveOffset > 8.0f) adaptiveOffset = 8.0f;    // máximo 8px
+    float adaptiveOffset = maxDim * 0.035f;  // 3.5% do tamanho: visivel alem da outline preta
+    if (adaptiveOffset < 5.0f) adaptiveOffset = 5.0f;    // minimo para sprites com contorno grosso
+    if (adaptiveOffset > 14.0f) adaptiveOffset = 14.0f;  // evita aura excessiva em sprites grandes
     
     Vector2 adaptiveAuraOffsets[8];
     float offsetScale = adaptiveOffset / 3.0f;  // 3 era o original
@@ -169,30 +169,27 @@ void renderStatusAura(
     }
 #endif
     
-    // === PATCH 1: Normalizar srcRect para desenho (fabsf) ===
-    Rectangle dstRectBase = {
-        spritePos.x,
-        spritePos.y,
-        spriteWidth * scale,
-        spriteHeight * scale
-    };
-    
-    // Desenha N passes deslocados para criar outline suave
-    for (int pass = 0; pass < STATUS_VISUAL_PASS_COUNT; pass++) {
-        Vector2 offset = adaptiveAuraOffsets[pass];
-        Vector2 shiftedPos = {
-            spritePos.x + offset.x * scale,
-            spritePos.y + offset.y * scale
-        };
-        
-        Rectangle dstRect = {
-            shiftedPos.x,
-            shiftedPos.y,
-            spriteWidth * scale,
-            spriteHeight * scale
-        };
-        
-        DrawTexturePro(sprite, srcRect, dstRect, origin, 0.0f, auraColor);
+    for (int ring = 2; ring >= 1; ring--) {
+        Color ringColor = auraColor;
+        ringColor.a = (unsigned char)((auraColor.a * ring) / 2);
+
+        // Desenha N passes deslocados para criar outline suave
+        for (int pass = 0; pass < STATUS_VISUAL_PASS_COUNT; pass++) {
+            Vector2 offset = adaptiveAuraOffsets[pass];
+            Vector2 shiftedPos = {
+                spritePos.x + offset.x * scale * ring,
+                spritePos.y + offset.y * scale * ring
+            };
+            
+            Rectangle dstRect = {
+                shiftedPos.x,
+                shiftedPos.y,
+                spriteWidth * scale,
+                spriteHeight * scale
+            };
+            
+            DrawTexturePro(sprite, srcRect, dstRect, origin, 0.0f, ringColor);
+        }
     }
     
     #if STATUS_VIS_DEBUG

@@ -34,6 +34,7 @@ static Texture2D targetArrowTexture;
 static Texture2D trapIconTexture;
 static Texture2D temptationIconTexture;
 static Texture2D boss1CombatBgTexture;
+static Texture2D playerCombatTextures[PARTY_SIZE];
 
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
@@ -62,6 +63,22 @@ static int isExtraTurn = 0;
 static int testEnemyNextTargetIndex = 0;
 
 static Texture2D weaknessIcons[4];
+
+static void loadPlayerCombatTextures(void) {
+    playerCombatTextures[0] = LoadTexture("assets/personagens/MARACATU_LUTA.png");
+    playerCombatTextures[1] = LoadTexture("assets/personagens/MANGUEBEAT_LUTA.png");
+    playerCombatTextures[2] = LoadTexture("assets/personagens/CIRANDEIRA_LUTA.png");
+    playerCombatTextures[3] = LoadTexture("assets/personagens/COCODERODA_LUTA.png");
+}
+
+static void unloadPlayerCombatTextures(void) {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        if (playerCombatTextures[i].id != 0) {
+            UnloadTexture(playerCombatTextures[i]);
+            playerCombatTextures[i] = (Texture2D){0};
+        }
+    }
+}
 
 static int isCombatItemVisible(InventoryItem* item, int includeKeyItems);
 static void removeItemNodeAndFree(InventoryItem* item);
@@ -688,18 +705,25 @@ static void drawTopInitiativeBar() {
 
 static void drawPlayers() {
     for (int i = 0; i < PARTY_SIZE; i++) {
-        int x = 90;
+        int x = 1200;
         int y = 125 + (i * 165);
 
-        if (party[i].front.id != 0) {
-            Vector2 spritePos = {(float)x + 40, (float)y};
-            Rectangle srcRect = {0, 0, (float)party[i].front.width, (float)party[i].front.height};
+        Texture2D spriteTexture = playerCombatTextures[i].id != 0 ? playerCombatTextures[i] : party[i].front;
+
+        DrawText(party[i].name, x + 185, y + - 10, 24, RAYWHITE);
+        DrawText(TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP), x + 185, y + 24, 20, GREEN);
+        DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 185, y + 52, 20, SKYBLUE);
+
+        if (spriteTexture.id != 0) {
+            float spriteScale = 1.0f;
+            Vector2 spritePos = {(float)x - 10, (float)y};
+            Rectangle srcRect = {0, 0, (float)spriteTexture.width, (float)spriteTexture.height};
             
-            renderStatusAura(party[i].front, srcRect, spritePos, (Vector2){0, 0}, 0.25f, &party[i].statusList);
+            renderStatusAura(spriteTexture, srcRect, spritePos, (Vector2){0, 0}, spriteScale, &party[i].statusList);
             
-            DrawTextureEx(party[i].front, spritePos, 0.0f, 0.25f, party[i].isAlive ? WHITE : GRAY);
+            DrawTextureEx(spriteTexture, spritePos, 0.0f, spriteScale, party[i].isAlive ? WHITE : GRAY);
             
-            Vector2 spriteSize = {party[i].front.width * 0.25f, party[i].front.height * 0.25f};
+            Vector2 spriteSize = {spriteTexture.width * spriteScale, spriteTexture.height * spriteScale};
             renderStatusBuffs(&party[i].statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, party[i].isAlive ? DARKBLUE : DARKGRAY);
@@ -714,10 +738,6 @@ static void drawPlayers() {
         if (currentPlayerIndex() == i) {
             DrawTexture(turnArrowTexture, x - 35, y + 10, WHITE);
         }
-
-        DrawText(party[i].name, x + 145, y + - 10, 24, RAYWHITE);
-        DrawText(TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP), x + 145, y + 24, 20, GREEN);
-        DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 145, y + 52, 20, SKYBLUE);
 
         drawPlayerWeaknessIcon(i, x, y, 0.25f);
         drawPlayerTrapIcon(i, x, y, 0.25f);
@@ -759,7 +779,7 @@ static void drawEnemyColumn() {
         if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) continue;
 
         Enemy* enemy = &enemyManager.enemies[worldEnemyIndex];
-        int x = 1200;
+        int x = 120;
         int y = 345 + (i * 165);
 
         if (enemy->texture.id != 0) {
@@ -792,11 +812,7 @@ static void drawEnemyColumn() {
 }
 
 static void drawBottomPanel() {
-    if (combatUiTexture.id != 0) {
-        DrawTexture(combatUiTexture, 0, 730, WHITE);
-    } else {
-        DrawRectangle(0, 730, 1920, 350, ColorAlpha(BLACK, 0.85f));
-    }
+    DrawRectangle(0, 730, 1920, 350, ColorAlpha(BLACK, 0.85f));
 
     if (combatUiState == COMBAT_UI_MAIN) {
         //substituir por textura eventualmente ou só pela fonte com drawTextEx
@@ -917,12 +933,12 @@ static void drawBottomPanel() {
 }
 
 void initCombatUI() {
-    combatUiTexture = LoadTexture("assets/interface/ui_combate_placeholder.png");
     turnArrowTexture = LoadTexture("assets/interface/seta_placeholder.png");
     targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
     trapIconTexture = LoadTexture("assets/icones/trap.png");
     temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
     boss1CombatBgTexture = LoadTexture("assets/cenarios/LUTA_PCFREVO.png");
+    loadPlayerCombatTextures();
 
     weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
     weaknessIcons[1] = LoadTexture("assets/icones/vento_icon.png");
@@ -933,11 +949,11 @@ void initCombatUI() {
 }
 
 void unloadCombatUI() {
-    UnloadTexture(combatUiTexture);
     UnloadTexture(turnArrowTexture);
     UnloadTexture(targetArrowTexture);
     UnloadTexture(trapIconTexture);
     UnloadTexture(temptationIconTexture);
+    unloadPlayerCombatTextures();
     if (boss1CombatBgTexture.id != 0) {
         UnloadTexture(boss1CombatBgTexture);
         boss1CombatBgTexture = (Texture2D){0};

@@ -11,7 +11,7 @@
 
 /* Constantes de renderização - AJUSTÁVEIS */
 #define STATUS_VISUAL_PASS_COUNT        8           /* Passes para aura */
-#define STATUS_VISUAL_AURA_ALPHA        160         /* Alpha base (~0.63) */
+#define STATUS_VISUAL_AURA_ALPHA        210         /* Alpha base forte para vencer outlines pretas */
 #define STATUS_VISUAL_CYCLE_PERIOD      0.8f        /* Segundos para ciclar cores */
 #define STATUS_VISUAL_BUFF_SPARK_RADIUS 2           /* Raio dos brilhos */
 #define STATUS_VISUAL_BUFF_PULSE_SPEED  3.0f        /* Velocidade da pulsação */

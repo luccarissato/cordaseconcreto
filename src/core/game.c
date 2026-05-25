@@ -216,12 +216,6 @@ void updateGame() {
             
             updateLoadedNpcs(party[0].position);
             updateInteractables(&interactableManager, party[0].position);
-            /*
-             * As zonas de transicao ja existiam nos mundos, mas nao eram
-             * chamadas no loop de exploracao. A checagem fica depois da
-             * movimentacao para usar o colisor atualizado do jogador e antes
-             * do combate para nao processar eventos do mapa antigo.
-             */
             processCurrentWorldTriggers(party[0].position);
             if (processPendingWorldLoad()) {
                 break;
