@@ -6,16 +6,185 @@
 #include "../entities/player.h"
 #include "raylib.h"
 #include <stddef.h>
+#include <stdlib.h>
 
 static const Vector2 WORLD_CS_LABIRINTO_RETURN_SPAWN = {880.0f, 410.0f};
 static const char* WORLD_LABIRINTO_MAP_PATH = "assets/cenarios/PUZZLE_CS.png";
+static const char* WORLD_LABIRINTO_BOSS2_TEXTURE_PATH = "assets/antagonistas/PAPA_FIGO.png";
 static const float WORLD_LABIRINTO_PLAYER_SCALE = 35.0f / 184.0f;
 static const float WORLD_LABIRINTO_BORDER_THICKNESS = 64.0f;
 
 static const Rectangle WORLD_LABIRINTO_RETURN_TRIGGER = {915.0f, 60.0f, 80.0f, 12.0f};
+static const Rectangle WORLD_LABIRINTO_BOSS2_TRIGGER = {915.0f, 1055.0f, 80.0f, 12.0f};
 
 static Rectangle WORLD_LABIRINTO_EDGE_BLOCKERS[4];
 static int WORLD_LABIRINTO_EDGE_BLOCKER_COUNT = 0;
+static Rectangle* WORLD_LABIRINTO_BLACK_BLOCKERS = NULL;
+static int WORLD_LABIRINTO_BLACK_BLOCKER_COUNT = 0;
+static int WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY = 0;
+static int WORLD_LABIRINTO_BOSS2_TRIGGER_USED = 0;
+
+static const Rectangle WORLD_LABIRINTO_BLACK_COLLISION_EXCEPTIONS[] = {
+    {900.0f, 900.0f, 101.0f, 180.0f},
+    {557.0f, 216.0f, 82.0f, 42.0f},
+    {1200.0f, 391.0f, 60.0f, 44.0f}
+};
+
+typedef struct BlackRun {
+    int x;
+    int width;
+    int rectIndex;
+} BlackRun;
+
+static int isInsideExceptionAreaPixel(int x, int y) {
+    for (int i = 0; i < (int)(sizeof(WORLD_LABIRINTO_BLACK_COLLISION_EXCEPTIONS) / sizeof(WORLD_LABIRINTO_BLACK_COLLISION_EXCEPTIONS[0])); i++) {
+        Rectangle exception = WORLD_LABIRINTO_BLACK_COLLISION_EXCEPTIONS[i];
+        if ((float)x >= exception.x &&
+            (float)x < exception.x + exception.width &&
+            (float)y >= exception.y &&
+            (float)y < exception.y + exception.height) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int isPureBlackPixel(Color color) {
+    return color.a > 0 && color.r == 0 && color.g == 0 && color.b == 0;
+}
+
+static void clearWorldLabirintoBlackBlockers(void) {
+    free(WORLD_LABIRINTO_BLACK_BLOCKERS);
+    WORLD_LABIRINTO_BLACK_BLOCKERS = NULL;
+    WORLD_LABIRINTO_BLACK_BLOCKER_COUNT = 0;
+    WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY = 0;
+}
+
+static int appendWorldLabirintoBlackBlocker(Rectangle blocker) {
+    if (WORLD_LABIRINTO_BLACK_BLOCKER_COUNT >= WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY) {
+        int nextCapacity = (WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY == 0) ? 128 : WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY * 2;
+        Rectangle* nextBlockers = realloc(WORLD_LABIRINTO_BLACK_BLOCKERS, sizeof(Rectangle) * nextCapacity);
+        if (nextBlockers == NULL) {
+            return -1;
+        }
+
+        WORLD_LABIRINTO_BLACK_BLOCKERS = nextBlockers;
+        WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY = nextCapacity;
+    }
+
+    WORLD_LABIRINTO_BLACK_BLOCKERS[WORLD_LABIRINTO_BLACK_BLOCKER_COUNT] = blocker;
+    return WORLD_LABIRINTO_BLACK_BLOCKER_COUNT++;
+}
+
+static int appendBlackRun(BlackRun** runs, int* count, int* capacity, BlackRun run) {
+    if (*count >= *capacity) {
+        int nextCapacity = (*capacity == 0) ? 32 : (*capacity * 2);
+        BlackRun* nextRuns = realloc(*runs, sizeof(BlackRun) * nextCapacity);
+        if (nextRuns == NULL) {
+            return 0;
+        }
+
+        *runs = nextRuns;
+        *capacity = nextCapacity;
+    }
+
+    (*runs)[(*count)++] = run;
+    return 1;
+}
+
+static int findActiveRun(const BlackRun* activeRuns, int activeRunCount, int x, int width) {
+    for (int i = 0; i < activeRunCount; i++) {
+        if (activeRuns[i].x == x && activeRuns[i].width == width) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static void rebuildWorldLabirintoBlackBlockers(void) {
+    clearWorldLabirintoBlackBlockers();
+
+    Image image = LoadImage(WORLD_LABIRINTO_MAP_PATH);
+    if (image.data == NULL || image.width <= 0 || image.height <= 0) {
+        return;
+    }
+
+    Color* pixels = LoadImageColors(image);
+    if (pixels == NULL) {
+        UnloadImage(image);
+        return;
+    }
+
+    BlackRun* activeRuns = NULL;
+    int activeRunCount = 0;
+    int activeRunCapacity = 0;
+
+    for (int y = 0; y < image.height; y++) {
+        BlackRun* currentRuns = NULL;
+        int currentRunCount = 0;
+        int currentRunCapacity = 0;
+
+        int x = 0;
+        while (x < image.width) {
+            Color color = pixels[y * image.width + x];
+            int isBlack = isPureBlackPixel(color) && !isInsideExceptionAreaPixel(x, y);
+            if (!isBlack) {
+                x++;
+                continue;
+            }
+
+            int runStart = x;
+            while (x < image.width) {
+                color = pixels[y * image.width + x];
+                isBlack = isPureBlackPixel(color) && !isInsideExceptionAreaPixel(x, y);
+                if (!isBlack) {
+                    break;
+                }
+                x++;
+            }
+
+            int runWidth = x - runStart;
+            int activeIndex = findActiveRun(activeRuns, activeRunCount, runStart, runWidth);
+            int rectIndex = -1;
+
+            if (activeIndex >= 0) {
+                rectIndex = activeRuns[activeIndex].rectIndex;
+                WORLD_LABIRINTO_BLACK_BLOCKERS[rectIndex].height += 1.0f;
+            } else {
+                rectIndex = appendWorldLabirintoBlackBlocker((Rectangle){(float)runStart, (float)y, (float)runWidth, 1.0f});
+                if (rectIndex < 0) {
+                    free(currentRuns);
+                    free(activeRuns);
+                    UnloadImageColors(pixels);
+                    UnloadImage(image);
+                    clearWorldLabirintoBlackBlockers();
+                    return;
+                }
+            }
+
+            if (!appendBlackRun(&currentRuns, &currentRunCount, &currentRunCapacity, (BlackRun){runStart, runWidth, rectIndex})) {
+                free(currentRuns);
+                free(activeRuns);
+                UnloadImageColors(pixels);
+                UnloadImage(image);
+                clearWorldLabirintoBlackBlockers();
+                return;
+            }
+        }
+
+        free(activeRuns);
+        activeRuns = currentRuns;
+        activeRunCount = currentRunCount;
+        activeRunCapacity = currentRunCapacity;
+    }
+
+    free(activeRuns);
+    UnloadImageColors(pixels);
+    UnloadImage(image);
+
+}
 
 static void rebuildWorldLabirintoBorderBlockers(void) {
     float mapWidth = (float)mapTexture.width;
@@ -35,7 +204,7 @@ static void rebuildWorldLabirintoBorderBlockers(void) {
 
 static void collectWorldLabirintoBlockers(Rectangle* outBlockers, int* outCount) {
     if (outCount != NULL) {
-        *outCount = WORLD_LABIRINTO_EDGE_BLOCKER_COUNT;
+        *outCount = WORLD_LABIRINTO_EDGE_BLOCKER_COUNT + WORLD_LABIRINTO_BLACK_BLOCKER_COUNT;
     }
 
     if (outBlockers == NULL) {
@@ -45,13 +214,23 @@ static void collectWorldLabirintoBlockers(Rectangle* outBlockers, int* outCount)
     for (int i = 0; i < WORLD_LABIRINTO_EDGE_BLOCKER_COUNT; i++) {
         outBlockers[i] = WORLD_LABIRINTO_EDGE_BLOCKERS[i];
     }
+
+    for (int i = 0; i < WORLD_LABIRINTO_BLACK_BLOCKER_COUNT; i++) {
+        outBlockers[WORLD_LABIRINTO_EDGE_BLOCKER_COUNT + i] = WORLD_LABIRINTO_BLACK_BLOCKERS[i];
+    }
 }
 
 static void drawWorldLabirintoOverlay(void) {
     DrawRectangleLinesEx(WORLD_LABIRINTO_RETURN_TRIGGER, 2.0f, ORANGE);
+    DrawRectangleLinesEx(WORLD_LABIRINTO_BOSS2_TRIGGER, 2.0f, MAGENTA);
+    DrawText("Boss 2", (int)WORLD_LABIRINTO_BOSS2_TRIGGER.x, (int)(WORLD_LABIRINTO_BOSS2_TRIGGER.y - 14.0f), 10, WHITE);
 
     for (int i = 0; i < WORLD_LABIRINTO_EDGE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_LABIRINTO_EDGE_BLOCKERS[i], 2.0f, GREEN);
+    }
+
+    for (int i = 0; i < WORLD_LABIRINTO_BLACK_BLOCKER_COUNT; i++) {
+        DrawRectangleLinesEx(WORLD_LABIRINTO_BLACK_BLOCKERS[i], 1.0f, RED);
     }
 }
 
@@ -75,6 +254,24 @@ static int processWorldLabirintoTriggers(Vector2 playerPos) {
         return 1;
     }
 
+    if (!WORLD_LABIRINTO_BOSS2_TRIGGER_USED && CheckCollisionRecs(playerRect, WORLD_LABIRINTO_BOSS2_TRIGGER)) {
+        int bossIndex = enemyManager.count;
+        spawnEnemy(
+            "Boss 2",
+            (Vector2){WORLD_LABIRINTO_BOSS2_TRIGGER.x, WORLD_LABIRINTO_BOSS2_TRIGGER.y},
+            WORLD_LABIRINTO_BOSS2_TEXTURE_PATH,
+            MAX_ENEMIES
+        );
+
+        if (enemyManager.count > bossIndex) {
+            setEnemyStats(&enemyManager.enemies[bossIndex], 1, 42, 18, 11);
+        }
+
+        WORLD_LABIRINTO_BOSS2_TRIGGER_USED = 1;
+        startCombat(playerPos, COMBAT_DETECTION_DISTANCE);
+        return 1;
+    }
+
     return 0;
 }
 
@@ -89,7 +286,9 @@ static void setupWorldLabirintoNode(void* userData) {
     }
 
     mapTexture = LoadTexture(WORLD_LABIRINTO_MAP_PATH);
+    WORLD_LABIRINTO_BOSS2_TRIGGER_USED = 0;
     rebuildWorldLabirintoBorderBlockers();
+    rebuildWorldLabirintoBlackBlockers();
     configureCameraForCurrentWorld();
 }
 
@@ -102,6 +301,7 @@ static void teardownWorldLabirintoNode(void) {
     }
 
     WORLD_LABIRINTO_EDGE_BLOCKER_COUNT = 0;
+    clearWorldLabirintoBlackBlockers();
     unloadParty();
 }
 

@@ -34,15 +34,18 @@ static Texture2D targetArrowTexture;
 static Texture2D trapIconTexture;
 static Texture2D temptationIconTexture;
 static Texture2D boss1CombatBgTexture;
+static Texture2D boss2CombatBgTexture;
 static Texture2D boss3CombatBgTexture;
 static Texture2D playerCombatTextures[PARTY_SIZE];
 
 #define DEFAULT_ENEMY_COMBAT_SPRITE_SCALE 0.55f
-#define BOSS1_COMBAT_SPRITE_SCALE 1.5f
+#define BOSS_COMBAT_SPRITE_SCALE 1.5f
 #define BOSS1_VISIBLE_LEFT_X 18.0f
 #define BOSS1_VISIBLE_CENTER_X 174.5f
 #define BOSS1_VISIBLE_TOP_Y 17.0f
-#define BOSS3_COMBAT_SPRITE_SCALE 1.5f
+#define BOSS2_VISIBLE_LEFT_X 4.0f
+#define BOSS2_VISIBLE_CENTER_X 180.0f
+#define BOSS2_VISIBLE_TOP_Y 2.0f
 #define BOSS3_VISIBLE_LEFT_X 7.0f
 #define BOSS3_VISIBLE_CENTER_X 201.5f
 #define BOSS3_VISIBLE_TOP_Y 42.0f
@@ -107,25 +110,52 @@ static int isBoss3EnemyName(const char* name) {
     return name != NULL && strcmp(name, "Boss 3") == 0;
 }
 
-static float getEnemyCombatSpriteScale(const Enemy* enemy) {
+static int isBoss2EnemyName(const char* name) {
+    return name != NULL && strcmp(name, "Boss 2") == 0;
+}
+
+typedef struct BossCombatVisualBounds {
+    float visibleLeftX;
+    float visibleCenterX;
+    float visibleTopY;
+} BossCombatVisualBounds;
+
+static int getBossCombatVisualBounds(const Enemy* enemy, BossCombatVisualBounds* outBounds) {
+    if (enemy == NULL || outBounds == NULL) {
+        return 0;
+    }
+    
     if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
-        return BOSS1_COMBAT_SPRITE_SCALE;
+        *outBounds = (BossCombatVisualBounds){BOSS1_VISIBLE_LEFT_X, BOSS1_VISIBLE_CENTER_X, BOSS1_VISIBLE_TOP_Y};
+        return 1;
     }
 
+    if (enemy != NULL && isBoss2EnemyName(enemy->name)) {
+        *outBounds = (BossCombatVisualBounds){BOSS2_VISIBLE_LEFT_X, BOSS2_VISIBLE_CENTER_X, BOSS2_VISIBLE_TOP_Y};
+        return 1;
+    }
+    
     if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
-        return BOSS3_COMBAT_SPRITE_SCALE;
+        *outBounds = (BossCombatVisualBounds){BOSS3_VISIBLE_LEFT_X, BOSS3_VISIBLE_CENTER_X, BOSS3_VISIBLE_TOP_Y};
+        return 1;
+    }
+
+    return 0;
+}
+
+static float getEnemyCombatSpriteScale(const Enemy* enemy) {
+    BossCombatVisualBounds bossBounds;
+    if (getBossCombatVisualBounds(enemy, &bossBounds)) {
+        return BOSS_COMBAT_SPRITE_SCALE;
     }
 
     return DEFAULT_ENEMY_COMBAT_SPRITE_SCALE;
 }
 
 static float getEnemyCombatSpriteCenterX(const Enemy* enemy, float spriteX, float spriteScale) {
-    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
-        return spriteX + (BOSS1_VISIBLE_CENTER_X * spriteScale);
-    }
-
-    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
-        return spriteX + (BOSS3_VISIBLE_CENTER_X * spriteScale);
+    BossCombatVisualBounds bossBounds;
+    if (getBossCombatVisualBounds(enemy, &bossBounds)) {
+        return spriteX + (bossBounds.visibleCenterX * spriteScale);
     }
 
     if (enemy != NULL && enemy->texture.id != 0) {
@@ -136,24 +166,18 @@ static float getEnemyCombatSpriteCenterX(const Enemy* enemy, float spriteX, floa
 }
 
 static float getEnemyCombatSpriteLeftX(const Enemy* enemy, float spriteX, float spriteScale) {
-    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
-        return spriteX + (BOSS1_VISIBLE_LEFT_X * spriteScale);
-    }
-
-    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
-        return spriteX + (BOSS3_VISIBLE_LEFT_X * spriteScale);
+    BossCombatVisualBounds bossBounds;
+    if (getBossCombatVisualBounds(enemy, &bossBounds)) {
+        return spriteX + (bossBounds.visibleLeftX * spriteScale);
     }
 
     return spriteX;
 }
 
 static float getEnemyCombatSpriteTopY(const Enemy* enemy, float spriteY, float spriteScale) {
-    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
-        return spriteY + (BOSS1_VISIBLE_TOP_Y * spriteScale);
-    }
-
-    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
-        return spriteY + (BOSS3_VISIBLE_TOP_Y * spriteScale);
+    BossCombatVisualBounds bossBounds;
+    if (getBossCombatVisualBounds(enemy, &bossBounds)) {
+        return spriteY + (bossBounds.visibleTopY * spriteScale);
     }
 
     return spriteY;
@@ -336,7 +360,7 @@ static void resetCombatUiState() {
     isExtraTurn = 0;
 }
 
-static int isBoss1CombatActive(void) {
+static Texture2D getActiveBossCombatBackgroundTexture(void) {
     for (int i = 0; i < combat.enemyCount; i++) {
         int worldEnemyIndex = combat.enemyIndices[i];
         if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) {
@@ -344,11 +368,19 @@ static int isBoss1CombatActive(void) {
         }
 
         if (isBoss1EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
-            return 1;
+            return boss1CombatBgTexture;
+        }
+
+        if (isBoss2EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
+            return boss2CombatBgTexture;
+        }
+
+        if (isBoss3EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
+            return boss3CombatBgTexture;
         }
     }
 
-    return 0;
+    return (Texture2D){0};
 }
 
 static void advanceCombatTurn() {
@@ -857,21 +889,6 @@ static void drawPlayers() {
     }
 }
 
-static int isBoss3CombatActive(void) {
-    for (int i = 0; i < combat.enemyCount; i++) {
-        int worldEnemyIndex = combat.enemyIndices[i];
-        if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) {
-            continue;
-        }
-
-        if (isBoss3EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
 static void drawCombatMessageBox(void) {
     const char* message = bossAiGetCurrentMessage();
     if (message == NULL) return;
@@ -1082,6 +1099,7 @@ void initCombatUI() {
     trapIconTexture = LoadTexture("assets/icones/trap.png");
     temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
     boss1CombatBgTexture = LoadTexture("assets/cenarios/LUTA_PCFREVO.png");
+    boss2CombatBgTexture = LoadTexture("assets/cenarios/CENARIO_CS_LUTA.png");
     boss3CombatBgTexture = LoadTexture("assets/cenarios/ESGOTO_LUTA.png");
     loadPlayerCombatTextures();
 
@@ -1102,6 +1120,10 @@ void unloadCombatUI() {
     if (boss1CombatBgTexture.id != 0) {
         UnloadTexture(boss1CombatBgTexture);
         boss1CombatBgTexture = (Texture2D){0};
+    }
+    if (boss2CombatBgTexture.id != 0) {
+        UnloadTexture(boss2CombatBgTexture);
+        boss2CombatBgTexture = (Texture2D){0};
     }
     if (boss3CombatBgTexture.id != 0) {
         UnloadTexture(boss3CombatBgTexture);
@@ -1347,14 +1369,11 @@ void updateCombatUI() {
 }
 
 void drawCombatUI() {
-    if (isBoss3CombatActive() && boss3CombatBgTexture.id != 0) {
-        Rectangle source = {0.0f, 0.0f, (float)boss3CombatBgTexture.width, (float)boss3CombatBgTexture.height};
+    Texture2D bossCombatBackgroundTexture = getActiveBossCombatBackgroundTexture();
+    if (bossCombatBackgroundTexture.id != 0) {
+        Rectangle source = {0.0f, 0.0f, (float)bossCombatBackgroundTexture.width, (float)bossCombatBackgroundTexture.height};
         Rectangle destination = {0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight()};
-        DrawTexturePro(boss3CombatBgTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
-    } else if (isBoss1CombatActive() && boss1CombatBgTexture.id != 0) {
-        Rectangle source = {0.0f, 0.0f, (float)boss1CombatBgTexture.width, (float)boss1CombatBgTexture.height};
-        Rectangle destination = {0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight()};
-        DrawTexturePro(boss1CombatBgTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+        DrawTexturePro(bossCombatBackgroundTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
     } else {
         ClearBackground((Color){ 20, 20, 26, 255 });
     }
