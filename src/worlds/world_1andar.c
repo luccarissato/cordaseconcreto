@@ -7,6 +7,11 @@
 #include "../interactables/interactable.h"
 #include "../interactables/color_puzzle.h"
 #include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include "../items/inventory.h"
+#include "../items/game_items.h"
+#include "../combat/boss_ai.h"
 
 extern InteractableManager interactableManager;
 
@@ -98,6 +103,11 @@ static void drawWorld1AndarOverlay(void) {
     for (int i = 0; i < WORLD_1ANDAR_CUSTOM_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_1ANDAR_CUSTOM_BLOCKERS[i], 2.0f, RED);
     }
+
+    /* Debug: draw pickup area for Coracao de Barro */
+    Rectangle heartArea = {70.0f - 6.0f, 835.0f - 6.0f, 12.0f, 12.0f};
+    DrawRectangleLinesEx(heartArea, 2.0f, YELLOW);
+    DrawText("Coracao de Barro", (int)heartArea.x, (int)(heartArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorld1AndarBounds(Rectangle* outBounds) {
@@ -114,6 +124,33 @@ static int processWorld1AndarTriggers(Vector2 playerPos) {
         .size = {150.0f, 200.0f}
     };
 
+    extern Inventory playerInventory;
+
+    Rectangle playerRect = getColliderRect(playerPos, playerCollider);
+    /* Pickup: Coracao de Barro at ~70,835 */
+    if (IsKeyPressed(KEY_Z)) {
+        Rectangle heartArea = {70.0f - 6.0f, 835.0f - 6.0f, 12.0f, 12.0f};
+        if (CheckCollisionRecs(playerRect, heartArea)) {
+            /* check if already in inventory */
+            ListNode* cur = playerInventory.items.head;
+            int found = 0;
+            for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
+                InventoryItem* it = (InventoryItem*)cur->data;
+                if (it != NULL && strcmp(it->baseItem->name, "Coracao de Barro") == 0) { found = 1; break; }
+                cur = cur->next;
+            }
+            if (!found) {
+                InventoryItem* newItem = malloc(sizeof(InventoryItem));
+                if (newItem != NULL) {
+                    newItem->baseItem = &coracaoDeBarro;
+                    newItem->quantity = 1;
+                    addItemInventory(&playerInventory, newItem);
+                    bossAiQueueMessage("Voce encontrou: Coracao de Barro");
+                }
+            }
+        }
+    }
+
     return processWorldTransitionZones(
         getColliderRect(playerPos, playerCollider),
         WORLD_1ANDAR_TRANSITIONS,
@@ -124,7 +161,7 @@ static int processWorld1AndarTriggers(Vector2 playerPos) {
 static void setupWorld1AndarNode(void* userData) {
     (void)userData;
 
-    initParty(1, getWorldSpawnPosition(WORLD_1ANDAR_PARTY_SPAWN));
+    initParty(0, getWorldSpawnPosition(WORLD_1ANDAR_PARTY_SPAWN));
 
     /* Initialize interactables for this world and add the color puzzle */
     initInteractableManager(&interactableManager);

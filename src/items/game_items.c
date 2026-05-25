@@ -811,6 +811,61 @@ Item pedaçoDeChave2 = {
     .reviveHPPercent = 0
 };
 
+/* =============================================================================
+ * ITENS DE CHAVE / QUEST
+ * =============================================================================
+ */
+/* Moeda do Cais - pequena moeda enferrujada encontrada no cais */
+Item moedaDoCais = {
+    .name = "Moeda do Cais",
+    .description = "Moeda antiga encontrada no cais. Parece pertencer a uma relíquia.",
+    .type = ITEM_KEY,
+    .hpRestore = 0,
+    .manaRestore = 0,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
+    .statusToCure = STATUS_NONE,
+    .cureType = CURE_SPECIFIC,
+    .statBoostType = BOOST_HP,
+    .statBoostValue = 0,
+    .reviveHPPercent = 0
+};
+
+/* Coração de Barro - objeto frágil com marca ritualística */
+Item coracaoDeBarro = {
+    .name = "Coracao de Barro",
+    .description = "Coracao feito de barro, com símbolos gravados.",
+    .type = ITEM_KEY,
+    .hpRestore = 0,
+    .manaRestore = 0,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
+    .statusToCure = STATUS_NONE,
+    .cureType = CURE_SPECIFIC,
+    .statBoostType = BOOST_HP,
+    .statBoostValue = 0,
+    .reviveHPPercent = 0
+};
+
+/* Casca do Mangue - casca resistente coletada em mangues sagrados */
+Item cascaDoMangue = {
+    .name = "Casca do Mangue",
+    .description = "Casca resistente retirada de um mangue sagrado.",
+    .type = ITEM_KEY,
+    .hpRestore = 0,
+    .manaRestore = 0,
+    .statusToApply = STATUS_NONE,
+    .statusDuration = 0,
+    .statusIntensity = 0,
+    .statusToCure = STATUS_NONE,
+    .cureType = CURE_SPECIFIC,
+    .statBoostType = BOOST_HP,
+    .statBoostValue = 0,
+    .reviveHPPercent = 0
+};
+
 void initAllGameItems(void) {
     /* Os itens já são inicializados estaticamente com designated initializers */
     /* Esta função existe para futuras expansões dinâmicas */
@@ -870,6 +925,13 @@ static Item* allItems[] = {
     &poDeEnvenenar,
     &pimentaMalagueta,
     &cogumelo,
+    
+    /* Itens de Chave / Quest */
+    &pedaçoDeChave1,
+    &pedaçoDeChave2,
+    &moedaDoCais,
+    &coracaoDeBarro,
+    &cascaDoMangue,
     
     NULL
 };

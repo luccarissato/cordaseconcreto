@@ -7,6 +7,11 @@
 #include "../data/dialogues/npc_dialogues.h"
 #include "raylib.h"
 #include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include "../items/inventory.h"
+#include "../items/game_items.h"
+#include "../combat/boss_ai.h"
 
 static const Vector2 WORLD_PC_PARTY_SPAWN = {900.0f, 560.0f};
 static const Vector2 WORLD_CS_RETURN_SPAWN = {860.0f, 850.0f};
@@ -36,6 +41,24 @@ static int WORLD_PC_CUSTOM_BLOCKER_COUNT = 0;
 
 static void drawTriggerRect(Rectangle rect, Color color) {
     DrawRectangleLinesEx(rect, 2.0f, color);
+}
+
+static Rectangle getWorldPCCoinPickupArea(void) {
+    if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
+        return (Rectangle){
+            WORLD_PC_CAR_BLOCKER.x + (WORLD_PC_CAR_BLOCKER.width * 0.25f),
+            WORLD_PC_CAR_BLOCKER.y + WORLD_PC_CAR_BLOCKER.height + 6.0f,
+            WORLD_PC_CAR_BLOCKER.width * 0.5f,
+            48.0f
+        };
+    }
+
+    return (Rectangle){
+        WORLD_PC_CAR_BASE_CENTER.x - 140.0f,
+        WORLD_PC_CAR_BASE_CENTER.y + 6.0f,
+        280.0f,
+        48.0f
+    };
 }
 
 static void drawWorldPCCar(void) {
@@ -91,6 +114,8 @@ static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorldPCOverlay(void) {
+    drawWorldPCCar();
+
     drawTriggerRect(WORLD_PC_PREVIOUS_WORLD_TRIGGER, ORANGE);
     drawTriggerRect(WORLD_PC_NEXT_WORLD_TRIGGER, ORANGE);
 
@@ -106,7 +131,9 @@ static void drawWorldPCOverlay(void) {
         DrawRectangleLinesEx(WORLD_PC_CAR_BLOCKER, 2.0f, RED);
     }
 
-    drawWorldPCCar();
+    Rectangle coinArea = getWorldPCCoinPickupArea();
+    DrawRectangleLinesEx(coinArea, 2.0f, YELLOW);
+    DrawText("Moeda do Cais", (int)coinArea.x, (int)(coinArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorldPCBounds(Rectangle* outBounds) {
@@ -123,6 +150,32 @@ static int processWorldPCTriggers(Vector2 playerPos) {
         .size = {150.0f, 200.0f}
     };
 
+    extern Inventory playerInventory;
+
+    Rectangle playerRect = getColliderRect(playerPos, playerCollider);
+    if (IsKeyPressed(KEY_Z)) {
+        Rectangle coinArea = getWorldPCCoinPickupArea();
+        if (CheckCollisionRecs(playerRect, coinArea)) {
+            /* check if already in inventory */
+            ListNode* cur = playerInventory.items.head;
+            int found = 0;
+            for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
+                InventoryItem* it = (InventoryItem*)cur->data;
+                if (it != NULL && strcmp(it->baseItem->name, "Moeda do Cais") == 0) { found = 1; break; }
+                cur = cur->next;
+            }
+            if (!found) {
+                InventoryItem* newItem = malloc(sizeof(InventoryItem));
+                if (newItem != NULL) {
+                    newItem->baseItem = &moedaDoCais;
+                    newItem->quantity = 1;
+                    addItemInventory(&playerInventory, newItem);
+                    bossAiQueueMessage("Voce encontrou: Moeda do Cais");
+                }
+            }
+        }
+    }
+
     return processWorldTransitionZones(
         getColliderRect(playerPos, playerCollider),
         WORLD_PC_TRANSITIONS,
@@ -133,7 +186,7 @@ static int processWorldPCTriggers(Vector2 playerPos) {
 static void setupWorldPCNode(void* userData) {
     (void)userData;
 
-    initParty(1, getWorldSpawnPosition(WORLD_PC_PARTY_SPAWN));
+    initParty(0, getWorldSpawnPosition(WORLD_PC_PARTY_SPAWN));
     initNPC(&worldPCNpc1, (Vector2){500.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc2Dialogue);
     initNPC(&worldPCNpc2, (Vector2){1750.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc3Dialogue);
 

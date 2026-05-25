@@ -174,6 +174,19 @@ extern Item pedaçoDeChave1;
 /* Segunda metade de uma chave misteriosa */
 extern Item pedaçoDeChave2;
 
+/* =============================================================================
+ * ITENS DE CHAVE / QUEST
+ * =============================================================================
+ */
+/* Moeda do cais - item de quest */
+extern Item moedaDoCais;
+
+/* Coração de Barro - item de quest */
+extern Item coracaoDeBarro;
+
+/* Casca do Mangue - item de quest */
+extern Item cascaDoMangue;
+
 // initAllGameItems - Inicializa todos os itens do jogo
 void initAllGameItems(void);
 

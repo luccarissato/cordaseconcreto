@@ -247,7 +247,10 @@ void initPlayerAbilities(Player* player, CharacterID characterID) {
     
     initializeAbilitySystem();
     
-    player->level = 1;
+    /* Preserve existing player level if already set (avoid overwriting during re-inits) */
+    if (player->level == 0) {
+        player->level = 1;
+    }
     player->characterID = characterID;
 }
 

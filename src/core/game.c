@@ -19,6 +19,7 @@
 #include "../worlds/world_pc.h"
 #include "../worlds/world_1andar.h"
 #include "../worlds/world_2andar.h"
+#include "../combat/boss_ai.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -156,6 +157,8 @@ void initGame() {
 }
 
 void updateGame() {
+    /* Update boss message timers so queued messages appear during exploration/dialogue. */
+    bossAiUpdateMessages(GetFrameTime());
     if (currentGameState != STATE_COMBAT) {
         processPendingWorldLoad();
     }
@@ -260,6 +263,15 @@ void drawGame() {
             drawEnemies();
             drawParty();
             EndMode2D();
+            /* Show queued boss messages during exploration (same styling used in combat UI) */
+            if (bossAiHasActiveMessage()) {
+                const char* message = bossAiGetCurrentMessage();
+                if (message != NULL) {
+                    DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
+                    DrawRectangleLines(220, 740, 1480, 180, GRAY);
+                    DrawText(message, 260, 810, 30, RAYWHITE);
+                }
+            }
             break;
         
         case STATE_DIALOGUE:
@@ -272,6 +284,14 @@ void drawGame() {
             drawParty();
             EndMode2D();
             drawDialogue();
+            if (bossAiHasActiveMessage()) {
+                const char* message = bossAiGetCurrentMessage();
+                if (message != NULL) {
+                    DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
+                    DrawRectangleLines(220, 740, 1480, 180, GRAY);
+                    DrawText(message, 260, 810, 30, RAYWHITE);
+                }
+            }
             break;
         
         case STATE_COMBAT:
@@ -365,8 +385,10 @@ void initParty(int applyGrowth, Vector2 spawnPosition) {
         calculateStats(&party[i].stats);
         /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
         party[i].characterID = i;
-        /* Personagem começa nível 1 */
-        party[i].level = 1;
+        /* Personagem começa nível 1 — preserve se já tiver level > 0 */
+        if (party[i].level == 0) {
+            party[i].level = 1;
+        }
         
         if (applyGrowth) {
             /* Aplica growth para atingir nível 4 (3 level ups: 1->2->3->4) */

@@ -3,7 +3,14 @@
 #include "worlds.h"
 #include "../core/game.h"
 #include "../core/collision.h"
+#include "../items/inventory.h"
+#include "../items/game_items.h"
+#include "../combat/boss_ai.h"
+#include "../data/dialogues/quest_npc.h"
+#include "../entities/npc.h"
 #include "raylib.h"
+#include <string.h>
+#include <stdlib.h>
 #include <stddef.h>
 
 static const Vector2 WORLD_MC_PARTY_SPAWN = {1680.0f, 680.0f};
@@ -81,6 +88,57 @@ static Rectangle getWorldMCTreeRect(Vector2 baseCenter) {
     };
 }
 
+extern Inventory playerInventory;
+extern Player party[PARTY_SIZE];
+
+NPC worldMCQuestNpc;
+
+static int hasItemInInventory(const char* name) {
+    ListNode* cur = playerInventory.items.head;
+    int iterations = playerInventory.items.size;
+    for (int i = 0; i < iterations && cur != NULL; i++) {
+        InventoryItem* it = (InventoryItem*)cur->data;
+        if (it != NULL && strcmp(it->baseItem->name, name) == 0) return 1;
+        cur = cur->next;
+    }
+    return 0;
+}
+
+static void removeItemFromInventoryByName(const char* name) {
+    ListNode* cur = playerInventory.items.head;
+    while (cur != NULL) {
+        InventoryItem* it = (InventoryItem*)cur->data;
+        if (it != NULL && strcmp(it->baseItem->name, name) == 0) {
+            free(it);
+            ListNode* toRemove = cur;
+            cur = cur->next;
+            removeNode(&playerInventory.items, toRemove);
+            return;
+        }
+        cur = cur->next;
+    }
+}
+
+static int worldMCQuestPreInteract(NPC* npc) {
+    if (hasItemInInventory("Moeda do Cais") && hasItemInInventory("Coracao de Barro") && hasItemInInventory("Casca do Mangue")) {
+        removeItemFromInventoryByName("Moeda do Cais");
+        removeItemFromInventoryByName("Coracao de Barro");
+        removeItemFromInventoryByName("Casca do Mangue");
+
+        npc->dialogueTree = &questNpcCompleteDialogue;
+        startDialogue(npc->dialogueTree);
+
+        /* reward: increase all party members by 1 level */
+        for (int i = 0; i < PARTY_SIZE; i++) {
+            playerLevelUp(&party[i]);
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
 static void rebuildWorldMCBorderBlockers(void) {
     float mapWidth = (float)mapTexture.width;
     float mapHeight = (float)mapTexture.height;
@@ -149,6 +207,18 @@ static void drawWorldMCOverlay(void) {
     for (int i = 0; i < WORLD_MC_TREE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_MC_TREE_BLOCKERS[i], 2.0f, GREEN);
     }
+
+    Rectangle pickArea;
+    Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
+    if (treeRect.width > 0 && treeRect.height > 0) {
+        pickArea = (Rectangle){ treeRect.x - 24.0f, treeRect.y, treeRect.width + 48.0f, treeRect.height };
+    } else {
+        /* fallback box centered on the known base center */
+        Vector2 base = WORLD_MC_TREE_POSITIONS_RD[1];
+        pickArea = (Rectangle){ base.x - 36.0f, base.y - 120.0f, 72.0f, 120.0f };
+    }
+    DrawRectangleLinesEx(pickArea, 2.0f, YELLOW);
+    DrawText("Casca do Mangue", (int)pickArea.x, (int)(pickArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorldMCBounds(Rectangle* outBounds) {
@@ -165,8 +235,43 @@ static int processWorldMCTriggers(Vector2 playerPos) {
         .size = {150.0f, 200.0f}
     };
 
+    Rectangle playerRect = getColliderRect(playerPos, playerCollider);
+
+    /* Pickup: Casca do Mangue logo embaixo da caixa de colisão da árvore RD index 1 (intencionalmente RD[1]) */
+    if (IsKeyPressed(KEY_Z)) {
+        Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
+        Rectangle pickArea;
+        /* Place pickup just below the collision rect: small gap (6px) and height 40px */
+        if (treeRect.width > 0 && treeRect.height > 0) {
+            pickArea = (Rectangle){ treeRect.x, treeRect.y + treeRect.height + 6.0f, treeRect.width, 40.0f };
+        } else {
+            /* fallback when texture not loaded: box below base center */
+            Vector2 base = WORLD_MC_TREE_POSITIONS_RD[1];
+            pickArea = (Rectangle){ base.x - 36.0f, base.y + 6.0f, 72.0f, 40.0f };
+        }
+        if (CheckCollisionRecs(playerRect, pickArea)) {
+            /* check inventory */
+            ListNode* cur = playerInventory.items.head;
+            int found = 0;
+            for (int i = 0; i < playerInventory.items.size && cur != NULL; i++) {
+                InventoryItem* it = (InventoryItem*)cur->data;
+                if (it != NULL && strcmp(it->baseItem->name, "Casca do Mangue") == 0) { found = 1; break; }
+                cur = cur->next;
+            }
+            if (!found) {
+                InventoryItem* newItem = malloc(sizeof(InventoryItem));
+                if (newItem != NULL) {
+                    newItem->baseItem = &cascaDoMangue;
+                    newItem->quantity = 1;
+                    addItemInventory(&playerInventory, newItem);
+                    bossAiQueueMessage("Voce encontrou: Casca do Mangue");
+                }
+            }
+        }
+    }
+
     return processWorldTransitionZones(
-        getColliderRect(playerPos, playerCollider),
+        playerRect,
         WORLD_MC_TRANSITIONS,
         (int)(sizeof(WORLD_MC_TRANSITIONS) / sizeof(WORLD_MC_TRANSITIONS[0]))
     );
@@ -175,7 +280,11 @@ static int processWorldMCTriggers(Vector2 playerPos) {
 static void setupWorldMCNode(void* userData) {
     (void)userData;
 
-    initParty(1, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
+    initParty(0, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
+
+    /* Initialize quest NPC */
+    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 445.0f}, "assets/NPCs/npc_placeholder.png", &questNpcIntroDialogue);
+    worldMCQuestNpc.preInteract = worldMCQuestPreInteract;
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);
@@ -218,6 +327,7 @@ static void teardownWorldMCNode(void) {
     WORLD_MC_EDGE_BLOCKER_COUNT = 0;
     WORLD_MC_TREE_BLOCKER_COUNT = 0;
 
+    unloadNPC(&worldMCQuestNpc);
     unloadParty();
 }
 

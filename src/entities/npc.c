@@ -7,6 +7,7 @@ extern NPC testNPC;
 extern NPC worldCSNpc;
 extern NPC worldPCNpc1;
 extern NPC worldPCNpc2;
+extern NPC worldMCQuestNpc;
 
 void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* tree) {
     npc->position = position;
@@ -15,6 +16,7 @@ void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* t
     npc->collider.size = (Vector2){ 184.0f, 184.0f };
     npc->dialogueTree = tree;
     npc->interactionDistance = 80.0f;
+    npc->preInteract = NULL;
 }
 
 void updateNPC(NPC* npc, Vector2 playerPos) {
@@ -29,6 +31,10 @@ void updateNPC(NPC* npc, Vector2 playerPos) {
     
     if (isNear) {
         if (IsKeyPressed(KEY_Z)) {
+            if (npc->preInteract != NULL) {
+                int handled = npc->preInteract(npc);
+                if (handled) return;
+            }
             startDialogue(npc->dialogueTree);
         }
     }
@@ -91,6 +97,13 @@ int collectLoadedNpcBlockers(Rectangle* outBlockers, int* outCount) {
         count++;
     }
 
+    if (isNpcLoaded(&worldMCQuestNpc)) {
+        if (outBlockers != NULL) {
+            outBlockers[count] = getColliderRect(worldMCQuestNpc.position, worldMCQuestNpc.collider);
+        }
+        count++;
+    }
+
     if (outCount != NULL) {
         *outCount = count;
     }
@@ -114,6 +127,10 @@ void updateLoadedNpcs(Vector2 playerPos) {
     if (isNpcLoaded(&worldPCNpc2)) {
         updateNPC(&worldPCNpc2, playerPos);
     }
+
+    if (isNpcLoaded(&worldMCQuestNpc)) {
+        updateNPC(&worldMCQuestNpc, playerPos);
+    }
 }
 
 void drawLoadedNpcs(void) {
@@ -131,5 +148,9 @@ void drawLoadedNpcs(void) {
 
     if (isNpcLoaded(&worldPCNpc2)) {
         drawNPC(&worldPCNpc2);
+    }
+
+    if (isNpcLoaded(&worldMCQuestNpc)) {
+        drawNPC(&worldMCQuestNpc);
     }
 }

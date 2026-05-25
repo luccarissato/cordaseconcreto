@@ -255,7 +255,10 @@ void initPlayer(Player* p, const char* prefix, Vector2 startPos, char* name) {
     p->isAlive = 1;
     
     /* Inicializa sistema de habilidades === */
-    p->level = 1;
+    /* Preserve existing level if already set (avoid resetting on world reloads) */
+    if (p->level == 0) {
+        p->level = 1;
+    }
     p->characterID = 0;  /* Será alterado ao carregar o personagem específico */
 
     /* Defesa desativada por padrão */

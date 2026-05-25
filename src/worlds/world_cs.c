@@ -214,7 +214,7 @@ static int processWorldCSTriggers(Vector2 playerPos) {
 static void setupWorldCSNode(void* userData) {
     (void)userData;
 
-    initParty(1, getWorldSpawnPosition(WORLD_CS_PARTY_SPAWN));
+    initParty(0, getWorldSpawnPosition(WORLD_CS_PARTY_SPAWN));
     initNPC(&worldCSNpc, (Vector2){1220.0f, 520.0f}, "assets/NPCs/npc_placeholder.png", &npc1Dialogue);
 
     if (mapTexture.id != 0) {

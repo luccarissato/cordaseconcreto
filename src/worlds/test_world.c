@@ -78,7 +78,7 @@ static void addStarterItem(Item* baseItem, int quantity) {
 }
 
 void SetupTestWorldContent(int includeStarterItems) {
-    initParty(1, (Vector2){960.0f, 540.0f});
+    initParty(0, (Vector2){960.0f, 540.0f});
     initNPC(&testNPC, (Vector2){1400, 700}, "assets/NPCs/npc_placeholder.png", &testeTree);
     initInventory(&playerInventory);
     initEnemyManager();

@@ -5,12 +5,14 @@
 #include "../core/collision.h"
 #include "../core/dialogue.h"
 
-typedef struct {
+typedef struct NPC {
     Vector2 position;
     Texture2D sprite;
     Collider collider;
     DialogueTree* dialogueTree;
     float interactionDistance;
+    /* Optional pre-interaction callback: return 1 if handled (do not start dialogue), 0 to continue normal dialogue */
+    int (*preInteract)(struct NPC* npc);
 } NPC;
 
 void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* tree);

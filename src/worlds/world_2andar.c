@@ -203,7 +203,7 @@ static int processWorld2AndarTriggers(Vector2 playerPos) {
 static void setupWorld2AndarNode(void* userData) {
     (void)userData;
 
-    initParty(1, getWorldSpawnPosition(WORLD_2ANDAR_PARTY_SPAWN));
+    initParty(0, getWorldSpawnPosition(WORLD_2ANDAR_PARTY_SPAWN));
     setupWorld2AndarDoors();
 
     if (mapTexture.id != 0) {
