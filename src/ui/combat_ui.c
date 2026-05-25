@@ -34,6 +34,7 @@ static Texture2D targetArrowTexture;
 static Texture2D trapIconTexture;
 static Texture2D temptationIconTexture;
 static Texture2D boss1CombatBgTexture;
+static Texture2D boss3CombatBgTexture;
 static Texture2D playerCombatTextures[PARTY_SIZE];
 
 #define DEFAULT_ENEMY_COMBAT_SPRITE_SCALE 0.55f
@@ -41,6 +42,10 @@ static Texture2D playerCombatTextures[PARTY_SIZE];
 #define BOSS1_VISIBLE_LEFT_X 18.0f
 #define BOSS1_VISIBLE_CENTER_X 174.5f
 #define BOSS1_VISIBLE_TOP_Y 17.0f
+#define BOSS3_COMBAT_SPRITE_SCALE 1.5f
+#define BOSS3_VISIBLE_LEFT_X 7.0f
+#define BOSS3_VISIBLE_CENTER_X 201.5f
+#define BOSS3_VISIBLE_TOP_Y 42.0f
 #define PLAYER_COMBAT_SPRITE_SCALE 1.0f
 #define PLAYER_COMBAT_SPACING 190
 
@@ -98,9 +103,17 @@ static int isBoss1EnemyName(const char* name) {
          strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
 }
 
+static int isBoss3EnemyName(const char* name) {
+    return name != NULL && strcmp(name, "Boss 3") == 0;
+}
+
 static float getEnemyCombatSpriteScale(const Enemy* enemy) {
     if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
         return BOSS1_COMBAT_SPRITE_SCALE;
+    }
+
+    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
+        return BOSS3_COMBAT_SPRITE_SCALE;
     }
 
     return DEFAULT_ENEMY_COMBAT_SPRITE_SCALE;
@@ -109,6 +122,10 @@ static float getEnemyCombatSpriteScale(const Enemy* enemy) {
 static float getEnemyCombatSpriteCenterX(const Enemy* enemy, float spriteX, float spriteScale) {
     if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
         return spriteX + (BOSS1_VISIBLE_CENTER_X * spriteScale);
+    }
+
+    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
+        return spriteX + (BOSS3_VISIBLE_CENTER_X * spriteScale);
     }
 
     if (enemy != NULL && enemy->texture.id != 0) {
@@ -123,12 +140,20 @@ static float getEnemyCombatSpriteLeftX(const Enemy* enemy, float spriteX, float 
         return spriteX + (BOSS1_VISIBLE_LEFT_X * spriteScale);
     }
 
+    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
+        return spriteX + (BOSS3_VISIBLE_LEFT_X * spriteScale);
+    }
+
     return spriteX;
 }
 
 static float getEnemyCombatSpriteTopY(const Enemy* enemy, float spriteY, float spriteScale) {
     if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
         return spriteY + (BOSS1_VISIBLE_TOP_Y * spriteScale);
+    }
+
+    if (enemy != NULL && isBoss3EnemyName(enemy->name)) {
+        return spriteY + (BOSS3_VISIBLE_TOP_Y * spriteScale);
     }
 
     return spriteY;
@@ -832,6 +857,21 @@ static void drawPlayers() {
     }
 }
 
+static int isBoss3CombatActive(void) {
+    for (int i = 0; i < combat.enemyCount; i++) {
+        int worldEnemyIndex = combat.enemyIndices[i];
+        if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) {
+            continue;
+        }
+
+        if (isBoss3EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static void drawCombatMessageBox(void) {
     const char* message = bossAiGetCurrentMessage();
     if (message == NULL) return;
@@ -1042,6 +1082,7 @@ void initCombatUI() {
     trapIconTexture = LoadTexture("assets/icones/trap.png");
     temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
     boss1CombatBgTexture = LoadTexture("assets/cenarios/LUTA_PCFREVO.png");
+    boss3CombatBgTexture = LoadTexture("assets/cenarios/ESGOTO_LUTA.png");
     loadPlayerCombatTextures();
 
     weaknessIcons[0] = LoadTexture("assets/icones/fogo_icon.png");
@@ -1061,6 +1102,10 @@ void unloadCombatUI() {
     if (boss1CombatBgTexture.id != 0) {
         UnloadTexture(boss1CombatBgTexture);
         boss1CombatBgTexture = (Texture2D){0};
+    }
+    if (boss3CombatBgTexture.id != 0) {
+        UnloadTexture(boss3CombatBgTexture);
+        boss3CombatBgTexture = (Texture2D){0};
     }
 
     for (int i = 0; i < 4; i++) {
@@ -1302,7 +1347,11 @@ void updateCombatUI() {
 }
 
 void drawCombatUI() {
-    if (isBoss1CombatActive() && boss1CombatBgTexture.id != 0) {
+    if (isBoss3CombatActive() && boss3CombatBgTexture.id != 0) {
+        Rectangle source = {0.0f, 0.0f, (float)boss3CombatBgTexture.width, (float)boss3CombatBgTexture.height};
+        Rectangle destination = {0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight()};
+        DrawTexturePro(boss3CombatBgTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+    } else if (isBoss1CombatActive() && boss1CombatBgTexture.id != 0) {
         Rectangle source = {0.0f, 0.0f, (float)boss1CombatBgTexture.width, (float)boss1CombatBgTexture.height};
         Rectangle destination = {0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight()};
         DrawTexturePro(boss1CombatBgTexture, source, destination, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);

@@ -17,9 +17,11 @@ static const Vector2 WORLD_MC_PARTY_SPAWN = {1680.0f, 680.0f};
 static const Vector2 WORLD_CS_RIGHT_EDGE_SPAWN = {1600.0f, 820.0f};
 static const char* WORLD_MC_MAP_PATH = "assets/cenarios/MZERO_ATUALIZADO.png";
 static const char* WORLD_MC_TREE_PATH = "assets/cenarios/ARVORE2_MZERO.png";
+static const char* WORLD_MC_BOSS3_TEXTURE_PATH = "assets/antagonistas/BOCA_DE_OURO.png";
 static const float WORLD_MC_BORDER_THICKNESS = 128.0f;
 
 static const Rectangle WORLD_MC_HORIZONTAL_BLOCKER = {0.0f, 240.0f, 1920.0f, 12.0f};
+static const Rectangle WORLD_MC_HATCH_INTERACTION_BOX = {940.0f, 630.0f, 40.0f, 40.0f};
 
 static const Vector2 WORLD_MC_TREE_POSITIONS_NORMAL[] = {
     {1870.0f, 565.0f},
@@ -43,6 +45,7 @@ static Rectangle WORLD_MC_TREE_BLOCKERS[4];
 static int WORLD_MC_TREE_BLOCKER_COUNT = 0;
 static Texture2D WORLD_MC_TREE_TEXTURE = {0};
 static Texture2D WORLD_MC_STATUE_TEXTURE = {0};
+static int WORLD_MC_BOSS3_TRIGGER_USED = 0;
 
 static void drawTreeAtBaseCenter(Vector2 baseCenter) {
     if (WORLD_MC_TREE_TEXTURE.id == 0) {
@@ -197,6 +200,8 @@ static void drawWorldMCOverlay(void) {
 
     drawStatueAtBaseCenter(WORLD_MC_STATUE_POSITION);
     drawTriggerRect(WORLD_MC_NEXT_WORLD_TRIGGER, ORANGE);
+    drawTriggerRect(WORLD_MC_HATCH_INTERACTION_BOX, MAGENTA);
+    DrawText("Portinhola", (int)WORLD_MC_HATCH_INTERACTION_BOX.x, (int)(WORLD_MC_HATCH_INTERACTION_BOX.y - 14.0f), 10, WHITE);
 
     for (int i = 0; i < WORLD_MC_EDGE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_MC_EDGE_BLOCKERS[i], 2.0f, GREEN);
@@ -235,6 +240,33 @@ static int processWorldMCTriggers(Vector2 playerPos) {
     Rectangle playerRect = getColliderRect(playerPos, playerCollider);
 
     if (IsKeyPressed(KEY_Z)) {
+        if (!WORLD_MC_BOSS3_TRIGGER_USED && CheckCollisionRecs(playerRect, WORLD_MC_HATCH_INTERACTION_BOX)) {
+            int hasFirstKeyPiece = hasItemInInventory("Pedaco de Chave 1");
+            int hasSecondKeyPiece = hasItemInInventory("Pedaco de Chave 2");
+
+            if (!hasFirstKeyPiece || !hasSecondKeyPiece) {
+                bossAiQueueMessage("Você ouve barulhos estranhos vindo debaixo dessa portinhola");
+                bossAiQueueMessage("Ao tentar abrir, você percebe que ela é trancada por um cadeado...");
+                return 1;
+            }
+
+            int bossIndex = enemyManager.count;
+            spawnEnemy(
+                "Boss 3",
+                (Vector2){WORLD_MC_HATCH_INTERACTION_BOX.x, WORLD_MC_HATCH_INTERACTION_BOX.y},
+                WORLD_MC_BOSS3_TEXTURE_PATH,
+                MAX_ENEMIES
+            );
+
+            if (enemyManager.count > bossIndex) {
+                setEnemyStats(&enemyManager.enemies[bossIndex], 1, 45, 18, 10);
+            }
+
+            WORLD_MC_BOSS3_TRIGGER_USED = 1;
+            startCombat(playerPos, COMBAT_DETECTION_DISTANCE);
+            return 1;
+        }
+
         Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
         Rectangle pickArea;
         if (treeRect.width > 0 && treeRect.height > 0) {
@@ -275,7 +307,7 @@ static void setupWorldMCNode(void* userData) {
 
     initParty(0, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
 
-    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 445.0f}, "assets/NPCs/npc_placeholder.png", &questNpcIntroDialogue, "Natacha");
+    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 255.0f}, "assets/NPCs/NPC4(NATACHA).png", &questNpcIntroDialogue, "Natacha");
     worldMCQuestNpc.preInteract = worldMCQuestPreInteract;
 
     if (mapTexture.id != 0) {
@@ -295,6 +327,7 @@ static void setupWorldMCNode(void* userData) {
     }
 
     WORLD_MC_STATUE_TEXTURE = LoadTexture("assets/cenarios/ESTATUA_MZERO.png");
+    WORLD_MC_BOSS3_TRIGGER_USED = 0;
     rebuildWorldMCBorderBlockers();
     rebuildWorldMCTreeBlockers();
     configureCameraForCurrentWorld();

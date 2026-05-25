@@ -8,6 +8,7 @@
 #include "../entities/npc.h"
 #include "../entities/enemy.h"
 #include "../items/inventory.h"
+#include "../items/game_items.h"
 #include "../ui/game_menu.h"
 #include "../interactables/interactable.h"
 #include "../combat/combat.h"
@@ -146,6 +147,7 @@ void initGame() {
     initDialogue();
     initInventory(&playerInventory);
     clearPlayerInventory();
+
     initCombat();
     initCombatUI();
     initWorldRegistry();
