@@ -252,14 +252,14 @@ static int processWorldMCTriggers(Vector2 playerPos) {
 
             int bossIndex = enemyManager.count;
             spawnEnemy(
-                "Boss 3",
+                "Boca de Ouro",
                 (Vector2){WORLD_MC_HATCH_INTERACTION_BOX.x, WORLD_MC_HATCH_INTERACTION_BOX.y},
                 WORLD_MC_BOSS3_TEXTURE_PATH,
                 MAX_ENEMIES
             );
 
             if (enemyManager.count > bossIndex) {
-                setEnemyStats(&enemyManager.enemies[bossIndex], 1, 45, 18, 10);
+                setEnemyStats(&enemyManager.enemies[bossIndex], 1300, 45, 18, 10);
             }
 
             WORLD_MC_BOSS3_TRIGGER_USED = 1;

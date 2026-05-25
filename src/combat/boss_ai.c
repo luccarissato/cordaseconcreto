@@ -178,6 +178,33 @@ static int isBoss1EnemyName(const char* name) {
          strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
 }
 
+static int isBoss2EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 2") == 0 ||
+         strcmp(name, "Papa figo") == 0);
+}
+
+static int isBoss3EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 3") == 0 ||
+         strcmp(name, "Boca de Ouro") == 0);
+}
+
+static const char* getPartyMemberDisplayName(int playerIndex) {
+    static const char* partyMemberNames[PARTY_SIZE] = {
+        "O Mestre",
+        "O Arauto",
+        "A Cirandeira",
+        "O Repentista"
+    };
+
+    if (playerIndex < 0 || playerIndex >= PARTY_SIZE) {
+        return "Personagem";
+    }
+
+    return partyMemberNames[playerIndex];
+}
+
 static void boss2ActivateAllPendingTraps(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
         if (!bossState.trapMarks[i].active) continue;
@@ -198,7 +225,7 @@ static void boss2LaunchNewTraps(void) {
         Boss2TrapEffect effect = (marksAdded == falseTrapIndex) ? BOSS2_TRAP_FALSE : rollTrapEffect();
         bossState.trapMarks[playerIndex].active = 1;
         bossState.trapMarks[playerIndex].effect = effect;
-        bossAiQueueMessage("Boss 2 armou uma armadilha em Personagem %d!", playerIndex + 1);
+        bossAiQueueMessage("Papa figo armou uma armadilha em %s!", getPartyMemberDisplayName(playerIndex));
         marksAdded++;
     }
 }
@@ -229,12 +256,12 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
 
     switch (effect) {
         case BOSS2_TRAP_HIGH_DAMAGE:
-            bossAiQueueMessage("A armadilha explodiu em Personagem %d!", playerIndex + 1);
+            bossAiQueueMessage("A armadilha explodiu em %s!", getPartyMemberDisplayName(playerIndex));
             applyCombatDamageToPlayer(target, (int)(trapDamageHigh * damageMultiplier));
             break;
 
         case BOSS2_TRAP_LOW_BLEED:
-            bossAiQueueMessage("A armadilha feriu Personagem %d!", playerIndex + 1);
+            bossAiQueueMessage("A armadilha feriu %s!", getPartyMemberDisplayName(playerIndex));
             applyCombatDamageToPlayer(target, (int)(trapDamageLow * damageMultiplier));
             if (!target->defenseGuardActive) {
                 addStatusCondition(&target->statusList, STATUS_BLEED, -1, 5.0f);
@@ -245,14 +272,14 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
         case BOSS2_TRAP_LOW_DEFENSE_DOWN:
             applyCombatDamageToPlayer(target, (int)(trapDamageLow * damageMultiplier));
             if (!target->defenseGuardActive) {
-                bossAiQueueMessage("A armadilha abalou a defesa de Personagem %d!", playerIndex + 1);
+                bossAiQueueMessage("A armadilha abalou a defesa de %s!", getPartyMemberDisplayName(playerIndex));
                 addStatusCondition(&target->statusList, STATUS_DEFENSE_DOWN, 3, 1.0f);
                 bossAiQueuePlayerAfflictedMessage(playerIndex, STATUS_DEFENSE_DOWN);
             }
             break;
 
         case BOSS2_TRAP_FALSE:
-            bossAiQueueMessage("A armadilha era falsa em Personagem %d!", playerIndex + 1);
+            bossAiQueueMessage("A armadilha era falsa em %s!", getPartyMemberDisplayName(playerIndex));
             break;
     }
 
@@ -266,7 +293,7 @@ static void boss2UseSpecialAttack(void) {
     if (targetIndex < 0) return;
 
     Player* target = &party[targetIndex];
-    bossAiQueueMessage("Boss 2 esmagou %s com um ataque especial!", target->name);
+    bossAiQueueMessage("Papa figo esmagou %s com um ataque especial!", target->name);
     applyCombatDamageToPlayer(target, (int)(150 * (1.0f + bossState.cumulativeDamageBonus)));
     bossState.boss2SpecialUsedThisRound = 1;
 }
@@ -300,7 +327,7 @@ void bossAiQueueMessage(const char* fmt, ...) {
 
 void bossAiQueuePlayerAfflictedMessage(int playerIndex, StatusType statusType) {
     if (playerIndex < 0 || statusType == STATUS_NONE || !isDebuff(statusType)) return;
-    bossAiQueueMessage("Personagem %d foi aflito com %s!", playerIndex + 1, getStatusName(statusType));
+    bossAiQueueMessage("%s foi aflito com %s!", getPartyMemberDisplayName(playerIndex), getStatusName(statusType));
 }
 
 int bossAiHasActiveMessage(void) {
@@ -442,7 +469,7 @@ void bossAiOnCombatStart(void) {
         int worldEnemyIndex = combat.enemyIndices[i];
         if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) continue;
 
-        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 2") == 0) {
+        if (isBoss2EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
             bossState.active = 1;
             bossState.kind = BOSS_KIND_2;
             bossState.worldEnemyIndex = worldEnemyIndex;
@@ -454,7 +481,7 @@ void bossAiOnCombatStart(void) {
             return;
         }
 
-        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 3") == 0) {
+        if (isBoss3EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
             bossState.active = 1;
             bossState.kind = BOSS_KIND_3;
             bossState.worldEnemyIndex = worldEnemyIndex;
@@ -517,7 +544,7 @@ void bossAiOnRoundWrap(void) {
     if (bossState.kind == BOSS_KIND_3) {
         if (bossState.phase >= 2 && bossState.boss3Phase2SkipPending) {
             bossState.boss3Phase2SkipPending = 0;
-            bossAiQueueMessage("Boss 3 perdeu um turno para reorganizar a divida.");
+            bossAiQueueMessage("Boca de Ouro perdeu um turno para reorganizar a divida.");
             return;
         }
 
@@ -548,7 +575,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     if (bossState.kind == BOSS_KIND_2) {
         if (bossState.phase == 1 && enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) {
             bossState.phase = 2;
-            bossAiQueueMessage("Boss 2 entrou na fase 2!");
+            bossAiQueueMessage("Papa figo entrou na fase 2!");
         }
 
         boss2ResolveTurnAction();
@@ -847,9 +874,9 @@ static void boss3PrepareOfferQueue(void) {
     snprintf(
         boss3PromptQueue[0].text,
         sizeof(boss3PromptQueue[0].text),
-        "Boss 3 oferece %s para Personagem %d. Aceita?",
+        "Boca de Ouro oferece %s\npara %s. Aceita?",
         boss3GetOfferName(boss3PromptQueue[0].offerType),
-        boss3PromptQueue[0].playerIndex + 1
+        getPartyMemberDisplayName(boss3PromptQueue[0].playerIndex)
     );
 
     if (offerCount >= 2) {
@@ -859,9 +886,9 @@ static void boss3PrepareOfferQueue(void) {
         snprintf(
             boss3PromptQueue[1].text,
             sizeof(boss3PromptQueue[1].text),
-            "Boss 3 oferece %s para Personagem %d. Aceita?",
+            "Boca de Ouro oferece %s\npara %s. Aceita?",
             boss3GetOfferName(boss3PromptQueue[1].offerType),
-            boss3PromptQueue[1].playerIndex + 1
+            getPartyMemberDisplayName(boss3PromptQueue[1].playerIndex)
         );
         boss3PromptCount = 2;
     } else {
@@ -892,7 +919,7 @@ static void boss3EnterPhase2(void) {
     bossState.boss3Debt = 0;
     bossState.boss3OfferTurnUsedThisRound = 0;
     bossAiClearPromptQueue();
-    bossAiQueueMessage("Boss 3 entrou na fase 2!");
+    bossAiQueueMessage("Boca de Ouro entrou na fase 2!");
 }
 
 static void boss3UseSpecialAttack(void) {
@@ -911,7 +938,7 @@ static void boss3UseSpecialAttack(void) {
     if (targetIndex < 0) return;
 
     Player* target = &party[targetIndex];
-    bossAiQueueMessage("Boss 3 castigou %s com um ataque especial!", target->name);
+    bossAiQueueMessage("Boca de Ouro castigou %s com um ataque especial!", target->name);
     applyCombatDamageToPlayer(target, 150);
     healEnemy(&enemyManager.enemies[bossState.worldEnemyIndex], 50);
     bossState.boss3SpecialUsedThisRound = 1;
@@ -933,7 +960,7 @@ static void boss3UsePhase1AreaAttack(void) {
         }
     }
 
-    bossAiQueueMessage("Boss 3 atingiu a party com um golpe de area.");
+    bossAiQueueMessage("Boca de Ouro atingiu a party com um golpe de area.");
     if (afflictedCount > 0) {
         bossAiQueueMessage("A pressao abalou a defesa de alguns alvos.");
     }
@@ -950,7 +977,7 @@ static void boss3UsePhase2ZeroDebtAttack(void) {
 
     if (firstTargetIndex >= 0) {
         Player* firstTarget = &party[firstTargetIndex];
-        bossAiQueueMessage("Boss 3 amarra %s em tentacao!", firstTarget->name);
+        bossAiQueueMessage("Boca de Ouro amarra %s em tentacao!", firstTarget->name);
         applyCombatDamageToPlayer(firstTarget, 110);
     }
 
@@ -960,12 +987,12 @@ static void boss3UsePhase2ZeroDebtAttack(void) {
 
     if (secondTargetIndex >= 0) {
         Player* secondTarget = &party[secondTargetIndex];
-        bossAiQueueMessage("Boss 3 amarra %s em tentacao!", secondTarget->name);
+        bossAiQueueMessage("Boca de Ouro amarra %s em tentacao!", secondTarget->name);
         applyCombatDamageToPlayer(secondTarget, 110);
     }
 
     boss3MarkTemptationTargets(firstTargetIndex, secondTargetIndex);
-    bossAiQueueMessage("Boss 3 deixou dois alvos tentados. A proxima habilidade deles vai custar mais.");
+    bossAiQueueMessage("Boca de Ouro deixou dois alvos tentados.\nA proxima habilidade deles vai custar mais.");
 }
 
 static void boss3UsePhase2DebtAttack(void) {
@@ -987,7 +1014,7 @@ static void boss3UsePhase2DebtAttack(void) {
     }
 
     bossState.boss3Debt = 0;
-    bossAiQueueMessage("Boss 3 consumiu a divida e atingiu a party.");
+    bossAiQueueMessage("Boca de Ouro consumiu a divida e atingiu a party.");
     if (afflictedCount > 0) {
         bossAiQueueMessage("A pressao abalou a defesa de alguns alvos.");
     }

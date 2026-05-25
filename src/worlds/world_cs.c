@@ -226,7 +226,7 @@ static void setupWorldCSNode(void* userData) {
     (void)userData;
 
     initParty(0, getWorldSpawnPosition(WORLD_CS_PARTY_SPAWN));
-    initNPC(&worldCSNpc, (Vector2){1220.0f, 520.0f}, "assets/NPCs/npc_placeholder.png", &npc1Dialogue, "Marco");
+    initNPC(&worldCSNpc, (Vector2){1220.0f, 520.0f}, "assets/NPCs/NPC2(GABRIEL).png", &npc1Dialogue, "Gabriel");
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);

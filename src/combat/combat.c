@@ -78,6 +78,12 @@ static int isBoss1EnemyName(const char* name) {
          strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
 }
 
+static int isBoss2EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 2") == 0 ||
+         strcmp(name, "Papa figo") == 0);
+}
+
 //compareCombatSpeed - Compara a velocidade dos participantes
 static int compareCombatantSpeed(const void* a, const void* b) {
     const Combatant* combA = (const Combatant*)a;
@@ -265,7 +271,7 @@ void endCombat() {
                 if (isBoss1EnemyName(enemy->name)) {
                     defeatedBoss1 = 1;
                 }
-                if (strcmp(enemy->name, "Boss 2") == 0) {
+                if (isBoss2EnemyName(enemy->name)) {
                     defeatedBoss2 = 1;
                 }
             }

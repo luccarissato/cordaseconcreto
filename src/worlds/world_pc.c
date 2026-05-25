@@ -191,8 +191,8 @@ static void setupWorldPCNode(void* userData) {
     (void)userData;
 
     initParty(0, getWorldSpawnPosition(WORLD_PC_PARTY_SPAWN));
-    initNPC(&worldPCNpc1, (Vector2){500.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc2Dialogue, "Gabriel");
-    initNPC(&worldPCNpc2, (Vector2){1750.0f, 190.0f}, "assets/NPCs/npc_placeholder.png", &npc3Dialogue, "Luiz");
+    initNPC(&worldPCNpc1, (Vector2){500.0f, 190.0f}, "assets/NPCs/NPC1.png", &npc2Dialogue, "Giovanna");
+    initNPC(&worldPCNpc2, (Vector2){1750.0f, 190.0f}, "assets/NPCs/NPC3.png", &npc3Dialogue, "Igor");
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);

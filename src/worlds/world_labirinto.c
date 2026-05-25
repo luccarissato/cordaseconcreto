@@ -223,7 +223,7 @@ static void collectWorldLabirintoBlockers(Rectangle* outBlockers, int* outCount)
 static void drawWorldLabirintoOverlay(void) {
     DrawRectangleLinesEx(WORLD_LABIRINTO_RETURN_TRIGGER, 2.0f, ORANGE);
     DrawRectangleLinesEx(WORLD_LABIRINTO_BOSS2_TRIGGER, 2.0f, MAGENTA);
-    DrawText("Boss 2", (int)WORLD_LABIRINTO_BOSS2_TRIGGER.x, (int)(WORLD_LABIRINTO_BOSS2_TRIGGER.y - 14.0f), 10, WHITE);
+    DrawText("Papa figo", (int)WORLD_LABIRINTO_BOSS2_TRIGGER.x, (int)(WORLD_LABIRINTO_BOSS2_TRIGGER.y - 14.0f), 10, WHITE);
 
     for (int i = 0; i < WORLD_LABIRINTO_EDGE_BLOCKER_COUNT; i++) {
         DrawRectangleLinesEx(WORLD_LABIRINTO_EDGE_BLOCKERS[i], 2.0f, GREEN);
@@ -257,14 +257,14 @@ static int processWorldLabirintoTriggers(Vector2 playerPos) {
     if (!WORLD_LABIRINTO_BOSS2_TRIGGER_USED && CheckCollisionRecs(playerRect, WORLD_LABIRINTO_BOSS2_TRIGGER)) {
         int bossIndex = enemyManager.count;
         spawnEnemy(
-            "Boss 2",
+            "Papa figo",
             (Vector2){WORLD_LABIRINTO_BOSS2_TRIGGER.x, WORLD_LABIRINTO_BOSS2_TRIGGER.y},
             WORLD_LABIRINTO_BOSS2_TEXTURE_PATH,
             MAX_ENEMIES
         );
 
         if (enemyManager.count > bossIndex) {
-            setEnemyStats(&enemyManager.enemies[bossIndex], 1, 42, 18, 11);
+            setEnemyStats(&enemyManager.enemies[bossIndex], 1100, 42, 14, 11);
         }
 
         WORLD_LABIRINTO_BOSS2_TRIGGER_USED = 1;

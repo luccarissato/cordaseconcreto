@@ -107,11 +107,15 @@ static int isBoss1EnemyName(const char* name) {
 }
 
 static int isBoss3EnemyName(const char* name) {
-    return name != NULL && strcmp(name, "Boss 3") == 0;
+    return name != NULL &&
+        (strcmp(name, "Boss 3") == 0 ||
+         strcmp(name, "Boca de Ouro") == 0);
 }
 
 static int isBoss2EnemyName(const char* name) {
-    return name != NULL && strcmp(name, "Boss 2") == 0;
+    return name != NULL &&
+        (strcmp(name, "Boss 2") == 0 ||
+         strcmp(name, "Papa figo") == 0);
 }
 
 typedef struct BossCombatVisualBounds {
