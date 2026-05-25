@@ -17,6 +17,7 @@
 #include "../worlds/worlds.h"
 #include "../worlds/world_mc.h"
 #include "../worlds/world_cs.h"
+#include "../worlds/world_labirinto.h"
 #include "../worlds/world_pc.h"
 #include "../worlds/world_1andar.h"
 #include "../worlds/world_2andar.h"
@@ -153,6 +154,7 @@ void initGame() {
     initWorldRegistry();
     RegisterWorldMC();
     RegisterWorldCS();
+    RegisterWorldLabirinto();
     RegisterWorldPC();
     RegisterWorld1Andar();
     RegisterWorld2Andar();

@@ -15,6 +15,8 @@ typedef void (*WorldCameraBoundsCallback)(Rectangle* outBounds);
 
 #define WORLD_NAME_MC "MZERO_ATUALIZADO"
 #define WORLD_NAME_CS "CS_FRENTE"
+#define WORLD_NAME_LABIRINTO "world_labirinto"
+#define WORLD_NAME_PC "PC_ARSENAL_ATUALIZADO"
 #define WORLD_NAME_1ANDAR "1ANDAR_PCFREVO"
 
 typedef enum {
@@ -61,6 +63,7 @@ void requestWorldLoadNext(void);
 void requestWorldLoadPrevious(void);
 void requestWorldTransitionNext(Vector2 spawnPosition);
 void requestWorldTransitionPrevious(Vector2 spawnPosition);
+void requestWorldTransitionToName(const char* worldName, Vector2 spawnPosition);
 int processPendingWorldLoad(void);
 int processWorldTransitionZones(Rectangle playerRect, const WorldTransitionZone* zones, int zoneCount);
 

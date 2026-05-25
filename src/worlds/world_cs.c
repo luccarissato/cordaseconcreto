@@ -1,5 +1,6 @@
 #include "world_cs.h"
 
+#include "world_labirinto.h"
 #include "worlds.h"
 #include "../core/game.h"
 #include "../core/collision.h"
@@ -10,6 +11,7 @@
 
 static const Vector2 WORLD_CS_PARTY_SPAWN = {120.0f, 820.0f};
 static const Vector2 WORLD_MC_LEFT_EDGE_SPAWN = {120.0f, 680.0f};
+static const Vector2 WORLD_PC_ENTRY_SPAWN = {760.0f, 300.0f};
 static const char* WORLD_CS_MAP_PATH = "assets/cenarios/CS_FRENTE.png";
 static const float WORLD_CS_BORDER_THICKNESS = 128.0f;
 
@@ -22,8 +24,8 @@ static const Vector2 WORLD_CS_POST_POSITION = {90.0f, 780.0f};
 
 static const Rectangle WORLD_CS_NEXT_WORLD_TRIGGER = {740.0f, 1075.0f, 285.0f, 12.0f};
 static const Rectangle WORLD_CS_PREVIOUS_WORLD_TRIGGER = {1835.0f, 800.0f, 160.0f, 270.0f};
+static const Rectangle WORLD_CS_LABIRINTO_TRIGGER = {1135.0f, 370.0f, 12.0f, 280.0f};
 static const WorldTransitionZone WORLD_CS_TRANSITIONS[] = {
-    {WORLD_CS_NEXT_WORLD_TRIGGER, WORLD_TRANSITION_NEXT, {760.0f, 300.0f}},
     {WORLD_CS_PREVIOUS_WORLD_TRIGGER, WORLD_TRANSITION_PREVIOUS, WORLD_MC_LEFT_EDGE_SPAWN}
 };
 
@@ -167,6 +169,7 @@ static void collectWorldCSBlockers(Rectangle* outBlockers, int* outCount) {
 static void drawWorldCSOverlay(void) {
     DrawRectangleLinesEx(WORLD_CS_NEXT_WORLD_TRIGGER, 2.0f, ORANGE);
     DrawRectangleLinesEx(WORLD_CS_PREVIOUS_WORLD_TRIGGER, 2.0f, ORANGE);
+    DrawRectangleLinesEx(WORLD_CS_LABIRINTO_TRIGGER, 2.0f, MAGENTA);
 
     drawWorldCSTreeAtBaseCenter(WORLD_CS_TREE_POSITION);
     drawWorldCSPostAtBaseCenter(WORLD_CS_POST_POSITION);
@@ -200,8 +203,20 @@ static int processWorldCSTriggers(Vector2 playerPos) {
         .size = {150.0f, 200.0f}
     };
 
+    Rectangle playerRect = getColliderRect(playerPos, playerCollider);
+
+    if (CheckCollisionRecs(playerRect, WORLD_CS_LABIRINTO_TRIGGER)) {
+        requestWorldTransitionToName(WORLD_NAME_LABIRINTO, WORLD_LABIRINTO_PARTY_SPAWN);
+        return 1;
+    }
+
+    if (CheckCollisionRecs(playerRect, WORLD_CS_NEXT_WORLD_TRIGGER)) {
+        requestWorldTransitionToName(WORLD_NAME_PC, WORLD_PC_ENTRY_SPAWN);
+        return 1;
+    }
+
     return processWorldTransitionZones(
-        getColliderRect(playerPos, playerCollider),
+        playerRect,
         WORLD_CS_TRANSITIONS,
         (int)(sizeof(WORLD_CS_TRANSITIONS) / sizeof(WORLD_CS_TRANSITIONS[0]))
     );

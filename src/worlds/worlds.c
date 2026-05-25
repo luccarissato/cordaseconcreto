@@ -12,12 +12,14 @@ typedef enum {
     PENDING_FIRST,
     PENDING_CURRENT,
     PENDING_NEXT,
-    PENDING_PREVIOUS
+    PENDING_PREVIOUS,
+    PENDING_NAMED
 } PendingWorldLoadType;
 
 static PendingWorldLoadType pendingType = PENDING_NONE;
 static int pendingHasSpawnOverride = 0;
 static Vector2 pendingSpawnPosition = {0.0f, 0.0f};
+static const char* pendingWorldName = NULL;
 static int setupHasSpawnOverride = 0;
 static Vector2 setupSpawnPosition = {0.0f, 0.0f};
 
@@ -50,6 +52,7 @@ void initWorldRegistry(void) {
     worldLoaded = 0;
     pendingType = PENDING_NONE;
     pendingHasSpawnOverride = 0;
+    pendingWorldName = NULL;
     setupHasSpawnOverride = 0;
 }
 
@@ -169,6 +172,22 @@ void requestWorldLoadCurrent(void) {
     pendingHasSpawnOverride = 0;
 }
 
+int loadWorldByName(const char* worldName) {
+    if (worldName == NULL || worldHead == NULL) {
+        return 0;
+    }
+
+    WorldNode* node = worldHead;
+    for (int i = 0; i < worldCount && node != NULL; i++) {
+        if (node->name != NULL && TextIsEqual(node->name, worldName)) {
+            return loadWorldNode(node);
+        }
+        node = node->next;
+    }
+
+    return 0;
+}
+
 void requestWorldLoadFirst(void) {
     pendingType = PENDING_FIRST;
     pendingHasSpawnOverride = 0;
@@ -196,6 +215,13 @@ void requestWorldTransitionPrevious(Vector2 spawnPosition) {
     pendingSpawnPosition = spawnPosition;
 }
 
+void requestWorldTransitionToName(const char* worldName, Vector2 spawnPosition) {
+    pendingType = PENDING_NAMED;
+    pendingHasSpawnOverride = 1;
+    pendingSpawnPosition = spawnPosition;
+    pendingWorldName = worldName;
+}
+
 int processPendingWorldLoad(void) {
     switch (pendingType) {
         case PENDING_FIRST:
@@ -213,6 +239,13 @@ int processPendingWorldLoad(void) {
         case PENDING_PREVIOUS:
             pendingType = PENDING_NONE;
             return loadPreviousWorld();
+
+        case PENDING_NAMED: {
+            const char* targetName = pendingWorldName;
+            pendingType = PENDING_NONE;
+            pendingWorldName = NULL;
+            return loadWorldByName(targetName);
+        }
 
         case PENDING_NONE:
         default:
@@ -251,5 +284,6 @@ void shutdownWorldRegistry(void) {
     worldLoaded = 0;
     pendingType = PENDING_NONE;
     pendingHasSpawnOverride = 0;
+    pendingWorldName = NULL;
     setupHasSpawnOverride = 0;
 }

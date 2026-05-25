@@ -80,6 +80,8 @@ void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount);
 void drawPlayer(Player* p);
 void unloadPlayer(Player* p);
 void updatePlayerAnimation(Player* p, int isMoving);
+void setPlayerWorldScale(float scale);
+float getPlayerWorldScale(void);
 void initSpriteSheetAnimation(SpriteSheetAnimation* animation, const char* texturePath, int frameCount, int frameWidth, int frameHeight, int movementStartIndex, int movementFrameCount, int idleFrameIndex, float frameDuration);
 void unloadSpriteSheetAnimation(SpriteSheetAnimation* animation);
 void updateSpriteSheetAnimation(SpriteSheetAnimation* animation, int isMoving);

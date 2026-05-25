@@ -173,11 +173,18 @@ static int processWorldPCTriggers(Vector2 playerPos) {
         }
     }
 
-    return processWorldTransitionZones(
-        getColliderRect(playerPos, playerCollider),
-        WORLD_PC_TRANSITIONS,
-        (int)(sizeof(WORLD_PC_TRANSITIONS) / sizeof(WORLD_PC_TRANSITIONS[0]))
-    );
+    playerRect = getColliderRect(playerPos, playerCollider);
+    if (CheckCollisionRecs(playerRect, WORLD_PC_PREVIOUS_WORLD_TRIGGER)) {
+        requestWorldTransitionToName(WORLD_NAME_CS, WORLD_CS_RETURN_SPAWN);
+        return 1;
+    }
+
+    if (CheckCollisionRecs(playerRect, WORLD_PC_NEXT_WORLD_TRIGGER)) {
+        requestWorldTransitionNext((Vector2){30.0f, 380.0f});
+        return 1;
+    }
+
+    return 0;
 }
 
 static void setupWorldPCNode(void* userData) {
@@ -240,7 +247,7 @@ static void teardownWorldPCNode(void) {
 
 void RegisterWorldPC(void) {
     static WorldNode worldPCNode = {
-        .name = "PC_ARSENAL_ATUALIZADO",
+        .name = WORLD_NAME_PC,
         .setup = setupWorldPCNode,
         .teardown = teardownWorldPCNode,
         .collectBlockers = collectWorldPCBlockers,

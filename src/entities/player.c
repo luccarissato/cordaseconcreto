@@ -7,6 +7,8 @@
 #define SPEED 5.0f
 #define ANIM_SPEED 0.2f
 
+static float playerWorldScale = 1.0f;
+
 #define PLAYER2_FRONT_IDLE_PATH "assets/personagens/p2_frente_placeholder.png"
 #define PLAYER2_BACK_PATH "assets/personagens/MANGUEBEAT_COSTAS.png"
 #define PLAYER2_SIDE_PATH "assets/personagens/MANGUEBEAT_DIREITA.png"
@@ -63,6 +65,33 @@ static void initSpriteSheetAnimationFromPath(SpriteSheetAnimation* animation, co
 void initSpriteSheetAnimation(SpriteSheetAnimation* animation, const char* texturePath, int frameCount, int frameWidth, int frameHeight, int movementStartIndex, int movementFrameCount, int idleFrameIndex, float frameDuration) {
     initSpriteSheetAnimationFromPath(animation, texturePath, frameCount, frameWidth, frameHeight, movementFrameCount, idleFrameIndex, frameDuration);
     animation->movementStartIndex = movementStartIndex;
+}
+
+void setPlayerWorldScale(float scale) {
+    playerWorldScale = (scale > 0.0f) ? scale : 1.0f;
+}
+
+float getPlayerWorldScale(void) {
+    return playerWorldScale;
+}
+
+static Rectangle getScaledPlayerColliderRect(Player* p) {
+    if (playerWorldScale != 1.0f) {
+        float scaledSpriteSize = 184.0f * playerWorldScale;
+        return (Rectangle){
+            p->position.x + (50.0f * playerWorldScale),
+            p->position.y,
+            scaledSpriteSize,
+            scaledSpriteSize
+        };
+    }
+
+    return (Rectangle){
+        p->position.x + (p->collider.offset.x * playerWorldScale),
+        p->position.y + (p->collider.offset.y * playerWorldScale),
+        p->collider.size.x * playerWorldScale,
+        p->collider.size.y * playerWorldScale
+    };
 }
 
 void unloadSpriteSheetAnimation(SpriteSheetAnimation* animation) {
@@ -306,7 +335,7 @@ void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount) {
         p->direction = DIR_LEFT;
     }
 
-    Rectangle playerCollider = getColliderRect(p->position, p->collider);
+    Rectangle playerCollider = getScaledPlayerColliderRect(p);
     Vector2 resolvedMove = resolveMovement(playerCollider, move, blockers, blockerCount);
 
     p->position.x += resolvedMove.x;
@@ -364,16 +393,22 @@ void drawPlayer(Player* p) {
             break;
     }
 
-    Vector2 drawPos = { p->position.x + 50.0f, p->position.y };
-    renderStatusAura(tex, src, drawPos, (Vector2){0, 0}, 1.0f, &p->statusList);
+    Vector2 drawPos = { p->position.x + (50.0f * playerWorldScale), p->position.y };
+    renderStatusAura(tex, src, drawPos, (Vector2){0, 0}, playerWorldScale, &p->statusList);
 
-    DrawTextureRec(tex, src, drawPos, WHITE);
+    Rectangle dest = {
+        drawPos.x,
+        drawPos.y,
+        fabsf(src.width) * playerWorldScale,
+        src.height * playerWorldScale
+    };
+    DrawTexturePro(tex, src, dest, (Vector2){0, 0}, 0.0f, WHITE);
 
-    Vector2 spriteSize = {fabsf((float)src.width), (float)src.height};
+    Vector2 spriteSize = {dest.width, dest.height};
     renderStatusBuffs(&p->statusList, drawPos, spriteSize);
 
     // colision debug
-    Rectangle colliderRect = getColliderRect(p->position, p->collider);
+    Rectangle colliderRect = getScaledPlayerColliderRect(p);
     DrawRectangleLinesEx(colliderRect, 2.0f, GREEN);
 }
 
