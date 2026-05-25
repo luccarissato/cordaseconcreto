@@ -50,11 +50,13 @@ int processCurrentWorldTriggers(Vector2 playerPos);
 void getCurrentWorldCameraBounds(Rectangle* outBounds);
 
 int loadCurrentWorld(void);
+int loadFirstWorld(void);
 int loadNextWorld(void);
 int loadPreviousWorld(void);
 
 Vector2 getWorldSpawnPosition(Vector2 fallbackPosition);
 void requestWorldLoadCurrent(void);
+void requestWorldLoadFirst(void);
 void requestWorldLoadNext(void);
 void requestWorldLoadPrevious(void);
 void requestWorldTransitionNext(Vector2 spawnPosition);

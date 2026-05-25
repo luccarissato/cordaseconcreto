@@ -180,11 +180,14 @@ void drawEnemy(Enemy* enemy) {
     if (enemy == NULL) return;
 
     Rectangle src = {0, 0, (float)enemy->texture.width, (float)enemy->texture.height};
-    renderStatusAura(enemy->texture, src, enemy->position, (Vector2){0, 0}, 1.0f, &enemy->statusList);
 
-    DrawTexture(enemy->texture, (int)enemy->position.x, (int)enemy->position.y, WHITE);
-    
-    Vector2 spriteSize = {(float)enemy->texture.width, (float)enemy->texture.height};
+    float spriteScale = 10.0f;
+
+    renderStatusAura(enemy->texture, src, enemy->position, (Vector2){0, 0}, spriteScale, &enemy->statusList);
+
+    DrawTextureEx(enemy->texture, enemy->position, 0.0f, spriteScale, WHITE);
+
+    Vector2 spriteSize = {(float)enemy->texture.width * spriteScale, (float)enemy->texture.height * spriteScale};
     renderStatusBuffs(&enemy->statusList, enemy->position, spriteSize);
     
     Rectangle colliderRect = getColliderRect(enemy->position, enemy->collider);

@@ -21,7 +21,7 @@ static const char* WORLD_2ANDAR_TERRA_PATH = "assets/cenarios/TERRA_A1_PCFREVO.p
 static const char* WORLD_2ANDAR_VENTO_PATH = "assets/cenarios/VENTO_A1_PCFREVO.png";
 static const char* WORLD_2ANDAR_DOOR_CLOSED_PATH = "assets/interagiveis/PORTA_FECHADA_A2_PCFREVO.png";
 static const char* WORLD_2ANDAR_DOOR_OPEN_PATH = "assets/interagiveis/PORTAO_ABERTO_A2_PCFREVO.png";
-static const char* WORLD_2ANDAR_BOSS1_TEXTURE_PATH = "assets/antagonistas/boss1_placeholder.png";
+static const char* WORLD_2ANDAR_BOSS1_TEXTURE_PATH = "assets/antagonistas/MULHER_GUARDA_CHUVA.png";
 static const float WORLD_2ANDAR_BORDER_THICKNESS = 128.0f;
 static const float WORLD_2ANDAR_DOOR_HALF_WIDTH = 200.0f;
 
@@ -181,7 +181,7 @@ static int processWorld2AndarTriggers(Vector2 playerPos) {
         if (CheckCollisionRecs(playerRect, WORLD_2ANDAR_BOSS1_TRIGGER)) {
             int bossIndex = enemyManager.count;
 
-            spawnEnemy("Boss 1", WORLD_2ANDAR_BOSS1_SPAWN, WORLD_2ANDAR_BOSS1_TEXTURE_PATH, MAX_ENEMIES);
+            spawnEnemy("Mulher do Guarda Chuva Branco", WORLD_2ANDAR_BOSS1_SPAWN, WORLD_2ANDAR_BOSS1_TEXTURE_PATH, MAX_ENEMIES);
             if (enemyManager.count > bossIndex) {
                 setEnemyStats(&enemyManager.enemies[bossIndex], 1, 40, 20, 12);
             }

@@ -413,10 +413,16 @@ void initParty(int applyGrowth, Vector2 spawnPosition) {
 }
 
 void resetGameState() {
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        party[i].level = 0;
+    }
+
     currentMenuState = MENU_MAIN;
     currentGameState = STATE_MENU;
     clearPlayerInventory();
-    requestWorldLoadCurrent();
+    unloadEnemyManager();
+    initEnemyManager();
+    requestWorldLoadFirst();
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {

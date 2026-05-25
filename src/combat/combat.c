@@ -72,6 +72,12 @@ static void restorePartyMinimumCombatHp(void) {
     }
 }
 
+static int isBoss1EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 1") == 0 ||
+         strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
+}
+
 //compareCombatSpeed - Compara a velocidade dos participantes
 static int compareCombatantSpeed(const void* a, const void* b) {
     const Combatant* combA = (const Combatant*)a;
@@ -234,6 +240,8 @@ int getEnemyCombatCount() {
 }
 
 void endCombat() {
+    if (!combat.inCombat) return;
+
     /* Verifica se foi vitória (todos inimigos derrotados) */
     int aliveEnemies = 0;
     int alivePlayers = 0;
@@ -254,7 +262,7 @@ void endCombat() {
             if (enemy->isAlive) {
                 aliveEnemies++;
             } else {
-                if (strcmp(enemy->name, "Boss 1") == 0) {
+                if (isBoss1EnemyName(enemy->name)) {
                     defeatedBoss1 = 1;
                 }
                 if (strcmp(enemy->name, "Boss 2") == 0) {
@@ -266,8 +274,10 @@ void endCombat() {
         }
     }
     
+    int partyDefeated = (alivePlayers == 0);
+
     /* Se nenhum inimigo vivo = jogadores venceram */
-    if (aliveEnemies == 0) {
+    if (!partyDefeated && aliveEnemies == 0) {
         if (defeatedBoss1) {
             grantKeyItem(&pedaçoDeChave1);
         }
@@ -286,6 +296,15 @@ void endCombat() {
 
     bossAiOnCombatEnd();
     clearCombatStatusState();
+
+    if (partyDefeated) {
+        combat.inCombat = 0;
+        combat.enemyCount = 0;
+        memset(combat.enemyIndices, 0, sizeof(combat.enemyIndices));
+        endCombatBattle();
+        resetGameState();
+        return;
+    }
 
      /* Garantir que qualquer personagem que terminou o combate com 0 HP volte para 1 HP
          antes de qualquer teardown/transition (previne crashes durante unload). */

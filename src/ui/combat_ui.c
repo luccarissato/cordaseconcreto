@@ -36,6 +36,14 @@ static Texture2D temptationIconTexture;
 static Texture2D boss1CombatBgTexture;
 static Texture2D playerCombatTextures[PARTY_SIZE];
 
+#define DEFAULT_ENEMY_COMBAT_SPRITE_SCALE 0.55f
+#define BOSS1_COMBAT_SPRITE_SCALE 1.5f
+#define BOSS1_VISIBLE_LEFT_X 18.0f
+#define BOSS1_VISIBLE_CENTER_X 174.5f
+#define BOSS1_VISIBLE_TOP_Y 17.0f
+#define PLAYER_COMBAT_SPRITE_SCALE 1.0f
+#define PLAYER_COMBAT_SPACING 190
+
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
 static int abilitySelection = 0;
@@ -83,6 +91,74 @@ static void unloadPlayerCombatTextures(void) {
 static int isCombatItemVisible(InventoryItem* item, int includeKeyItems);
 static void removeItemNodeAndFree(InventoryItem* item);
 static Combatant* getCurrentCombatantSafe(void);
+
+static int isBoss1EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 1") == 0 ||
+         strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
+}
+
+static float getEnemyCombatSpriteScale(const Enemy* enemy) {
+    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
+        return BOSS1_COMBAT_SPRITE_SCALE;
+    }
+
+    return DEFAULT_ENEMY_COMBAT_SPRITE_SCALE;
+}
+
+static float getEnemyCombatSpriteCenterX(const Enemy* enemy, float spriteX, float spriteScale) {
+    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
+        return spriteX + (BOSS1_VISIBLE_CENTER_X * spriteScale);
+    }
+
+    if (enemy != NULL && enemy->texture.id != 0) {
+        return spriteX + ((float)enemy->texture.width * spriteScale * 0.5f);
+    }
+
+    return spriteX + 60.0f;
+}
+
+static float getEnemyCombatSpriteLeftX(const Enemy* enemy, float spriteX, float spriteScale) {
+    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
+        return spriteX + (BOSS1_VISIBLE_LEFT_X * spriteScale);
+    }
+
+    return spriteX;
+}
+
+static float getEnemyCombatSpriteTopY(const Enemy* enemy, float spriteY, float spriteScale) {
+    if (enemy != NULL && isBoss1EnemyName(enemy->name)) {
+        return spriteY + (BOSS1_VISIBLE_TOP_Y * spriteScale);
+    }
+
+    return spriteY;
+}
+
+static Vector2 getEnemyCombatPosition(int enemySlot) {
+    return (Vector2){220.0f, 145.0f + ((float)enemySlot * 165.0f)};
+}
+
+static Vector2 getPlayerCombatPosition(int playerIndex) {
+    Vector2 enemyPosition = getEnemyCombatPosition(0);
+    Enemy* anchorEnemy = NULL;
+    if (combat.enemyCount > 0) {
+        int worldEnemyIndex = combat.enemyIndices[0];
+        if (worldEnemyIndex >= 0 && worldEnemyIndex < enemyManager.count) {
+            anchorEnemy = &enemyManager.enemies[worldEnemyIndex];
+        }
+    }
+
+    float enemyScale = getEnemyCombatSpriteScale(anchorEnemy);
+    float enemyCenterX = getEnemyCombatSpriteCenterX(anchorEnemy, enemyPosition.x, enemyScale);
+    float enemyTopY = getEnemyCombatSpriteTopY(anchorEnemy, enemyPosition.y, enemyScale);
+    float playerStartX = enemyCenterX + 500.0f;
+    float playerY = enemyTopY + 295.0f;
+
+    return (Vector2){
+        playerStartX + ((float)playerIndex * PLAYER_COMBAT_SPACING),
+        playerY
+    };
+}
 
 //teste
 static void applyFixedOneDamageToPlayer(Player* target) {
@@ -242,7 +318,7 @@ static int isBoss1CombatActive(void) {
             continue;
         }
 
-        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 1") == 0) {
+        if (isBoss1EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
             return 1;
         }
     }
@@ -393,6 +469,8 @@ static void processEnemyTurnStart(Enemy* enemy) {
 }
 
 static void finishCombatIfNeeded() {
+    if (!combat.inCombat || !isCombatActive()) return;
+
     int alivePlayers = 0;
     int aliveEnemies = 0;
 
@@ -705,18 +783,27 @@ static void drawTopInitiativeBar() {
 
 static void drawPlayers() {
     for (int i = 0; i < PARTY_SIZE; i++) {
-        int x = 1200;
-        int y = 125 + (i * 165);
+        Vector2 playerPos = getPlayerCombatPosition(i);
+        int x = (int)playerPos.x;
+        int y = (int)playerPos.y;
 
         Texture2D spriteTexture = playerCombatTextures[i].id != 0 ? playerCombatTextures[i] : party[i].front;
+        float spriteScale = PLAYER_COMBAT_SPRITE_SCALE;
+        float spriteWidth = spriteTexture.id != 0 ? (float)spriteTexture.width * spriteScale : 120.0f;
+        float spriteHeight = spriteTexture.id != 0 ? (float)spriteTexture.height * spriteScale : 120.0f;
+        int spriteCenterX = x + (int)(spriteWidth * 0.5f);
+        int nameFontSize = 20;
+        int hpFontSize = 18;
+        int mpFontSize = 18;
+        const char* hpText = TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP);
+        const char* mpText = TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana);
 
-        DrawText(party[i].name, x + 185, y + - 10, 24, RAYWHITE);
-        DrawText(TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP), x + 185, y + 24, 20, GREEN);
-        DrawText(TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana), x + 185, y + 52, 20, SKYBLUE);
+        DrawText(party[i].name, spriteCenterX - (MeasureText(party[i].name, nameFontSize) / 2), y - 72, nameFontSize, RAYWHITE);
+        DrawText(hpText, spriteCenterX - (MeasureText(hpText, hpFontSize) / 2), y - 46, hpFontSize, GREEN);
+        DrawText(mpText, spriteCenterX - (MeasureText(mpText, mpFontSize) / 2), y - 24, mpFontSize, SKYBLUE);
 
         if (spriteTexture.id != 0) {
-            float spriteScale = 1.0f;
-            Vector2 spritePos = {(float)x - 10, (float)y};
+            Vector2 spritePos = {(float)x, (float)y};
             Rectangle srcRect = {0, 0, (float)spriteTexture.width, (float)spriteTexture.height};
             
             renderStatusAura(spriteTexture, srcRect, spritePos, (Vector2){0, 0}, spriteScale, &party[i].statusList);
@@ -731,17 +818,17 @@ static void drawPlayers() {
 
         if (targetIsEnemy == 0 && (combatUiState == COMBAT_UI_ATTACK_TARGET || combatUiState == COMBAT_UI_ABILITY_TARGET || combatUiState == COMBAT_UI_ITEM_TARGET)) {
             if (targetSelection < targetCount && targetIndices[targetSelection] == i) {
-                DrawTexture(targetArrowTexture, x - 35, y + 45, WHITE);
+                DrawTexture(targetArrowTexture, x - targetArrowTexture.width - 8, y + (int)(spriteHeight * 0.5f), WHITE);
             }
         }
 
         if (currentPlayerIndex() == i) {
-            DrawTexture(turnArrowTexture, x - 35, y + 10, WHITE);
+            DrawTexture(turnArrowTexture, x - turnArrowTexture.width - 8, y + (int)(spriteHeight * 0.5f) - turnArrowTexture.height - 8, WHITE);
         }
 
-        drawPlayerWeaknessIcon(i, x, y, 0.25f);
-        drawPlayerTrapIcon(i, x, y, 0.25f);
-        drawPlayerTemptationIcon(i, x, y, 0.25f);
+        drawPlayerWeaknessIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
+        drawPlayerTrapIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
+        drawPlayerTemptationIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
     }
 }
 
@@ -779,35 +866,52 @@ static void drawEnemyColumn() {
         if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) continue;
 
         Enemy* enemy = &enemyManager.enemies[worldEnemyIndex];
-        int x = 120;
-        int y = 345 + (i * 165);
+        Vector2 enemyPosition = getEnemyCombatPosition(i);
+        int x = (int)enemyPosition.x;
+        int y = (int)enemyPosition.y;
+        float spriteDrawX = (float)x;
+        float spriteDrawY = (float)y;
+        float spriteScale = 1.0f;
 
         if (enemy->texture.id != 0) {
+            spriteScale = getEnemyCombatSpriteScale(enemy);
             Vector2 spritePos = {(float)x, (float)y};
             Rectangle srcRect = {0, 0, (float)enemy->texture.width, (float)enemy->texture.height};
+            spriteDrawX = spritePos.x;
+            spriteDrawY = spritePos.y;
             
-            renderStatusAura(enemy->texture, srcRect, spritePos, (Vector2){0, 0}, 0.55f, &enemy->statusList);
+            renderStatusAura(enemy->texture, srcRect, spritePos, (Vector2){0, 0}, spriteScale, &enemy->statusList);
             
-            DrawTextureEx(enemy->texture, spritePos, 0.0f, 0.55f, enemy->isAlive ? WHITE : GRAY);
+            DrawTextureEx(enemy->texture, spritePos, 0.0f, spriteScale, enemy->isAlive ? WHITE : GRAY);
             
-            Vector2 spriteSize = {enemy->texture.width * 0.55f, enemy->texture.height * 0.55f};
+            Vector2 spriteSize = {enemy->texture.width * spriteScale, enemy->texture.height * spriteScale};
             renderStatusBuffs(&enemy->statusList, spritePos, spriteSize);
         } else {
             DrawRectangle(x, y, 120, 120, enemy->isAlive ? MAROON : DARKGRAY);
         }
 
+        int spriteCenterX = (int)getEnemyCombatSpriteCenterX(enemy, spriteDrawX, spriteScale);
+        int spriteLeftX = (int)getEnemyCombatSpriteLeftX(enemy, spriteDrawX, spriteScale);
+        int spriteTopY = (int)getEnemyCombatSpriteTopY(enemy, spriteDrawY, spriteScale);
+
         if (targetIsEnemy == 1 && (combatUiState == COMBAT_UI_ATTACK_TARGET || combatUiState == COMBAT_UI_ABILITY_TARGET || combatUiState == COMBAT_UI_ITEM_TARGET)) {
             if (targetSelection < targetCount && targetIndices[targetSelection] == worldEnemyIndex) {
-                DrawTexture(targetArrowTexture, x - 35, y + 45, WHITE);
+                DrawTexture(targetArrowTexture, spriteLeftX - targetArrowTexture.width - 8, spriteTopY + 80, WHITE);
             }
         }
 
         if (currentEnemyCombatIndex() == i) {
-            DrawTexture(turnArrowTexture, x - 35, y + 10, WHITE);
+            DrawTexture(turnArrowTexture, spriteLeftX - turnArrowTexture.width - 8, spriteTopY + 12, WHITE);
         }
 
-        DrawText(enemy->name, x + 40, y - 50, 24, RAYWHITE);
-        DrawText(TextFormat("HP %d/%d", enemy->stats.currentHP, enemy->stats.maxHP), x + 25, y - 20, 20, PINK);
+        int nameFontSize = 24;
+        int hpFontSize = 20;
+        const char* hpText = TextFormat("HP %d/%d", enemy->stats.currentHP, enemy->stats.maxHP);
+        int nameX = spriteCenterX - (MeasureText(enemy->name, nameFontSize) / 2);
+        int hpX = spriteCenterX - (MeasureText(hpText, hpFontSize) / 2);
+
+        DrawText(enemy->name, nameX, spriteTopY - 50, nameFontSize, RAYWHITE);
+        DrawText(hpText, hpX, spriteTopY - 20, hpFontSize, PINK);
     }
 }
 
@@ -925,7 +1029,7 @@ static void drawBottomPanel() {
 
             Color color = (i == targetSelection) ? YELLOW : RAYWHITE;
             DrawText(name, 120, 825 + (i * 42), 24, color);
-            DrawText(TextFormat("HP %d/%d", hp, maxHp), 430, 825 + (i * 42), 20, LIGHTGRAY);
+            DrawText(TextFormat("HP %d/%d", hp, maxHp), 630, 825 + (i * 42), 20, LIGHTGRAY);
         }
 
         DrawTexture(targetArrowTexture, 58, 830 + (targetSelection * 42), WHITE);
@@ -933,8 +1037,8 @@ static void drawBottomPanel() {
 }
 
 void initCombatUI() {
-    turnArrowTexture = LoadTexture("assets/interface/seta_placeholder.png");
-    targetArrowTexture = LoadTexture("assets/interface/seta_alvo_placeholder.png");
+    turnArrowTexture = LoadTexture("assets/interface/SETA_MENU.png");
+    targetArrowTexture = LoadTexture("assets/interface/SETA_MENU.png");
     trapIconTexture = LoadTexture("assets/icones/trap.png");
     temptationIconTexture = LoadTexture("assets/icones/tentacao.png");
     boss1CombatBgTexture = LoadTexture("assets/cenarios/LUTA_PCFREVO.png");

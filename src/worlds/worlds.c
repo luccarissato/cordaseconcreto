@@ -9,6 +9,7 @@ static int worldLoaded = 0;
 
 typedef enum {
     PENDING_NONE = 0,
+    PENDING_FIRST,
     PENDING_CURRENT,
     PENDING_NEXT,
     PENDING_PREVIOUS
@@ -131,6 +132,14 @@ int loadCurrentWorld(void) {
     return loadWorldNode(worldCurrent);
 }
 
+int loadFirstWorld(void) {
+    if (worldHead == NULL) {
+        return 0;
+    }
+
+    return loadWorldNode(worldHead);
+}
+
 int loadNextWorld(void) {
     WorldNode* target = (worldCurrent == NULL) ? worldHead : worldCurrent->next;
 
@@ -160,6 +169,11 @@ void requestWorldLoadCurrent(void) {
     pendingHasSpawnOverride = 0;
 }
 
+void requestWorldLoadFirst(void) {
+    pendingType = PENDING_FIRST;
+    pendingHasSpawnOverride = 0;
+}
+
 void requestWorldLoadNext(void) {
     pendingType = PENDING_NEXT;
     pendingHasSpawnOverride = 0;
@@ -184,6 +198,10 @@ void requestWorldTransitionPrevious(Vector2 spawnPosition) {
 
 int processPendingWorldLoad(void) {
     switch (pendingType) {
+        case PENDING_FIRST:
+            pendingType = PENDING_NONE;
+            return loadFirstWorld();
+
         case PENDING_CURRENT:
             pendingType = PENDING_NONE;
             return loadCurrentWorld();

@@ -172,6 +172,12 @@ static int boss2HasPendingTraps(void) {
     return 0;
 }
 
+static int isBoss1EnemyName(const char* name) {
+    return name != NULL &&
+        (strcmp(name, "Boss 1") == 0 ||
+         strcmp(name, "Mulher do Guarda Chuva Branco") == 0);
+}
+
 static void boss2ActivateAllPendingTraps(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
         if (!bossState.trapMarks[i].active) continue;
@@ -473,7 +479,7 @@ void bossAiOnCombatStart(void) {
         int worldEnemyIndex = combat.enemyIndices[i];
         if (worldEnemyIndex < 0 || worldEnemyIndex >= enemyManager.count) continue;
 
-        if (strcmp(enemyManager.enemies[worldEnemyIndex].name, "Boss 1") == 0) {
+        if (isBoss1EnemyName(enemyManager.enemies[worldEnemyIndex].name)) {
             bossState.active = 1;
             bossState.kind = BOSS_KIND_1;
             bossState.worldEnemyIndex = worldEnemyIndex;
@@ -484,7 +490,7 @@ void bossAiOnCombatStart(void) {
             saveOriginalPartyResistances();
 
             /* Aviso antecipado do próximo elemento do boss */
-            bossAiQueueMessage("Boss 1 prepara magia de %s!", getBossElementName(bossState.currentElementIndex));
+            bossAiQueueMessage("%s prepara magia de %s!", enemyManager.enemies[worldEnemyIndex].name, getBossElementName(bossState.currentElementIndex));
             break;
         }
     }
@@ -580,7 +586,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
 
     if (bossState.openingTurnPending) {
         bossState.openingTurnPending = 0;
-        bossAiQueueMessage("Boss 1 prepara magia de %s!", getBossElementName(bossState.currentElementIndex));
+        bossAiQueueMessage("%s prepara magia de %s!", enemy->name, getBossElementName(bossState.currentElementIndex));
         return 1;
     }
 
@@ -592,7 +598,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     if (bossState.phase == 1 && enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) {
         bossState.phase = 2;
         bossState.cumulativeDamageBonus = 0.0f;
-        bossAiQueueMessage("Boss 1 entrou na fase 2!");
+        bossAiQueueMessage("%s entrou na fase 2!", enemy->name);
         shufflePartyWeaknessesForPhase2();
     }
 
@@ -640,7 +646,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
         applyCombatDamageToPlayer(target, damage);
     }
 
-    bossAiQueueMessage("Boss 1 atingiu toda a party com %s.", getBossElementName(element));
+    bossAiQueueMessage("%s atingiu toda a party com %s.", enemy->name, getBossElementName(element));
     if (weaknessHits > 0 && bossState.phase >= 2) {
         bossAiQueueMessage("Fraquezas atingidas: %s. Bonus cumulativo +10%% por acerto.", weakNames);
     }
@@ -648,7 +654,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     bossState.currentElementIndex = (bossState.currentElementIndex + 1) % BOSS_ELEMENT_COUNT;
 
     /* Já anuncia o próximo elemento com antecedência para o jogador se preparar */
-    bossAiQueueMessage("Boss 1 prepara magia de %s!", getBossElementName(bossState.currentElementIndex));
+    bossAiQueueMessage("%s prepara magia de %s!", enemy->name, getBossElementName(bossState.currentElementIndex));
 
     return 1;
 }
