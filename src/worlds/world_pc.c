@@ -4,6 +4,8 @@
 #include "../core/game.h"
 #include "../core/collision.h"
 #include "../entities/npc.h"
+#include "../interactables/chest.h"
+#include "../interactables/interactable.h"
 #include "../data/dialogues/npc_dialogues.h"
 #include "raylib.h"
 #include <stddef.h>
@@ -13,12 +15,17 @@
 #include "../items/game_items.h"
 #include "../combat/boss_ai.h"
 
+extern InteractableManager interactableManager;
+
 static const Vector2 WORLD_PC_PARTY_SPAWN = {900.0f, 560.0f};
 static const Vector2 WORLD_CS_RETURN_SPAWN = {860.0f, 850.0f};
 static const char* WORLD_PC_MAP_PATH = "assets/cenarios/PC_ARSENAL_ATUALIZADO.png";
 static const char* WORLD_PC_CAR_PATH = "assets/cenarios/CARRO_PCARSENAL.png";
 static const float WORLD_PC_BORDER_THICKNESS = 128.0f;
 static const Vector2 WORLD_PC_CAR_BASE_CENTER = {480.0f, 800.0f};
+static const char* WORLD_PC_CHEST_CLOSED_PATH = "assets/interagiveis/CAIXA_FECHADA.png";
+static const char* WORLD_PC_CHEST_OPEN_PATH = "assets/interagiveis/CAIXA_ABERTA.png";
+static const float WORLD_PC_CHEST_GAP = 30.0f;
 
 NPC worldPCNpc1;
 NPC worldPCNpc2;
@@ -191,6 +198,15 @@ static void setupWorldPCNode(void* userData) {
     (void)userData;
 
     initParty(0, getWorldSpawnPosition(WORLD_PC_PARTY_SPAWN));
+    initInteractableManager(&interactableManager);
+    addChestSequence(
+        &interactableManager,
+        (Vector2){1320.0f, 1055.0f},
+        3,
+        WORLD_PC_CHEST_GAP,
+        WORLD_PC_CHEST_CLOSED_PATH,
+        WORLD_PC_CHEST_OPEN_PATH
+    );
     initNPC(&worldPCNpc1, (Vector2){500.0f, 190.0f}, "assets/NPCs/NPC1.png", &npc2Dialogue, "Giovanna");
     initNPC(&worldPCNpc2, (Vector2){1750.0f, 190.0f}, "assets/NPCs/NPC3.png", &npc3Dialogue, "Igor");
 
@@ -241,6 +257,7 @@ static void teardownWorldPCNode(void) {
     WORLD_PC_EDGE_BLOCKER_COUNT = 0;
     WORLD_PC_CAR_BLOCKER = (Rectangle){0.0f, 0.0f, 0.0f, 0.0f};
     WORLD_PC_CUSTOM_BLOCKER_COUNT = 0;
+    unloadInteractableManager(&interactableManager);
 
     unloadParty();
 }

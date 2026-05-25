@@ -115,7 +115,7 @@ void SetupTestWorldContent(int includeStarterItems) {
         "assets/interagiveis/chao_amarelo_placeholdert.png",
         "assets/interagiveis/chao_vermelho_placeholder.png",
         2.0f,
-        50
+        30
     );
     addInteractable(&interactableManager, &colorPuzzle);
 

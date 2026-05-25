@@ -5,6 +5,7 @@
 #include "../core/collision.h"
 #include "raylib.h"
 #include "../interactables/interactable.h"
+#include "../interactables/chest.h"
 #include "../interactables/color_puzzle.h"
 #include <stddef.h>
 #include <string.h>
@@ -20,6 +21,9 @@ static const Vector2 WORLD_PC_RETURN_SPAWN = {1225.0f, 240.0f};
 static const Vector2 WORLD_2ANDAR_RETURN_SPAWN = {1690.0f, 740.0f};
 static const char* WORLD_1ANDAR_MAP_PATH = "assets/cenarios/1ANDAR_PCFREVO.png";
 static const float WORLD_1ANDAR_BORDER_THICKNESS = 128.0f;
+static const char* WORLD_1ANDAR_CHEST_CLOSED_PATH = "assets/interagiveis/CAIXA_FECHADA.png";
+static const char* WORLD_1ANDAR_CHEST_OPEN_PATH = "assets/interagiveis/CAIXA_ABERTA.png";
+static const float WORLD_1ANDAR_CHEST_GAP = 30.0f;
 
 static const Rectangle WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER = {35.0f, 405.0f, 12.0f, 155.0f};
 static const Rectangle WORLD_1ANDAR_NEXT_WORLD_TRIGGER = {1755.0f, 900.0f, 12.0f, 12.0f};
@@ -162,9 +166,17 @@ static void setupWorld1AndarNode(void* userData) {
         "assets/interagiveis/chao_amarelo.png",
         "assets/interagiveis/chao_vermelho.png",
         2.0f,
-        50
+        30
     );
     addInteractable(&interactableManager, &colorPuzzle);
+    addChestSequence(
+        &interactableManager,
+        (Vector2){450.0f, 850.0f},
+        2,
+        WORLD_1ANDAR_CHEST_GAP,
+        WORLD_1ANDAR_CHEST_CLOSED_PATH,
+        WORLD_1ANDAR_CHEST_OPEN_PATH
+    );
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);

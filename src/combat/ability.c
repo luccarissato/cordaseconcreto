@@ -26,7 +26,7 @@ static void initCharacter1Abilities() {
     abilities[0][0].scaling_mult = 0.3f;
     abilities[0][0].characterID = CHARACTER_1_TANK;
     abilities[0][0].ability_index = 0;
-    strcpy(abilities[0][0].name, "Baque");
+    strcpy(abilities[0][0].name, "Baque de cura");
     strcpy(abilities[0][0].description, "Ataque fisico leve que cura voce com base no dano causado");
     
     /* Skill 2: Protect - Absorve dano de aliado */
@@ -36,7 +36,7 @@ static void initCharacter1Abilities() {
     abilities[0][1].ability_type = ABILITY_TYPE_BUFF;
     abilities[0][1].damage_base = 0;
     abilities[0][1].scaling_type = SCALING_NONE;
-    strcpy(abilities[0][1].name, "Proteção");
+    strcpy(abilities[0][1].name, "Proteçao Ritmica");
     strcpy(abilities[0][1].description, "Absorve dano de um aliado por 3 turnos");
     abilities[0][1].data.buff_action.turns_extra = 3;
     
@@ -48,7 +48,7 @@ static void initCharacter1Abilities() {
     abilities[0][2].damage_base = 25;
     abilities[0][2].scaling_type = SCALING_FORCA;
     abilities[0][2].scaling_mult = 0.8f;
-    strcpy(abilities[0][2].name, "Golpe Debilitante");
+    strcpy(abilities[0][2].name, "Loa de Respeito");
     strcpy(abilities[0][2].description, "Dano em área + reduz força e velocidade por 3 turnos");
     
     /* Skill 4: Reduce Damage - Reduz dano e reflete */
@@ -58,7 +58,7 @@ static void initCharacter1Abilities() {
     abilities[0][3].ability_type = ABILITY_TYPE_BUFF;
     abilities[0][3].damage_base = 0;
     abilities[0][3].scaling_type = SCALING_NONE;
-    strcpy(abilities[0][3].name, "Bastião");
+    strcpy(abilities[0][3].name, "A Marcha da Folia");
     strcpy(abilities[0][3].description, "Reduz dano e reflete parte como true damage por 3 turnos");
     abilities[0][3].data.reflect.reflect_duration = 3;
     abilities[0][3].data.reflect.reflect_mult = 1.0f;
@@ -75,7 +75,7 @@ static void initCharacter2Abilities() {
     abilities[1][0].damage_base = 20;
     abilities[1][0].scaling_type = SCALING_FORCA;
     abilities[1][0].scaling_mult = 0.5f;
-    strcpy(abilities[1][0].name, "Triplo Golpe");
+    strcpy(abilities[1][0].name, "Triplice Parabolica");
     strcpy(abilities[1][0].description, "3 ataques rápidos. 50% de chance de reduzir defesa");
     abilities[1][0].data.area.max_targets = 3;
     
@@ -87,7 +87,7 @@ static void initCharacter2Abilities() {
     abilities[1][1].damage_base = 35;
     abilities[1][1].scaling_type = SCALING_FORCA;
     abilities[1][1].scaling_mult = 0.7f;
-    strcpy(abilities[1][1].name, "Corte Sangrento");
+    strcpy(abilities[1][1].name, "Corte de Carangueijo");
     strcpy(abilities[1][1].description, "Ataque físico que aplica sangramento escalável");
     abilities[1][1].data.status.status_type = STATUS_BLEED;
     abilities[1][1].data.status.duration = -1;
@@ -100,7 +100,7 @@ static void initCharacter2Abilities() {
     abilities[1][2].ability_type = ABILITY_TYPE_BUFF;
     abilities[1][2].damage_base = 0;
     abilities[1][2].scaling_type = SCALING_NONE;
-    strcpy(abilities[1][2].name, "Contra-Ataque");
+    strcpy(abilities[1][2].name, "Banditismo por Necessidade");
     strcpy(abilities[1][2].description, "Devolve 50% do dano recebido. Aumenta sangramento em 1");
     
     /* Skill 4: Haste - Extra turno + buff velocidade */
@@ -110,7 +110,7 @@ static void initCharacter2Abilities() {
     abilities[1][3].ability_type = ABILITY_TYPE_BUFF;
     abilities[1][3].damage_base = 0;
     abilities[1][3].scaling_type = SCALING_NONE;
-    strcpy(abilities[1][3].name, "Aceleração");
+    strcpy(abilities[1][3].name, "A Praieira");
     strcpy(abilities[1][3].description, "Ganha turno extra + 5 de velocidade por 3 turnos");
     abilities[1][3].data.buff_action.turns_extra = 1;
     abilities[1][3].data.buff_action.speed_bonus = 5;
@@ -125,7 +125,7 @@ static void initCharacter3Abilities() {
     abilities[2][0].ability_type = ABILITY_TYPE_CLEANSE;
     abilities[2][0].damage_base = 0;
     abilities[2][0].scaling_type = SCALING_NONE;
-    strcpy(abilities[2][0].name, "Purificar");
+    strcpy(abilities[2][0].name, "Vento de Itamaracá");
     strcpy(abilities[2][0].description, "Remove todos os debuffs de um aliado");
     
     /* Skill 2: Group Heal - Cura em grupo */
@@ -136,7 +136,7 @@ static void initCharacter3Abilities() {
     abilities[2][1].damage_base = 0;
     abilities[2][1].scaling_type = SCALING_MENTE;
     abilities[2][1].scaling_mult = 0.8f;
-    strcpy(abilities[2][1].name, "Cura em Grupo");
+    strcpy(abilities[2][1].name, "Passo da Ciranda");
     strcpy(abilities[2][1].description, "Cura pequena em todos os aliados");
     abilities[2][1].data.heal.heal_amount = 30;
     abilities[2][1].data.heal.heal_scaling = 0.8f;
@@ -148,7 +148,7 @@ static void initCharacter3Abilities() {
     abilities[2][2].ability_type = ABILITY_TYPE_BUFF;
     abilities[2][2].damage_base = 0;
     abilities[2][2].scaling_type = SCALING_NONE;
-    strcpy(abilities[2][2].name, "Bênção Seletiva >");
+    strcpy(abilities[2][2].name, "O Balanço das Ondas >");
     strcpy(abilities[2][2].description, "Buff alternável: +10% dano por 3 turnos.\n\nPressione setas para trocar o efeito.");
     abilities[2][2].is_alternatable = 1;
     abilities[2][2].current_buff_mode = BUFF_MODE_DAMAGE;  /* Começa em dano */
@@ -160,7 +160,7 @@ static void initCharacter3Abilities() {
     abilities[2][3].ability_type = ABILITY_TYPE_REVIVE;
     abilities[2][3].damage_base = 0;
     abilities[2][3].scaling_type = SCALING_NONE;
-    strcpy(abilities[2][3].name, "Ressureição");
+    strcpy(abilities[2][3].name, "Quem me deu foi Lia");
     strcpy(abilities[2][3].description, "Ressuscita aliado com 33% de HP");
     abilities[2][3].data.revive.revive_hp_percent = 0.33f;
 }
@@ -176,7 +176,7 @@ static void initCharacter4Abilities() {
     abilities[3][0].damage_base = 60;
     abilities[3][0].scaling_type = SCALING_MENTE;
     abilities[3][0].scaling_mult = 0.9f;
-    strcpy(abilities[3][0].name, "Magia Elemental >");
+    strcpy(abilities[3][0].name, "Rima dos Quatro Cantos >");
     strcpy(abilities[3][0].description, "Ataque elemental em alvo único. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][0].is_alternatable = 1;
     abilities[3][0].current_element = ELEMENT_HEAT;  /* Começa em Calor */
@@ -188,7 +188,7 @@ static void initCharacter4Abilities() {
     abilities[3][1].ability_type = ABILITY_TYPE_DEBUFF;
     abilities[3][1].damage_base = 0;
     abilities[3][1].scaling_type = SCALING_NONE;
-    strcpy(abilities[3][1].name, "Marca Arcana");
+    strcpy(abilities[3][1].name, "Ponto de Marração");
     strcpy(abilities[3][1].description, "Marca alvo. Próximo dano elemental recebe 2x multiplicador");
     abilities[3][1].data.status.status_type = STATUS_ARCANE_MARK;
     abilities[3][1].data.status.duration = 3;
@@ -202,7 +202,7 @@ static void initCharacter4Abilities() {
     abilities[3][2].damage_base = 53;
     abilities[3][2].scaling_type = SCALING_MENTE;
     abilities[3][2].scaling_mult = 0.8f;
-    strcpy(abilities[3][2].name, "Explosão Elemental >");
+    strcpy(abilities[3][2].name, "Ritmo intercostal >");
     strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][2].is_alternatable = 1;
     abilities[3][2].current_element = ELEMENT_HEAT;  /* Começa em Calor */
@@ -214,7 +214,7 @@ static void initCharacter4Abilities() {
     abilities[3][3].ability_type = ABILITY_TYPE_BUFF;
     abilities[3][3].damage_base = 0;
     abilities[3][3].scaling_type = SCALING_NONE;
-    strcpy(abilities[3][3].name, "Ascensão Mágica");
+    strcpy(abilities[3][3].name, "A Balada do Iludido");
     strcpy(abilities[3][3].description, "Buff permanente: +10% dano elemental por round ate morte");
     abilities[3][3].data.buff_action.turns_extra = -1;
 }

@@ -51,6 +51,14 @@ static Texture2D playerCombatTextures[PARTY_SIZE];
 #define BOSS3_VISIBLE_TOP_Y 42.0f
 #define PLAYER_COMBAT_SPRITE_SCALE 1.0f
 #define PLAYER_COMBAT_SPACING 190
+#define COMBAT_ITEM_ROWS_PER_COLUMN 6
+#define COMBAT_ITEM_COLUMNS 2
+#define COMBAT_ITEM_PAGE_SIZE (COMBAT_ITEM_ROWS_PER_COLUMN * COMBAT_ITEM_COLUMNS)
+#define COMBAT_ITEM_START_X 120
+#define COMBAT_ITEM_START_Y 825
+#define COMBAT_SELL_ITEM_START_Y 845
+#define COMBAT_ITEM_COLUMN_WIDTH 360
+#define COMBAT_ITEM_ROW_HEIGHT 42
 
 static CombatUiState combatUiState = COMBAT_UI_MAIN;
 static int mainSelection = 0;
@@ -345,6 +353,38 @@ static void clampItemSelection(void) {
         itemSelection = availableItemCount - 1;
     } else if (itemSelection >= availableItemCount) {
         itemSelection = 0;
+    }
+}
+
+static int getVisibleItemPageStart(void) {
+    if (itemSelection < 0) {
+        return 0;
+    }
+
+    return (itemSelection / COMBAT_ITEM_PAGE_SIZE) * COMBAT_ITEM_PAGE_SIZE;
+}
+
+static void moveItemSelectionByColumn(int direction) {
+    if (availableItemCount <= 0) {
+        itemSelection = 0;
+        return;
+    }
+
+    itemSelection += direction * COMBAT_ITEM_ROWS_PER_COLUMN;
+    clampItemSelection();
+}
+
+static void getItemListPosition(int itemIndex, int startY, int* outX, int* outY) {
+    int pageIndex = itemIndex - getVisibleItemPageStart();
+    int column = pageIndex / COMBAT_ITEM_ROWS_PER_COLUMN;
+    int row = pageIndex % COMBAT_ITEM_ROWS_PER_COLUMN;
+
+    if (outX != NULL) {
+        *outX = COMBAT_ITEM_START_X + (column * COMBAT_ITEM_COLUMN_WIDTH);
+    }
+
+    if (outY != NULL) {
+        *outY = startY + (row * COMBAT_ITEM_ROW_HEIGHT);
     }
 }
 
@@ -962,7 +1002,7 @@ static void drawEnemyColumn() {
         }
 
         if (currentEnemyCombatIndex() == i) {
-            DrawTexture(turnArrowTexture, spriteLeftX - turnArrowTexture.width - 8, spriteTopY + 12, WHITE);
+            DrawTexture(turnArrowTexture, spriteLeftX - turnArrowTexture.width - 8, spriteTopY + 8, WHITE);
         }
 
         int nameFontSize = 24;
@@ -1025,44 +1065,76 @@ static void drawBottomPanel() {
     if (combatUiState == COMBAT_UI_ITEM_LIST) {
         DrawText("ITENS", 120, 780, 26, RAYWHITE);
 
-        for (int i = 0; i < availableItemCount; i++) {
+        int firstVisibleItem = getVisibleItemPageStart();
+        int lastVisibleItem = firstVisibleItem + COMBAT_ITEM_PAGE_SIZE;
+        if (lastVisibleItem > availableItemCount) {
+            lastVisibleItem = availableItemCount;
+        }
+
+        for (int i = firstVisibleItem; i < lastVisibleItem; i++) {
             InventoryItem* item = (InventoryItem*)availableItemNodes[i]->data;
             if (item == NULL || item->baseItem == NULL) continue;
 
+            int itemX = 0;
+            int itemY = 0;
             Color color = (i == itemSelection) ? YELLOW : RAYWHITE;
-            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), 120, 825 + (i * 42), 24, color);
+            getItemListPosition(i, COMBAT_ITEM_START_Y, &itemX, &itemY);
+            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), itemX, itemY, 24, color);
         }
 
         if (availableItemCount > 0) {
             InventoryItem* item = (InventoryItem*)availableItemNodes[itemSelection]->data;
             if (item != NULL && item->baseItem != NULL) {
-                DrawText(item->baseItem->description, 840, 820, 22, LIGHTGRAY);
+                DrawText(item->baseItem->description, 920, 820, 22, LIGHTGRAY);
             }
         }
 
-        DrawTexture(turnArrowTexture, 58, 830 + (itemSelection * 42), WHITE);
+        if (availableItemCount > COMBAT_ITEM_PAGE_SIZE) {
+            DrawText(TextFormat("%d-%d/%d", firstVisibleItem + 1, lastVisibleItem, availableItemCount), 120, 1040, 18, LIGHTGRAY);
+        }
+
+        int cursorX = 0;
+        int cursorY = 0;
+        getItemListPosition(itemSelection, COMBAT_ITEM_START_Y, &cursorX, &cursorY);
+        DrawTexture(turnArrowTexture, cursorX - 62, cursorY - 15, WHITE);
     }
 
     if (combatUiState == COMBAT_UI_SELL_LIST) {
         DrawText("INVENTARIO", 120, 780, 26, RAYWHITE);
         DrawText("DESCARTAR", 120, 810, 20, LIGHTGRAY);
 
-        for (int i = 0; i < availableItemCount; i++) {
+        int firstVisibleItem = getVisibleItemPageStart();
+        int lastVisibleItem = firstVisibleItem + COMBAT_ITEM_PAGE_SIZE;
+        if (lastVisibleItem > availableItemCount) {
+            lastVisibleItem = availableItemCount;
+        }
+
+        for (int i = firstVisibleItem; i < lastVisibleItem; i++) {
             InventoryItem* item = (InventoryItem*)availableItemNodes[i]->data;
             if (item == NULL || item->baseItem == NULL) continue;
 
+            int itemX = 0;
+            int itemY = 0;
             Color color = (i == itemSelection) ? YELLOW : RAYWHITE;
-            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), 120, 845 + (i * 42), 24, color);
+            getItemListPosition(i, COMBAT_SELL_ITEM_START_Y, &itemX, &itemY);
+            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), itemX, itemY, 24, color);
         }
 
         if (availableItemCount > 0) {
             InventoryItem* item = (InventoryItem*)availableItemNodes[itemSelection]->data;
             if (item != NULL && item->baseItem != NULL) {
-                DrawText(item->baseItem->description, 840, 820, 22, LIGHTGRAY);
+                DrawText(item->baseItem->description, 920, 820, 22, LIGHTGRAY);
             }
         }
 
-        DrawTexture(turnArrowTexture, 58, 830 + (itemSelection * 42), WHITE);
+        if (availableItemCount > COMBAT_ITEM_PAGE_SIZE) {
+            DrawText(TextFormat("%d-%d/%d", firstVisibleItem + 1, lastVisibleItem, availableItemCount), 120, 1040, 18, LIGHTGRAY);
+        }
+
+        int cursorX = 0;
+        int cursorY = 0;
+        getItemListPosition(itemSelection, COMBAT_SELL_ITEM_START_Y, &cursorX, &cursorY);
+        DrawTexture(turnArrowTexture, cursorX - 62, cursorY - 15, WHITE);
     }
 
     if (combatUiState == COMBAT_UI_ATTACK_TARGET || combatUiState == COMBAT_UI_ABILITY_TARGET || combatUiState == COMBAT_UI_ITEM_TARGET) {
@@ -1307,6 +1379,14 @@ void updateCombatUI() {
             clampItemSelection();
         }
 
+        if (IsKeyPressed(KEY_RIGHT)) {
+            moveItemSelectionByColumn(1);
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            moveItemSelectionByColumn(-1);
+        }
+
         if (IsKeyPressed(KEY_Z)) {
             executeSelectedItem();
         }
@@ -1323,6 +1403,14 @@ void updateCombatUI() {
         if (IsKeyPressed(KEY_UP)) {
             itemSelection--;
             clampItemSelection();
+        }
+
+        if (IsKeyPressed(KEY_RIGHT)) {
+            moveItemSelectionByColumn(1);
+        }
+
+        if (IsKeyPressed(KEY_LEFT)) {
+            moveItemSelectionByColumn(-1);
         }
 
         if (IsKeyPressed(KEY_Z)) {

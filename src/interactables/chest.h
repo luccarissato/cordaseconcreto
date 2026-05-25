@@ -18,6 +18,15 @@ Interactable createChest(
     const char* openSpritePath
 );
 
+void addChestSequence(
+    InteractableManager* manager,
+    Vector2 firstBaseLeftPosition,
+    int count,
+    float gap,
+    const char* closedSpritePath,
+    const char* openSpritePath
+);
+
 void chest_on_interact(Interactable* self, void* playerData);
 void chest_on_update(Interactable* self, Vector2 playerPos);
 void chest_on_draw(Interactable* self);

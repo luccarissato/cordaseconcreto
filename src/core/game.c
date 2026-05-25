@@ -329,6 +329,18 @@ void closeGame() {
 }
 
 void initParty(int applyGrowth, Vector2 spawnPosition) {
+    int hadExistingParty[PARTY_SIZE];
+    int previousHP[PARTY_SIZE];
+    int previousMana[PARTY_SIZE];
+    int previousAlive[PARTY_SIZE];
+
+    for (int i = 0; i < PARTY_SIZE; i++) {
+        hadExistingParty[i] = (party[i].level > 0);
+        previousHP[i] = party[i].stats.currentHP;
+        previousMana[i] = party[i].stats.currentMana;
+        previousAlive[i] = party[i].isAlive;
+    }
+
     initPlayer(&party[0], "p1", spawnPosition, "O Mestre");
     initPlayer(&party[1], "p2", spawnPosition, "O Arauto");
     initPlayer(&party[2], "p3", spawnPosition, "A Cirandeira");
@@ -405,6 +417,27 @@ void initParty(int applyGrowth, Vector2 spawnPosition) {
         
         /* Recalcula stats derivados com o nível final */
         calculateStats(&party[i].stats);
+
+        if (hadExistingParty[i]) {
+            party[i].stats.currentHP = previousHP[i];
+            party[i].stats.currentMana = previousMana[i];
+
+            if (party[i].stats.currentHP > party[i].stats.maxHP) {
+                party[i].stats.currentHP = party[i].stats.maxHP;
+            }
+            if (party[i].stats.currentHP < 0) {
+                party[i].stats.currentHP = 0;
+            }
+
+            if (party[i].stats.currentMana > party[i].stats.maxMana) {
+                party[i].stats.currentMana = party[i].stats.maxMana;
+            }
+            if (party[i].stats.currentMana < 0) {
+                party[i].stats.currentMana = 0;
+            }
+
+            party[i].isAlive = previousAlive[i] && party[i].stats.currentHP > 0;
+        }
     }
 
     historyIndex = 0;

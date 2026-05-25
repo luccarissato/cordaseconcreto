@@ -5,15 +5,22 @@
 #include "../core/game.h"
 #include "../core/collision.h"
 #include "../entities/npc.h"
+#include "../interactables/chest.h"
+#include "../interactables/interactable.h"
 #include "../data/dialogues/npc_dialogues.h"
 #include "raylib.h"
 #include <stddef.h>
+
+extern InteractableManager interactableManager;
 
 static const Vector2 WORLD_CS_PARTY_SPAWN = {120.0f, 820.0f};
 static const Vector2 WORLD_MC_LEFT_EDGE_SPAWN = {120.0f, 680.0f};
 static const Vector2 WORLD_PC_ENTRY_SPAWN = {760.0f, 300.0f};
 static const char* WORLD_CS_MAP_PATH = "assets/cenarios/CS_FRENTE.png";
 static const float WORLD_CS_BORDER_THICKNESS = 128.0f;
+static const char* WORLD_CS_CHEST_CLOSED_PATH = "assets/interagiveis/CAIXA_FECHADA.png";
+static const char* WORLD_CS_CHEST_OPEN_PATH = "assets/interagiveis/CAIXA_ABERTA.png";
+static const float WORLD_CS_CHEST_GAP = 30.0f;
 
 NPC worldCSNpc;
 
@@ -226,6 +233,15 @@ static void setupWorldCSNode(void* userData) {
     (void)userData;
 
     initParty(0, getWorldSpawnPosition(WORLD_CS_PARTY_SPAWN));
+    initInteractableManager(&interactableManager);
+    addChestSequence(
+        &interactableManager,
+        (Vector2){30.0f, 1050.0f},
+        3,
+        WORLD_CS_CHEST_GAP,
+        WORLD_CS_CHEST_CLOSED_PATH,
+        WORLD_CS_CHEST_OPEN_PATH
+    );
     initNPC(&worldCSNpc, (Vector2){1220.0f, 520.0f}, "assets/NPCs/NPC2(GABRIEL).png", &npc1Dialogue, "Gabriel");
 
     if (mapTexture.id != 0) {
@@ -272,6 +288,7 @@ static void teardownWorldCSNode(void) {
     WORLD_CS_TREE_BLOCKER_COUNT = 0;
     WORLD_CS_POST_BLOCKER_COUNT = 0;
     WORLD_CS_CUSTOM_BLOCKER_COUNT = 0;
+    unloadInteractableManager(&interactableManager);
     unloadParty();
 }
 

@@ -125,7 +125,7 @@ Interactable createChest(
         .position = position,
         .collider = {
             .offset = {0.0f, 0.0f},
-            .size = {300.0f, 300.0f}
+            .size = {(float)data->spriteClosed.width, (float)data->spriteClosed.height}
         },
         .hasInteracted = 0,
         .interactionDistance = 80.0f,
@@ -140,4 +140,22 @@ Interactable createChest(
     };
     
     return chest;
+}
+
+void addChestSequence(
+    InteractableManager* manager,
+    Vector2 firstBaseLeftPosition,
+    int count,
+    float gap,
+    const char* closedSpritePath,
+    const char* openSpritePath
+) {
+    Vector2 basePosition = firstBaseLeftPosition;
+
+    for (int i = 0; i < count; i++) {
+        Interactable chest = createChest(basePosition, closedSpritePath, openSpritePath);
+        chest.position.y -= (float)chest.sprite.height;
+        addInteractable(manager, &chest);
+        basePosition.x += (float)chest.sprite.width + gap;
+    }
 }
