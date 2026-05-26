@@ -242,7 +242,7 @@ static int processWorldMCTriggers(Vector2 playerPos) {
             );
 
             if (enemyManager.count > bossIndex) {
-                setEnemyStats(&enemyManager.enemies[bossIndex], 800, 45, 18, 10);
+                setEnemyStats(&enemyManager.enemies[bossIndex], 650, 45, 18, 10);
                 setEnemyElementalResistances(&enemyManager.enemies[bossIndex], 5, 5, 5, 5);
             }
 

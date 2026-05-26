@@ -448,5 +448,6 @@ void playerLevelUp(Player* player) {
     
     player->stats.currentHP = player->stats.maxHP;
     player->stats.currentMana = player->stats.maxMana;
+    player->isAlive = 1;
 }
 

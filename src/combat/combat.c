@@ -302,11 +302,9 @@ void endCombat() {
             grantKeyItem(&pedaçoDeChave2);
         }
 
-        /* Aplica level up a todos os jogadores vivos */
+        /* Aplica level up a todos os jogadores, mesmo os derrotados */
         for (int i = 0; i < PARTY_SIZE; i++) {
-            if (party[i].isAlive) {
-                playerLevelUp(&party[i]);
-            }
+            playerLevelUp(&party[i]);
         }
     }
 
