@@ -387,12 +387,14 @@ void closeGame() {
 
 void initParty(int applyGrowth, Vector2 spawnPosition) {
     int hadExistingParty[PARTY_SIZE];
+    int previousLevel[PARTY_SIZE];
     int previousHP[PARTY_SIZE];
     int previousMana[PARTY_SIZE];
     int previousAlive[PARTY_SIZE];
 
     for (int i = 0; i < PARTY_SIZE; i++) {
         hadExistingParty[i] = (party[i].level > 0);
+        previousLevel[i] = party[i].level;
         previousHP[i] = party[i].stats.currentHP;
         previousMana[i] = party[i].stats.currentMana;
         previousAlive[i] = party[i].isAlive;
@@ -457,6 +459,14 @@ void initParty(int applyGrowth, Vector2 spawnPosition) {
 
     for (int i = 0; i < PARTY_SIZE; i++) {
         calculateStats(&party[i].stats);
+        if (!applyGrowth && hadExistingParty[i]) {
+            party[i].level = 1;
+            for (int level = 1; level < previousLevel[i]; level++) {
+                applyLevelGrowth(&party[i].stats);
+                party[i].level++;
+            }
+        }
+
         /* Inicializa o tipo de personagem (Tank, DPS, Healer, Mage) */
         party[i].characterID = i;
         /* Personagem começa nível 1 — preserve se já tiver level > 0 */
