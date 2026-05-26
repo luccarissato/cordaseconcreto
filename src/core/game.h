@@ -50,6 +50,9 @@ void closeGame();
 // resetGameState - Reinicia o estado de jogo sem fechar a janela
 void resetGameState();
 
+// startGameWithControlsIntro - Mostra controles antes de liberar a exploração
+void startGameWithControlsIntro();
+
 // initEnemyManager - Inicializa o gerenciador de inimigos
 void initEnemyManager();
 

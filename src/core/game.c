@@ -30,6 +30,8 @@
 #include <stdio.h>
 
 #define HISTORY_SIZE 1000
+#define CONTROLS_INTRO_TEXT_DURATION 3.0f
+#define CONTROLS_INTRO_FADE_DURATION 1.2f
 
 NPC testNPC;
 InteractableManager interactableManager;
@@ -41,6 +43,7 @@ Direction directionHistory[HISTORY_SIZE];
 int historyIndex = 0;
 Texture2D mapTexture;
 Camera2D camera;
+static float controlsIntroTimer = 0.0f;
 
 Player party[PARTY_SIZE];
 Inventory playerInventory;
@@ -67,6 +70,8 @@ void drawParty();
 void unloadParty();
 
 void applyPartyDamage(int damage);
+static void drawExplorationScene(void);
+static void drawControlsIntro(void);
 
 
 void initEnemyManager();
@@ -173,6 +178,13 @@ void updateGame() {
             updateMenu();
             break;
 
+        case STATE_CONTROLS_INTRO:
+            controlsIntroTimer += GetFrameTime();
+            if (controlsIntroTimer >= CONTROLS_INTRO_TEXT_DURATION + CONTROLS_INTRO_FADE_DURATION) {
+                currentGameState = STATE_EXPLORATION;
+            }
+            break;
+
         case STATE_EXPLORATION:
             if (IsKeyPressed(KEY_X)) {
                 openGameMenu();
@@ -259,24 +271,12 @@ void drawGame() {
             drawMenu();
             break;
 
+        case STATE_CONTROLS_INTRO:
+            drawControlsIntro();
+            break;
+
         case STATE_EXPLORATION:
-            BeginMode2D(camera);
-            DrawTexture(mapTexture, 0, 0, WHITE);
-            drawCurrentWorldOverlay();
-            drawLoadedNpcs();
-            drawInteractables(&interactableManager);
-            drawEnemies();
-            drawParty();
-            EndMode2D();
-            /* Show queued boss messages during exploration (same styling used in combat UI) */
-            if (bossAiHasActiveMessage()) {
-                const char* message = bossAiGetCurrentMessage();
-                if (message != NULL) {
-                    DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
-                    DrawRectangleLines(220, 740, 1480, 180, GRAY);
-                    DrawText(message, 260, 810, 30, RAYWHITE);
-                }
-            }
+            drawExplorationScene();
             break;
         
         case STATE_DIALOGUE:
@@ -317,6 +317,59 @@ void drawGame() {
         }
 
     EndDrawing();
+}
+
+static void drawExplorationScene(void) {
+    BeginMode2D(camera);
+    DrawTexture(mapTexture, 0, 0, WHITE);
+    drawCurrentWorldOverlay();
+    drawLoadedNpcs();
+    drawInteractables(&interactableManager);
+    drawEnemies();
+    drawParty();
+    EndMode2D();
+
+    /* Show queued boss messages during exploration (same styling used in combat UI) */
+    if (bossAiHasActiveMessage()) {
+        const char* message = bossAiGetCurrentMessage();
+        if (message != NULL) {
+            DrawRectangle(220, 740, 1480, 180, ColorAlpha(BLACK, 0.85f));
+            DrawRectangleLines(220, 740, 1480, 180, GRAY);
+            DrawText(message, 260, 810, 30, RAYWHITE);
+        }
+    }
+}
+
+static void drawCenteredText(const char* text, int y, int fontSize, Color color) {
+    int textWidth = MeasureText(text, fontSize);
+    DrawText(text, (GetScreenWidth() - textWidth) / 2, y, fontSize, color);
+}
+
+static void drawControlsIntro(void) {
+    if (controlsIntroTimer < CONTROLS_INTRO_TEXT_DURATION) {
+        ClearBackground(BLACK);
+        int centerY = GetScreenHeight() / 2;
+
+        drawCenteredText("CONTROLES", centerY - 150, 48, RAYWHITE);
+        drawCenteredText("Setas: mover", centerY - 60, 34, RAYWHITE);
+        drawCenteredText("Z: interagir", centerY, 34, RAYWHITE);
+        drawCenteredText("X: inventario", centerY + 60, 34, RAYWHITE);
+        return;
+    }
+
+    drawExplorationScene();
+
+    float fadeTimer = controlsIntroTimer - CONTROLS_INTRO_TEXT_DURATION;
+    float alpha = 1.0f - (fadeTimer / CONTROLS_INTRO_FADE_DURATION);
+
+    if (alpha < 0.0f) {
+        alpha = 0.0f;
+    }
+    if (alpha > 1.0f) {
+        alpha = 1.0f;
+    }
+
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), ColorAlpha(BLACK, alpha));
 }
 
 void closeGame() {
@@ -460,6 +513,11 @@ void resetGameState() {
     unloadEnemyManager();
     initEnemyManager();
     requestWorldLoadFirst();
+}
+
+void startGameWithControlsIntro() {
+    controlsIntroTimer = 0.0f;
+    currentGameState = STATE_CONTROLS_INTRO;
 }
 
 void updateParty(const Rectangle* blockers, int blockerCount) {

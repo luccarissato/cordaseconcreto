@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "raylib.h"
 #include "../core/state.h"
+#include "../core/game.h"
 
 static Texture2D background;
 static Texture2D arrow;
@@ -20,7 +21,7 @@ static const float arrowOffsetY = 6.0f;
 static void activateSelectedOption(void) {
     switch (selectedOption) {
         case 0:
-            currentGameState = STATE_EXPLORATION;
+            startGameWithControlsIntro();
             break;
 
         case 1:
