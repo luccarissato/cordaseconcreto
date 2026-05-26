@@ -373,7 +373,7 @@ void applyCombatDamageToPlayer(Player* target, int damage) {
     if (effectiveDamage < 1) effectiveDamage = 1;
 
     if (target->defenseDamageReductionPending) {
-        effectiveDamage = (int)(effectiveDamage * 0.70f);
+        effectiveDamage = (int)(effectiveDamage * 0.30f);
         if (effectiveDamage < 1) effectiveDamage = 1;
         target->defenseDamageReductionPending = 0;
     }

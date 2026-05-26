@@ -71,7 +71,7 @@ typedef struct Player {
 
     /* Estado temporário de defesa (combate) */
     int defenseGuardActive;             /* Imune a NOVOS status até o próximo turno */
-    int defenseDamageReductionPending;  /* Reduz 30% do próximo ataque recebido */
+    int defenseDamageReductionPending;  /* Reduz 70% do próximo ataque recebido */
     int extraTurnsPending;              /* Turnos extras pendentes de Aceleração */
 } Player;
 

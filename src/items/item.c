@@ -95,6 +95,10 @@ void useItem(Player* target, InventoryItem* item) {
             clampHP(&target->stats);
             clampMana(&target->stats);
             clearAllStatus(&target->statusList);
+            target->isAlive = 1;
+            target->defenseGuardActive = 0;
+            target->defenseDamageReductionPending = 0;
+            target->extraTurnsPending = 0;
         }
     }
 }
@@ -262,6 +266,10 @@ int revivePlayer(Player* target, float hpPercent) {
     if (hpToRestore < 1) hpToRestore = 1;
     
     target->stats.currentHP = hpToRestore;
+    target->isAlive = 1;
+    target->defenseGuardActive = 0;
+    target->defenseDamageReductionPending = 0;
+    target->extraTurnsPending = 0;
     
     clearAllStatus(&target->statusList);
     

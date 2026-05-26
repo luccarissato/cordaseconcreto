@@ -1045,7 +1045,7 @@ static void drawBottomPanel() {
         if (bossAiIsBoss3Phase2() && mainSelection == 4) {
             DrawTexture(turnArrowTexture, 360, 915, WHITE);
         } else {
-            DrawTexture(turnArrowTexture, 58, 795 + (mainSelection * 60), WHITE);
+            DrawTexture(turnArrowTexture, 58, 775 + (mainSelection * 60), WHITE);
         }
     }
 
