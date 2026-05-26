@@ -253,17 +253,6 @@ static void collectWorldLabirintoBlockers(Rectangle* outBlockers, int* outCount)
 }
 
 static void drawWorldLabirintoOverlay(void) {
-    DrawRectangleLinesEx(WORLD_LABIRINTO_RETURN_TRIGGER, 2.0f, ORANGE);
-    DrawRectangleLinesEx(WORLD_LABIRINTO_BOSS2_TRIGGER, 2.0f, MAGENTA);
-    DrawText("Papa figo", (int)WORLD_LABIRINTO_BOSS2_TRIGGER.x, (int)(WORLD_LABIRINTO_BOSS2_TRIGGER.y - 14.0f), 10, WHITE);
-
-    for (int i = 0; i < WORLD_LABIRINTO_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_LABIRINTO_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-
-    for (int i = 0; i < WORLD_LABIRINTO_BLACK_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_LABIRINTO_BLACK_BLOCKERS[i], 1.0f, RED);
-    }
 }
 
 static void getWorldLabirintoBounds(Rectangle* outBounds) {

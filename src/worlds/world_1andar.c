@@ -38,7 +38,8 @@ static Rectangle WORLD_1ANDAR_CUSTOM_BLOCKERS[5];
 static int WORLD_1ANDAR_CUSTOM_BLOCKER_COUNT = 0;
 
 static void drawTriggerRect(Rectangle rect, Color color) {
-    DrawRectangleLinesEx(rect, 2.0f, color);
+    (void)rect;
+    (void)color;
 }
 
 static void rebuildWorld1AndarBorderBlockers(void) {
@@ -91,19 +92,6 @@ static void collectWorld1AndarBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorld1AndarOverlay(void) {
-    drawTriggerRect(WORLD_1ANDAR_NEXT_WORLD_TRIGGER, ORANGE);
-    drawTriggerRect(WORLD_1ANDAR_PREVIOUS_WORLD_TRIGGER, ORANGE);
-
-    for (int i = 0; i < WORLD_1ANDAR_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_1ANDAR_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-    for (int i = 0; i < WORLD_1ANDAR_CUSTOM_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_1ANDAR_CUSTOM_BLOCKERS[i], 2.0f, RED);
-    }
-
-    Rectangle heartArea = {70.0f - 6.0f, 835.0f - 6.0f, 12.0f, 12.0f};
-    DrawRectangleLinesEx(heartArea, 2.0f, YELLOW);
-    DrawText("Coracao de Barro", (int)heartArea.x, (int)(heartArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorld1AndarBounds(Rectangle* outBounds) {

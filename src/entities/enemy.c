@@ -189,9 +189,6 @@ void drawEnemy(Enemy* enemy) {
 
     Vector2 spriteSize = {(float)enemy->texture.width * spriteScale, (float)enemy->texture.height * spriteScale};
     renderStatusBuffs(&enemy->statusList, enemy->position, spriteSize);
-    
-    Rectangle colliderRect = getColliderRect(enemy->position, enemy->collider);
-    DrawRectangleLinesEx(colliderRect, 2.0f, RED);
 }
 
 // unloadEnemy - Descarrega recursos do inimigo

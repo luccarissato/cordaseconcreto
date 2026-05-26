@@ -174,26 +174,8 @@ static void collectWorldCSBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorldCSOverlay(void) {
-    DrawRectangleLinesEx(WORLD_CS_NEXT_WORLD_TRIGGER, 2.0f, ORANGE);
-    DrawRectangleLinesEx(WORLD_CS_PREVIOUS_WORLD_TRIGGER, 2.0f, ORANGE);
-    DrawRectangleLinesEx(WORLD_CS_LABIRINTO_TRIGGER, 2.0f, MAGENTA);
-
     drawWorldCSTreeAtBaseCenter(WORLD_CS_TREE_POSITION);
     drawWorldCSPostAtBaseCenter(WORLD_CS_POST_POSITION);
-    for (int i = 0; i < WORLD_CS_CUSTOM_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_CS_CUSTOM_BLOCKERS[i], 2.0f, RED);
-    }
-
-    for (int i = 0; i < WORLD_CS_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_CS_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-
-    for (int i = 0; i < WORLD_CS_TREE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_CS_TREE_BLOCKERS[i], 2.0f, GREEN);
-    }
-    for (int i = 0; i < WORLD_CS_POST_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_CS_POST_BLOCKERS[i], 2.0f, GREEN);
-    }
 }
 
 static void getWorldCSBounds(Rectangle* outBounds) {

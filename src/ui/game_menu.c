@@ -6,22 +6,26 @@
 
 #include "raylib.h"
 #include <stdio.h>
+#include <string.h>
 
 static Texture2D gameMenuBg;
-static Texture2D gameMenuPlaceholderBg;
+static Texture2D gameMenuItemsBg;
+static Texture2D gameMenuStatsBg;
 static Texture2D cursorArrow;
 static int menuX;
 static int menuY;
 
 static const int playerMenuFrameSize = 184;
 static int mainMenuCursorY[2] = {310, 620};
-static int categoryCursorX[2] = {400, 880};
 
 static ListNode* selectedItemNode = NULL;
 static int targetSelection = 0;
 static int mainMenuSelection = 0;
 static int categorySelection = 0;
 static int itemSelection = 0;
+
+static const int itemRowsPerColumn = 9;
+static const int itemPageSize = 18;
 
 extern Inventory playerInventory;
 extern Player party[4];
@@ -44,7 +48,8 @@ static void drawStatsMenu();
 
 void initGameMenu() {
     gameMenuBg = LoadTexture("assets/interface/game_menu_background.png");
-    gameMenuPlaceholderBg = LoadTexture("assets/interface/game_menu_bg_placeholder.png");
+    gameMenuItemsBg = LoadTexture("assets/interface/game_menu_itens_bg.png");
+    gameMenuStatsBg = LoadTexture("assets/interface/game_menu_stats_bg.png");
     cursorArrow = LoadTexture("assets/interface/SETA_MENU.png");
     menuX = (1920 - gameMenuBg.width) / 2;
     menuY = (1080 - gameMenuBg.height) / 2;
@@ -130,17 +135,25 @@ static void updateItemCategory() {
     // Navegar entre itens da categoria
     if (IsKeyPressed(KEY_DOWN)) {
         int itemsInCategory = countItemsInCategory(categorySelection);
-        itemSelection++;
-        if (itemSelection >= itemsInCategory) {
+        if (itemsInCategory <= 0) {
             itemSelection = 0;
+        } else {
+            itemSelection++;
+            if (itemSelection >= itemsInCategory) {
+                itemSelection = 0;
+            }
         }
     }
 
     if (IsKeyPressed(KEY_UP)) {
         int itemsInCategory = countItemsInCategory(categorySelection);
-        itemSelection--;
-        if (itemSelection < 0) {
-            itemSelection = itemsInCategory - 1;
+        if (itemsInCategory <= 0) {
+            itemSelection = 0;
+        } else {
+            itemSelection--;
+            if (itemSelection < 0) {
+                itemSelection = itemsInCategory - 1;
+            }
         }
     }
 
@@ -177,6 +190,89 @@ void drawGameMenu() {
             drawItemTarget();
             break;
     }
+}
+
+static int getCenteredTextureX(Texture2D texture) {
+    return (GetScreenWidth() - texture.width) / 2;
+}
+
+static int getCenteredTextureY(Texture2D texture) {
+    return (GetScreenHeight() - texture.height) / 2;
+}
+
+static void drawCenteredTextInBox(const char* text, int x, int y, int width, int fontSize, Color color) {
+    if (text == NULL) {
+        return;
+    }
+
+    DrawText(text, x + ((width - MeasureText(text, fontSize)) / 2), y, fontSize, color);
+}
+
+static void drawTextClippedWidth(const char* text, int x, int y, int fontSize, int maxWidth, Color color) {
+    if (text == NULL) {
+        return;
+    }
+
+    char buffer[96];
+    snprintf(buffer, sizeof(buffer), "%s", text);
+
+    while (buffer[0] != '\0' && MeasureText(buffer, fontSize) > maxWidth) {
+        size_t len = strlen(buffer);
+        if (len <= 3) {
+            break;
+        }
+
+        buffer[len - 1] = '\0';
+        buffer[len - 2] = '.';
+        buffer[len - 3] = '.';
+        buffer[len - 4] = '.';
+    }
+
+    DrawText(buffer, x, y, fontSize, color);
+}
+
+static void drawWrappedText(const char* text, int x, int y, int fontSize, int maxWidth, int lineHeight, int maxLines, Color color) {
+    if (text == NULL || maxLines <= 0) {
+        return;
+    }
+
+    char source[512];
+    snprintf(source, sizeof(source), "%s", text);
+
+    char line[256] = "";
+    int drawnLines = 0;
+    char* token = strtok(source, " ");
+
+    while (token != NULL && drawnLines < maxLines) {
+        char candidate[256];
+        if (line[0] == '\0') {
+            snprintf(candidate, sizeof(candidate), "%s", token);
+        } else {
+            snprintf(candidate, sizeof(candidate), "%s %s", line, token);
+        }
+
+        if (MeasureText(candidate, fontSize) <= maxWidth) {
+            snprintf(line, sizeof(line), "%s", candidate);
+        } else {
+            DrawText(line, x, y + (drawnLines * lineHeight), fontSize, color);
+            drawnLines++;
+            snprintf(line, sizeof(line), "%s", token);
+        }
+
+        token = strtok(NULL, " ");
+    }
+
+    if (line[0] != '\0' && drawnLines < maxLines) {
+        DrawText(line, x, y + (drawnLines * lineHeight), fontSize, color);
+    }
+}
+
+static int getVisibleItemPageStart(void) {
+    if (itemSelection < 0) {
+        return 0;
+    }
+
+    return (itemSelection / itemPageSize) * itemPageSize;
 }
 
 static void drawMainMenu() {
@@ -223,44 +319,57 @@ static void drawMainMenu() {
 }
 
 static void drawItemCategory() {
-    DrawTexture(gameMenuPlaceholderBg, menuX, menuY, WHITE);
+    int bgX = getCenteredTextureX(gameMenuItemsBg);
+    int bgY = getCenteredTextureY(gameMenuItemsBg);
+    DrawTexture(gameMenuItemsBg, bgX, bgY, WHITE);
 
-    DrawText("Consumiveis", menuX + 480, menuY + 95, 36, categorySelection == 0 ? YELLOW : WHITE);
-    DrawText("Itens chave", menuX + 960, menuY + 95, 36, categorySelection == 1 ? YELLOW : WHITE);
-    DrawTexture(cursorArrow, menuX + categoryCursorX[categorySelection], menuY + 95, WHITE);
+    int tabY = bgY + 127;
+    int leftTabX = bgX + 285;
+    int rightTabX = bgX + 840;
+    int tabWidth = 520;
+    drawCenteredTextInBox("Consumiveis", leftTabX, tabY, tabWidth, 32, categorySelection == 0 ? YELLOW : BROWN);
+    drawCenteredTextInBox("Itens chave", rightTabX, tabY, tabWidth, 32, categorySelection == 1 ? YELLOW : BROWN);
 
-    int previewX = menuX + 120;
-    int previewY = menuY + 200;
-    int previewWidth = 350;
-    int previewHeight = 100;
+    int selectedTabX = categorySelection == 0 ? leftTabX : rightTabX;
+    DrawTexture(cursorArrow, selectedTabX - 55, tabY + 1, WHITE);
 
     InventoryItem* selectedItem = getItemInCategory(categorySelection, itemSelection);
     
     if (selectedItem != NULL) {
-        int textX = previewX + 20;
-        int textY = previewY + 30;
-
-        DrawText(selectedItem->baseItem->description, textX + 450, textY, 20, LIGHTGRAY);
+        DrawText(selectedItem->baseItem->name, bgX + 1040, bgY + 290, 28, BROWN);
+        drawWrappedText(selectedItem->baseItem->description, bgX + 1040, bgY + 340, 22, 420, 30, 7, DARKBROWN);
     } else {
-        DrawText("Nenhum item", previewX + 20, previewY + 50, 25, GRAY);
+        DrawText("Nenhum item", bgX + 150, bgY + 290, 28, GRAY);
     }
 
     int itemsInCategory = countItemsInCategory(categorySelection);
-    int listStartY = previewY + previewHeight;
+    int firstVisibleItem = getVisibleItemPageStart();
+    int lastVisibleItem = firstVisibleItem + itemPageSize;
+    if (lastVisibleItem > itemsInCategory) {
+        lastVisibleItem = itemsInCategory;
+    }
     
-    for (int i = 0; i < itemsInCategory; i++) {
+    for (int i = firstVisibleItem; i < lastVisibleItem; i++) {
         InventoryItem* item = getItemInCategory(categorySelection, i);
         
         if (item != NULL) {
-            Color color = (i == itemSelection) ? YELLOW : WHITE;
-            int y = listStartY + (i * 50);
+            int pageIndex = i - firstVisibleItem;
+            int column = pageIndex / itemRowsPerColumn;
+            int row = pageIndex % itemRowsPerColumn;
+            int x = bgX + 150 + (column * 430);
+            int y = bgY + 285 + (row * 58);
+            Color color = (i == itemSelection) ? YELLOW : DARKBROWN;
 
             if (i == itemSelection) {
-                DrawTexture(cursorArrow, menuX + 120, y - 5, WHITE);
+                DrawTexture(cursorArrow, x - 72, y - 7, WHITE);
             }
 
-            DrawText(TextFormat("%s x%d", item->baseItem->name, item->quantity), menuX + 220, y, 35, color);
+            drawTextClippedWidth(TextFormat("%s x%d", item->baseItem->name, item->quantity), x, y, 26, 350, color);
         }
+    }
+
+    if (itemsInCategory > itemPageSize) {
+        DrawText(TextFormat("%d-%d/%d", firstVisibleItem + 1, lastVisibleItem, itemsInCategory), bgX + 150, bgY + 830, 20, BROWN);
     }
 }
 
@@ -273,57 +382,66 @@ static void updateStatsMenu() {
 static void drawPlayerStatsColumn(int playerIndex, int x, int y) {
     Player* player = &party[playerIndex];
     Stats* stats = &player->stats;
-    int lineHeight = 32;
-    int fontSize = 18;
+    int fontSize = 17;
+    int width = 275;
+    int textX = x + 18;
 
-    DrawText(TextFormat("%s", player->name), x, y, 22, WHITE);
-    y += 44;
+    drawCenteredTextInBox(player->name, x, y, width, 22, DARKBROWN);
 
-    DrawText(TextFormat("Nivel: %d", player->level), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("HP: %d/%d", stats->currentHP, stats->maxHP), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("MP: %d/%d", stats->currentMana, stats->maxMana), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("HP Base: %d", stats->baseHP), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Mana Base: %d", stats->baseMana), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Fortitude: %d", stats->fortitude), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Mente: %d", stats->mente), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Forca: %d", stats->forca), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Defesa: %d", stats->defesa), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Velocidade: %d", stats->velocidade), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Def. Calor: %d", stats->defCalor), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Def. Vento: %d", stats->defVento), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Def. Mare: %d", stats->defMare), x, y, fontSize, WHITE);
-    y += lineHeight;
-    DrawText(TextFormat("Def. Terra: %d", stats->defTerra), x, y, fontSize, WHITE);
+    int rowY[14] = {
+        y + 82,
+        y + 127,
+        y + 172,
+        y + 217,
+        y + 262,
+        y + 307,
+        y + 352,
+        y + 397,
+        y + 442,
+        y + 487,
+        y + 532,
+        y + 577,
+        y + 622,
+        y + 667
+    };
+
+    DrawText(TextFormat("Nivel: %d", player->level), textX, rowY[0], fontSize, DARKBROWN);
+    DrawText(TextFormat("HP: %d/%d", stats->currentHP, stats->maxHP), textX, rowY[1], fontSize, DARKBROWN);
+    DrawText(TextFormat("MP: %d/%d", stats->currentMana, stats->maxMana), textX, rowY[2], fontSize, DARKBROWN);
+    DrawText(TextFormat("HP Base: %d", stats->baseHP), textX, rowY[3], fontSize, DARKBROWN);
+    DrawText(TextFormat("Mana Base: %d", stats->baseMana), textX, rowY[4], fontSize, DARKBROWN);
+    DrawText(TextFormat("Fortitude: %d", stats->fortitude), textX, rowY[5], fontSize, DARKBROWN);
+    DrawText(TextFormat("Mente: %d", stats->mente), textX, rowY[6], fontSize, DARKBROWN);
+    DrawText(TextFormat("Forca: %d", stats->forca), textX, rowY[7], fontSize, DARKBROWN);
+    DrawText(TextFormat("Defesa: %d", stats->defesa), textX, rowY[8], fontSize, DARKBROWN);
+    DrawText(TextFormat("Velocidade: %d", stats->velocidade), textX, rowY[9], fontSize, DARKBROWN);
+    DrawText(TextFormat("Def. Calor: %d", stats->defCalor), textX, rowY[10], fontSize, DARKBROWN);
+    DrawText(TextFormat("Def. Vento: %d", stats->defVento), textX, rowY[11], fontSize, DARKBROWN);
+    DrawText(TextFormat("Def. Mare: %d", stats->defMare), textX, rowY[12], fontSize, DARKBROWN);
+    DrawText(TextFormat("Def. Terra: %d", stats->defTerra), textX, rowY[13], fontSize, DARKBROWN);
 }
 
 static void drawStatsMenu() {
-    DrawTexture(gameMenuPlaceholderBg, menuX, menuY, WHITE);
+    int bgX = getCenteredTextureX(gameMenuStatsBg);
+    int bgY = getCenteredTextureY(gameMenuStatsBg);
+    DrawTexture(gameMenuStatsBg, bgX, bgY, WHITE);
 
-    int rightSectionX = menuX + 550;
-    int rightSectionWidth = 1100;
-    int slotWidth = rightSectionWidth / 4 - 13;
+    int columnX[4] = {
+        bgX + 152,
+        bgX + 508,
+        bgX + 864,
+        bgX + 1220
+    };
 
     for (int i = 0; i < 4; i++) {
-        int slotX = rightSectionX + (slotWidth * i);
-        drawPlayerStatsColumn(i, slotX - 200, menuY + 165);
+        drawPlayerStatsColumn(i, columnX[i], bgY + 165);
     }
 }
 
 void unloadGameMenu() {
     UnloadTexture(gameMenuBg);
-    UnloadTexture(gameMenuPlaceholderBg);
+    UnloadTexture(gameMenuItemsBg);
+    UnloadTexture(gameMenuStatsBg);
     UnloadTexture(cursorArrow);
 }
 

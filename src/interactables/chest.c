@@ -91,8 +91,6 @@ void chest_on_draw(Interactable* self) {
     DrawTexture(self->sprite, self->position.x, self->position.y, WHITE);
     
     /* DEBUG: mostra colisão */
-    Rectangle collider = getColliderRect(self->position, self->collider);
-    DrawRectangleLinesEx(collider, 2.0f, RED);
     
     /* DEBUG: mostra raio de interação (comentado por padrão) */
     // Vector2 center = (Vector2){

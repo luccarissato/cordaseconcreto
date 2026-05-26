@@ -93,7 +93,8 @@ static void setupWorld2AndarDoors(void) {
 }
 
 static void drawTriggerRect(Rectangle rect, Color color) {
-    DrawRectangleLinesEx(rect, 2.0f, color);
+    (void)rect;
+    (void)color;
 }
 
 static void drawSpriteAtTopCenter(Texture2D texture, Vector2 topCenterPosition) {
@@ -145,20 +146,10 @@ static void collectWorld2AndarBlockers(Rectangle* outBlockers, int* outCount) {
 }
 
 static void drawWorld2AndarOverlay(void) {
-    drawTriggerRect(WORLD_2ANDAR_PREVIOUS_WORLD_TRIGGER, ORANGE);
-    drawTriggerRect(WORLD_2ANDAR_BOSS1_TRIGGER, MAGENTA);
-
     drawSpriteAtTopCenter(WORLD_2ANDAR_AGUA_TEXTURE, WORLD_2ANDAR_AGUA_POSITION);
     drawSpriteAtTopCenter(WORLD_2ANDAR_FOGO_TEXTURE, WORLD_2ANDAR_FOGO_POSITION);
     drawSpriteAtTopCenter(WORLD_2ANDAR_TERRA_TEXTURE, WORLD_2ANDAR_TERRA_POSITION);
     drawSpriteAtTopCenter(WORLD_2ANDAR_VENTO_TEXTURE, WORLD_2ANDAR_VENTO_POSITION);
-
-    for (int i = 0; i < WORLD_2ANDAR_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_2ANDAR_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-    for (int i = 0; i < WORLD_2ANDAR_CUSTOM_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_2ANDAR_CUSTOM_BLOCKERS[i], 2.0f, RED);
-    }
 }
 
 static void getWorld2AndarBounds(Rectangle* outBounds) {

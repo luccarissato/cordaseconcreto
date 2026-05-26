@@ -91,13 +91,7 @@ void door_on_update(Interactable* self, Vector2 playerPos) {
 
 // door_on_draw() - Renderiza o sprite atual 
 void door_on_draw(Interactable* self) {
-    DoorData* data = (DoorData*) self->data;
-    
     DrawTexture(self->sprite, self->position.x, self->position.y, WHITE);
-    
-    Rectangle collider = getColliderRect(self->position, self->collider);
-    Color debugColor = (data->isOpen) ? GREEN : RED;
-    DrawRectangleLinesEx(collider, 2.0f, debugColor);
 }
 
 // door_on_unload() - Libera recursos

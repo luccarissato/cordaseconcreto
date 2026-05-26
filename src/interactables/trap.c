@@ -163,10 +163,6 @@ void trap_on_draw(Interactable* self) {
         (int)self->position.y,
         trap->discovered ? WHITE : ColorAlpha(WHITE, 0.32f)
     );
-
-    Rectangle collider = getColliderRect(self->position, self->collider);
-    Color debugColor = trap->discovered ? RED : ORANGE;
-    DrawRectangleLinesEx(collider, 2.0f, debugColor);
 }
 
 void trap_on_unload(Interactable* self) {

@@ -194,8 +194,6 @@ void renderStatusAura(
     
     #if STATUS_VIS_DEBUG
     // === DEBUG OVERLAY: Desenha retângulo de debug + info ===
-    Rectangle debugRect = {spritePos.x, spritePos.y, spriteWidth, spriteHeight};
-    DrawRectangleLinesEx(debugRect, 3.0f, YELLOW);
     DrawText("AURA", (int)spritePos.x, (int)spritePos.y - 20, 16, YELLOW);
     DrawText(TextFormat("debuffs: %d", debuffCount), (int)spritePos.x, (int)spritePos.y - 5, 12, WHITE);
     DrawText(TextFormat("offset: %.1f", adaptiveOffset), (int)spritePos.x, (int)spritePos.y + 10, 10, SKYBLUE);

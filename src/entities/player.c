@@ -407,9 +407,6 @@ void drawPlayer(Player* p) {
     Vector2 spriteSize = {dest.width, dest.height};
     renderStatusBuffs(&p->statusList, drawPos, spriteSize);
 
-    // colision debug
-    Rectangle colliderRect = getScaledPlayerColliderRect(p);
-    DrawRectangleLinesEx(colliderRect, 2.0f, GREEN);
 }
 
 /**

@@ -218,8 +218,6 @@ void colorPuzzle_on_draw(Interactable* self) {
     }
 
     if (activeRedTileIndex >= 0) {
-        Rectangle redRect = getTileRect(puzzle, activeRedTileIndex);
-        DrawRectangleLinesEx(redRect, 2.0f, RED);
     }
 }
 

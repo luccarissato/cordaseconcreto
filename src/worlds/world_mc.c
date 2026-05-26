@@ -74,7 +74,8 @@ static void drawStatueAtBaseCenter(Vector2 baseCenter) {
 }
 
 static void drawTriggerRect(Rectangle rect, Color color) {
-    DrawRectangleLinesEx(rect, 2.0f, color);
+    (void)rect;
+    (void)color;
 }
 
 static Rectangle getWorldMCTreeRect(Vector2 baseCenter) {
@@ -199,28 +200,6 @@ static void drawWorldMCOverlay(void) {
     }
 
     drawStatueAtBaseCenter(WORLD_MC_STATUE_POSITION);
-    drawTriggerRect(WORLD_MC_NEXT_WORLD_TRIGGER, ORANGE);
-    drawTriggerRect(WORLD_MC_HATCH_INTERACTION_BOX, MAGENTA);
-    DrawText("Portinhola", (int)WORLD_MC_HATCH_INTERACTION_BOX.x, (int)(WORLD_MC_HATCH_INTERACTION_BOX.y - 14.0f), 10, WHITE);
-
-    for (int i = 0; i < WORLD_MC_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_MC_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-
-    for (int i = 0; i < WORLD_MC_TREE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_MC_TREE_BLOCKERS[i], 2.0f, GREEN);
-    }
-
-    Rectangle pickArea;
-    Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
-    if (treeRect.width > 0 && treeRect.height > 0) {
-        pickArea = (Rectangle){ treeRect.x - 24.0f, treeRect.y, treeRect.width + 48.0f, treeRect.height };
-    } else {
-        Vector2 base = WORLD_MC_TREE_POSITIONS_RD[1];
-        pickArea = (Rectangle){ base.x - 36.0f, base.y - 120.0f, 72.0f, 120.0f };
-    }
-    DrawRectangleLinesEx(pickArea, 2.0f, YELLOW);
-    DrawText("Casca do Mangue", (int)pickArea.x, (int)(pickArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorldMCBounds(Rectangle* outBounds) {

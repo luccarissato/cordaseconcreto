@@ -45,8 +45,6 @@ void drawNPC(NPC* npc) {
     DrawTexture(npc->sprite, npc->position.x, npc->position.y, WHITE);
 
     /* colision debug */
-    Rectangle colliderRect = getColliderRect(npc->position, npc->collider);
-    DrawRectangleLinesEx(colliderRect, 2.0f, RED);
 
     /* DEBUG: mostra raio de interação (comentado por padrão) */
     // Vector2 center = getColliderCenter(npc->position, npc->collider);

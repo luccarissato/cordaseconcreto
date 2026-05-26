@@ -45,7 +45,8 @@ static Rectangle WORLD_PC_CUSTOM_BLOCKERS[3];
 static int WORLD_PC_CUSTOM_BLOCKER_COUNT = 0;
 
 static void drawTriggerRect(Rectangle rect, Color color) {
-    DrawRectangleLinesEx(rect, 2.0f, color);
+    (void)rect;
+    (void)color;
 }
 
 static Rectangle getWorldPCCoinPickupArea(void) {
@@ -120,25 +121,6 @@ static void collectWorldPCBlockers(Rectangle* outBlockers, int* outCount) {
 
 static void drawWorldPCOverlay(void) {
     drawWorldPCCar();
-
-    drawTriggerRect(WORLD_PC_PREVIOUS_WORLD_TRIGGER, ORANGE);
-    drawTriggerRect(WORLD_PC_NEXT_WORLD_TRIGGER, ORANGE);
-
-    for (int i = 0; i < WORLD_PC_EDGE_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_PC_EDGE_BLOCKERS[i], 2.0f, GREEN);
-    }
-
-    for (int i = 0; i < WORLD_PC_CUSTOM_BLOCKER_COUNT; i++) {
-        DrawRectangleLinesEx(WORLD_PC_CUSTOM_BLOCKERS[i], 2.0f, RED);
-    }
-
-    if (WORLD_PC_CAR_BLOCKER.width > 0.0f && WORLD_PC_CAR_BLOCKER.height > 0.0f) {
-        DrawRectangleLinesEx(WORLD_PC_CAR_BLOCKER, 2.0f, RED);
-    }
-
-    Rectangle coinArea = getWorldPCCoinPickupArea();
-    DrawRectangleLinesEx(coinArea, 2.0f, YELLOW);
-    DrawText("Moeda do Cais", (int)coinArea.x, (int)(coinArea.y - 14.0f), 10, WHITE);
 }
 
 static void getWorldPCBounds(Rectangle* outBounds) {
