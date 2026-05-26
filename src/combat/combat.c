@@ -90,9 +90,9 @@ static int compareCombatantSpeed(const void* a, const void* b) {
     const Combatant* combB = (const Combatant*)b;
     
     if (combA->speedStat > combB->speedStat) {
-        return -1; 
-    } else if (combA->speedStat < combB->speedStat) {
         return 1; 
+    } else if (combA->speedStat < combB->speedStat) {
+        return -1; 
     } else {
         return 0; 
     }

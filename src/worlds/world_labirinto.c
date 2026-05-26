@@ -285,7 +285,7 @@ static int processWorldLabirintoTriggers(Vector2 playerPos) {
         );
 
         if (enemyManager.count > bossIndex) {
-            setEnemyStats(&enemyManager.enemies[bossIndex], 700, 36, 14, 11);
+            setEnemyStats(&enemyManager.enemies[bossIndex], 700, 36, 14, 20);
             setEnemyElementalResistances(&enemyManager.enemies[bossIndex], -10, -10, -10, -10);
         }
 

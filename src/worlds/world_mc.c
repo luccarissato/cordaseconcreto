@@ -293,7 +293,7 @@ static void setupWorldMCNode(void* userData) {
 
     initParty(0, getWorldSpawnPosition(WORLD_MC_PARTY_SPAWN));
 
-    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 255.0f}, "assets/NPCs/NPC4(NATACHA).png", &questNpcIntroDialogue, "Natacha");
+    initNPC(&worldMCQuestNpc, (Vector2){1285.0f, 255.0f}, "assets/NPCs/NPC4-ATUALIZADO.png", &questNpcIntroDialogue, "Natalia");
     worldMCQuestNpc.preInteract = worldMCQuestPreInteract;
 
     if (mapTexture.id != 0) {

@@ -48,7 +48,7 @@ typedef struct {
     int originalSaved;
     int displayedWeakness[PARTY_SIZE];
     Boss2TrapMark trapMarks[PARTY_SIZE];
-    int boss2SpecialUsedThisRound;
+    int boss2LastActionWasSpecial;
     int boss3OfferTurnUsedThisRound;
     int boss3SpecialUsedThisRound;
     int boss3Phase2SkipPending;
@@ -87,10 +87,23 @@ static void clearBoss2TrapMarks(void) {
     }
 }
 
-static int hasAnyStatusPlayer(void) {
+static int hasAnyDebuff(StatusList* statusList) {
+    if (statusList == NULL) return 0;
+
+    for (int status = STATUS_NONE + 1; status < STATUS_COUNT; status++) {
+        StatusType statusType = (StatusType)status;
+        if (isDebuff(statusType) && hasStatusCondition(statusList, statusType)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int hasAnyDebuffedPlayer(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
         if (!party[i].isAlive) continue;
-        if (countActiveStatus(&party[i].statusList) > 0) {
+        if (hasAnyDebuff(&party[i].statusList)) {
             return 1;
         }
     }
@@ -100,7 +113,7 @@ static int hasAnyStatusPlayer(void) {
 static int findStatusTargetIndex(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
         if (!party[i].isAlive) continue;
-        if (countActiveStatus(&party[i].statusList) > 0) {
+        if (hasAnyDebuff(&party[i].statusList)) {
             return i;
         }
     }
@@ -212,6 +225,8 @@ static void boss2ActivateAllPendingTraps(void) {
 
         boss2ApplyTrapEffect(i, bossState.trapMarks[i].effect);
     }
+
+    bossState.boss2LastActionWasSpecial = 0;
 }
 
 static void boss2LaunchNewTraps(void) {
@@ -229,16 +244,18 @@ static void boss2LaunchNewTraps(void) {
         bossAiQueueMessage("Papa figo armou uma armadilha em %s!", getPartyMemberDisplayName(playerIndex));
         marksAdded++;
     }
+
+    bossState.boss2LastActionWasSpecial = 0;
 }
 
 static void boss2ResolveTurnAction(void) {
     if (boss2HasPendingTraps()) {
-        boss2ActivateAllPendingTraps();
-        return;
-    }
+        if (!bossState.boss2LastActionWasSpecial && hasAnyDebuffedPlayer()) {
+            boss2UseSpecialAttack();
+            return;
+        }
 
-    if (!bossState.boss2SpecialUsedThisRound && hasAnyStatusPlayer()) {
-        boss2UseSpecialAttack();
+        boss2ActivateAllPendingTraps();
         return;
     }
 
@@ -254,6 +271,7 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
     float damageMultiplier = 1.0f + bossState.cumulativeDamageBonus;
     int trapDamageHigh = (bossState.phase >= 2) ? 130 : 100;
     int trapDamageLow = (bossState.phase >= 2) ? 50 : 35;
+    float bleedIntensity = (bossState.phase >= 2) ? 8.0f : 5.0f;
 
     switch (effect) {
         case BOSS2_TRAP_HIGH_DAMAGE:
@@ -265,7 +283,7 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
             bossAiQueueMessage("A armadilha feriu %s!", getPartyMemberDisplayName(playerIndex));
             applyCombatDamageToPlayer(target, (int)(trapDamageLow * damageMultiplier));
             if (!target->defenseGuardActive) {
-                addStatusCondition(&target->statusList, STATUS_BLEED, -1, 5.0f);
+                addStatusCondition(&target->statusList, STATUS_BLEED, -1, bleedIntensity);
                 bossAiQueuePlayerAfflictedMessage(playerIndex, STATUS_BLEED);
             }
             break;
@@ -284,7 +302,9 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
             break;
     }
 
-    bossState.cumulativeDamageBonus += 0.10f;
+    if (bossState.phase >= 2) {
+        bossState.cumulativeDamageBonus += 0.10f;
+    }
     bossState.trapMarks[playerIndex].active = 0;
     bossState.trapMarks[playerIndex].effect = BOSS2_TRAP_HIGH_DAMAGE;
 }
@@ -296,11 +316,7 @@ static void boss2UseSpecialAttack(void) {
     Player* target = &party[targetIndex];
     bossAiQueueMessage("Papa figo esmagou %s com um ataque especial!", target->name);
     applyCombatDamageToPlayer(target, (int)(125 * (1.0f + bossState.cumulativeDamageBonus)));
-    bossState.boss2SpecialUsedThisRound = 1;
-}
-
-static void boss2UseRoundWrapAction(void) {
-    boss2ResolveTurnAction();
+    bossState.boss2LastActionWasSpecial = 1;
 }
 
 static void clearMessageQueue(void) {
@@ -478,7 +494,7 @@ void bossAiOnCombatStart(void) {
             bossState.currentElementIndex = 0;
             bossState.openingTurnPending = 0;
             bossState.cumulativeDamageBonus = 0.0f;
-            bossState.boss2SpecialUsedThisRound = 0;
+            bossState.boss2LastActionWasSpecial = 0;
             return;
         }
 
@@ -537,7 +553,6 @@ void bossAiOnRoundWrap(void) {
     if (!bossState.active) return;
 
     if (bossState.kind == BOSS_KIND_2) {
-        bossState.boss2SpecialUsedThisRound = 0;
         return;
     }
 
