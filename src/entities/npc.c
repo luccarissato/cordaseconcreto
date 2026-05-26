@@ -12,11 +12,11 @@ extern NPC worldMCQuestNpc;
 void initNPC(NPC* npc, Vector2 position, const char* spritePath, DialogueTree* tree, const char* name) {
     npc->position = position;
     npc->sprite = LoadTexture(spritePath);
-    npc->collider.offset = (Vector2){ 0.0f, 0.0f };
-    npc->collider.size = (Vector2){ 184.0f, 184.0f };
+    npc->collider.offset = (Vector2){ 32.0f, 32.0f };
+    npc->collider.size = (Vector2){ 120.0f, 120.0f };
     npc->dialogueTree = tree;
     npc->name = name;
-    npc->interactionDistance = 80.0f;
+    npc->interactionDistance = 50.0f;
     npc->preInteract = NULL;
 }
 

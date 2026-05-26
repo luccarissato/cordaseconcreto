@@ -88,6 +88,18 @@ static int testEnemyNextTargetIndex = 0;
 
 static Texture2D weaknessIcons[4];
 
+static void drawOutlinedText(const char* text, int x, int y, int fontSize, Color color) {
+    DrawText(text, x - 3, y, fontSize, BLACK);
+    DrawText(text, x + 3, y, fontSize, BLACK);
+    DrawText(text, x, y - 3, fontSize, BLACK);
+    DrawText(text, x, y + 3, fontSize, BLACK);
+    DrawText(text, x - 2, y - 2, fontSize, BLACK);
+    DrawText(text, x + 2, y - 2, fontSize, BLACK);
+    DrawText(text, x - 2, y + 2, fontSize, BLACK);
+    DrawText(text, x + 2, y + 2, fontSize, BLACK);
+    DrawText(text, x, y, fontSize, color);
+}
+
 static void loadPlayerCombatTextures(void) {
     playerCombatTextures[0] = LoadTexture("assets/personagens/MARACATU_LUTA.png");
     playerCombatTextures[1] = LoadTexture("assets/personagens/MANGUEBEAT_LUTA.png");
@@ -250,63 +262,60 @@ static int executeTestEnemyAction(Enemy* enemy) {
     return 1;
 }
 
-static void drawPlayerWeaknessIcon(int playerIndex, int x, int y, float spriteScale) {
+static void drawPlayerWeaknessIcon(int playerIndex, int nameCenterX, int nameY) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
 
     int weaknessElement = bossAiGetPlayerWeaknessElement(playerIndex);
     if (weaknessElement < 0 || weaknessElement >= 4) return;
     if (weaknessIcons[weaknessElement].id == 0) return;
 
-    float iconScale = 0.65f;
+    float iconScale = 1.0f;
     Vector2 iconSize = {
         weaknessIcons[weaknessElement].width * iconScale,
         weaknessIcons[weaknessElement].height * iconScale
     };
 
-    float spriteWidth = party[playerIndex].front.width * spriteScale;
     Vector2 iconPos = {
-        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
-        (float)y - iconSize.y - 12.0f
+        (float)nameCenterX - (iconSize.x * 0.5f),
+        (float)nameY - iconSize.y - 8.0f
     };
 
     DrawTextureEx(weaknessIcons[weaknessElement], iconPos, 0.0f, iconScale, WHITE);
 }
 
-static void drawPlayerTrapIcon(int playerIndex, int x, int y, float spriteScale) {
+static void drawPlayerTrapIcon(int playerIndex, int nameCenterX, int nameY) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
     if (!bossAiHasTrapMark(playerIndex)) return;
     if (trapIconTexture.id == 0) return;
 
-    float iconScale = 0.65f;
+    float iconScale = 1.0f;
     Vector2 iconSize = {
         trapIconTexture.width * iconScale,
         trapIconTexture.height * iconScale
     };
 
-    float spriteWidth = party[playerIndex].front.width * spriteScale;
     Vector2 iconPos = {
-        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
-        (float)y - iconSize.y - 12.0f
+        (float)nameCenterX - (iconSize.x * 0.5f),
+        (float)nameY - iconSize.y - 8.0f
     };
 
     DrawTextureEx(trapIconTexture, iconPos, 0.0f, iconScale, WHITE);
 }
 
-static void drawPlayerTemptationIcon(int playerIndex, int x, int y, float spriteScale) {
+static void drawPlayerTemptationIcon(int playerIndex, int nameCenterX, int nameY) {
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return;
     if (!bossAiHasTemptationMark(playerIndex)) return;
     if (temptationIconTexture.id == 0) return;
 
-    float iconScale = 0.65f;
+    float iconScale = 1.0f;
     Vector2 iconSize = {
         temptationIconTexture.width * iconScale,
         temptationIconTexture.height * iconScale
     };
 
-    float spriteWidth = party[playerIndex].front.width * spriteScale;
     Vector2 iconPos = {
-        (float)x + 40.0f + (spriteWidth * 0.5f) - (iconSize.x * 0.5f),
-        (float)y - iconSize.y - 12.0f
+        (float)nameCenterX - (iconSize.x * 0.5f),
+        (float)nameY - iconSize.y - 8.0f
     };
 
     DrawTextureEx(temptationIconTexture, iconPos, 0.0f, iconScale, WHITE);
@@ -799,7 +808,10 @@ static void confirmTargetAction() {
 
     if (combatUiState == COMBAT_UI_ATTACK_TARGET) {
         if (targetIsEnemy && targetIndex >= 0 && targetIndex < enemyManager.count) {
-            int damage = 10 + player->stats.forca * 2;
+            int damage = 30 + player->stats.forca * 2;
+            if (player->characterID == CHARACTER_2_DPS) {
+                damage = 46 + player->stats.forca * 2;
+            }
             damageEnemy(&enemyManager.enemies[targetIndex], damage);
             bossAiNotifyPlayerPhysicalAction(currentPlayerIndex(), 1);
             spendAndFinishTurn();
@@ -899,9 +911,11 @@ static void drawPlayers() {
         const char* hpText = TextFormat("HP %d/%d", party[i].stats.currentHP, party[i].stats.maxHP);
         const char* mpText = TextFormat("MP %d/%d", party[i].stats.currentMana, party[i].stats.maxMana);
 
-        DrawText(party[i].name, spriteCenterX - (MeasureText(party[i].name, nameFontSize) / 2), y - 72, nameFontSize, RAYWHITE);
-        DrawText(hpText, spriteCenterX - (MeasureText(hpText, hpFontSize) / 2), y - 46, hpFontSize, GREEN);
-        DrawText(mpText, spriteCenterX - (MeasureText(mpText, mpFontSize) / 2), y - 24, mpFontSize, SKYBLUE);
+        int nameY = y - 72;
+        int nameX = spriteCenterX - (MeasureText(party[i].name, nameFontSize) / 2);
+        drawOutlinedText(party[i].name, nameX, nameY, nameFontSize, RAYWHITE);
+        drawOutlinedText(hpText, spriteCenterX - (MeasureText(hpText, hpFontSize) / 2), y - 46, hpFontSize, GREEN);
+        drawOutlinedText(mpText, spriteCenterX - (MeasureText(mpText, mpFontSize) / 2), y - 24, mpFontSize, SKYBLUE);
 
         if (spriteTexture.id != 0) {
             Vector2 spritePos = {(float)x, (float)y};
@@ -927,9 +941,9 @@ static void drawPlayers() {
             DrawTexture(turnArrowTexture, x - turnArrowTexture.width - 8, y + (int)(spriteHeight * 0.5f) - turnArrowTexture.height - 8, WHITE);
         }
 
-        drawPlayerWeaknessIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
-        drawPlayerTrapIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
-        drawPlayerTemptationIcon(i, x, y, PLAYER_COMBAT_SPRITE_SCALE);
+        drawPlayerWeaknessIcon(i, spriteCenterX, nameY);
+        drawPlayerTrapIcon(i, spriteCenterX, nameY);
+        drawPlayerTemptationIcon(i, spriteCenterX, nameY);
     }
 }
 
@@ -1011,8 +1025,8 @@ static void drawEnemyColumn() {
         int nameX = spriteCenterX - (MeasureText(enemy->name, nameFontSize) / 2);
         int hpX = spriteCenterX - (MeasureText(hpText, hpFontSize) / 2);
 
-        DrawText(enemy->name, nameX, spriteTopY - 50, nameFontSize, RAYWHITE);
-        DrawText(hpText, hpX, spriteTopY - 20, hpFontSize, PINK);
+        drawOutlinedText(enemy->name, nameX, spriteTopY - 50, nameFontSize, RAYWHITE);
+        drawOutlinedText(hpText, hpX, spriteTopY - 20, hpFontSize, PINK);
     }
 }
 

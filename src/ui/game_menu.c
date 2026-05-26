@@ -493,7 +493,6 @@ static void drawItemTarget() {
         }
     }
 
-    DrawText("Escolha um personagem", menuX + 650, menuY + 800, 30, WHITE);
 }
 
 static int isConsumableItem(InventoryItem* item) {

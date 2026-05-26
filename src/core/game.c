@@ -3,6 +3,7 @@
 #include "game.h"
 #include "dialogue.h"
 #include "collision.h"
+#include "window_icon.h"
 #include "../ui/menu.h"
 #include "../entities/player.h"
 #include "../entities/npc.h"
@@ -11,6 +12,7 @@
 #include "../items/game_items.h"
 #include "../ui/game_menu.h"
 #include "../interactables/interactable.h"
+#include "../interactables/chest.h"
 #include "../combat/combat.h"
 #include "../combat/ability.h"
 #include "../ui/combat_ui.h"
@@ -144,6 +146,7 @@ void initGame() {
     InitWindow(1920, 1080, "Cordas & Concreto");
     Image windowIcon = LoadImage("assets/icones/window_icon.png");
     SetWindowIcon(windowIcon);
+    applyWindowTaskbarIcon(windowIcon);
     UnloadImage(windowIcon);
     SetTargetFPS(60);
     srand((unsigned int) time(NULL));  /* Seed para random number generator */
@@ -351,9 +354,10 @@ static void drawControlsIntro(void) {
         int centerY = GetScreenHeight() / 2;
 
         drawCenteredText("CONTROLES", centerY - 150, 48, RAYWHITE);
-        drawCenteredText("Setas: mover", centerY - 60, 34, RAYWHITE);
-        drawCenteredText("Z: interagir", centerY, 34, RAYWHITE);
-        drawCenteredText("X: inventario", centerY + 60, 34, RAYWHITE);
+        drawCenteredText("Setas: mover", centerY - 80, 34, RAYWHITE);
+        drawCenteredText("Shift: correr", centerY - 20, 34, RAYWHITE);
+        drawCenteredText("Z: interagir", centerY + 40, 34, RAYWHITE);
+        drawCenteredText("X: inventario", centerY + 100, 34, RAYWHITE);
         return;
     }
 
@@ -510,6 +514,7 @@ void resetGameState() {
     currentMenuState = MENU_MAIN;
     currentGameState = STATE_MENU;
     clearPlayerInventory();
+    resetOpenedChests();
     unloadEnemyManager();
     initEnemyManager();
     requestWorldLoadFirst();

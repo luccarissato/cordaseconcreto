@@ -4,7 +4,7 @@
 #include "../entities/player.h"
 #include "../entities/enemy.h"
 
-#define MAX_COMBATANTS 8
+#define MAX_COMBATANTS 9
 
 typedef enum {
     COMBATANT_PLAYER,

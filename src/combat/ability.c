@@ -21,7 +21,7 @@ static void initCharacter1Abilities() {
     abilities[0][0].mana_cost = 20;
     abilities[0][0].target_type = TARGET_SINGLE_ENEMY;
     abilities[0][0].ability_type = ABILITY_TYPE_DAMAGE;
-    abilities[0][0].damage_base = 10;
+    abilities[0][0].damage_base = 35;
     abilities[0][0].scaling_type = SCALING_FORCA;
     abilities[0][0].scaling_mult = 0.3f;
     abilities[0][0].characterID = CHARACTER_1_TANK;
@@ -91,7 +91,7 @@ static void initCharacter2Abilities() {
     strcpy(abilities[1][1].description, "Ataque físico que aplica sangramento escalável");
     abilities[1][1].data.status.status_type = STATUS_BLEED;
     abilities[1][1].data.status.duration = -1;
-    abilities[1][1].data.status.intensity = 5;
+    abilities[1][1].data.status.intensity = 0;
     
     /* Skill 3: Counter - Devolve dano recebido */
     abilities[1][2].level_unlocked = 3;
@@ -173,9 +173,9 @@ static void initCharacter4Abilities() {
     abilities[3][0].mana_cost = 18;
     abilities[3][0].target_type = TARGET_SINGLE_ENEMY;
     abilities[3][0].ability_type = ABILITY_TYPE_DAMAGE;
-    abilities[3][0].damage_base = 60;
+    abilities[3][0].damage_base = 50;
     abilities[3][0].scaling_type = SCALING_MENTE;
-    abilities[3][0].scaling_mult = 0.9f;
+    abilities[3][0].scaling_mult = 0.0f;
     strcpy(abilities[3][0].name, "Rima dos Quatro Cantos >");
     strcpy(abilities[3][0].description, "Ataque elemental em alvo único. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][0].is_alternatable = 1;
@@ -199,9 +199,9 @@ static void initCharacter4Abilities() {
     abilities[3][2].mana_cost = 30;
     abilities[3][2].target_type = TARGET_AREA_ENEMIES;
     abilities[3][2].ability_type = ABILITY_TYPE_DAMAGE;
-    abilities[3][2].damage_base = 53;
+    abilities[3][2].damage_base = 50;
     abilities[3][2].scaling_type = SCALING_MENTE;
-    abilities[3][2].scaling_mult = 0.8f;
+    abilities[3][2].scaling_mult = 0.0f;
     strcpy(abilities[3][2].name, "Ritmo intercostal >");
     strcpy(abilities[3][2].description, "Ataque elemental em todos inimigos. Elemento: Calor\n\nPressione setas para trocar elemento");
     abilities[3][2].is_alternatable = 1;
