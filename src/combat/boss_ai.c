@@ -164,6 +164,8 @@ static Boss2TrapEffect rollTrapEffect(void) {
 
 static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect);
 static void boss2UseSpecialAttack(void);
+static int isBoss2EnemyName(const char* name);
+static int isBoss3EnemyName(const char* name);
 static void boss3PrepareOfferQueue(void);
 static int boss3StartOfferTurn(void);
 static void boss3ApplyCurrentOffer(int accepted);
@@ -184,6 +186,44 @@ static int boss2HasPendingTraps(void) {
     }
 
     return 0;
+}
+
+static void boss2EnsureEncounterState(int worldEnemyIndex, Enemy* enemy) {
+    if (enemy == NULL || !enemy->isAlive || !isBoss2EnemyName(enemy->name)) return;
+    if (bossState.active && bossState.kind == BOSS_KIND_2 && bossState.worldEnemyIndex == worldEnemyIndex) return;
+
+    bossState.active = 1;
+    bossState.kind = BOSS_KIND_2;
+    bossState.worldEnemyIndex = worldEnemyIndex;
+    bossState.phase = (enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) ? 2 : 1;
+    bossState.currentElementIndex = 0;
+    bossState.openingTurnPending = 0;
+    bossState.cumulativeDamageBonus = 0.0f;
+    bossState.boss2LastActionWasSpecial = 0;
+    clearBoss2TrapMarks();
+}
+
+static void boss3EnsureEncounterState(int worldEnemyIndex, Enemy* enemy) {
+    if (enemy == NULL || !enemy->isAlive || !isBoss3EnemyName(enemy->name)) return;
+    if (bossState.active && bossState.kind == BOSS_KIND_3 && bossState.worldEnemyIndex == worldEnemyIndex) return;
+
+    bossState.active = 1;
+    bossState.kind = BOSS_KIND_3;
+    bossState.worldEnemyIndex = worldEnemyIndex;
+    bossState.phase = (enemy->stats.currentHP <= (enemy->stats.maxHP / 2)) ? 2 : 1;
+    bossState.currentElementIndex = 0;
+    bossState.openingTurnPending = 0;
+    bossState.cumulativeDamageBonus = 0.0f;
+    bossState.boss3OfferTurnUsedThisRound = 0;
+    bossState.boss3SpecialUsedThisRound = 0;
+    bossState.boss3Phase2SkipPending = 0;
+    bossState.boss3Debt = 0;
+    bossState.boss3OfferTargetIndex[0] = -1;
+    bossState.boss3OfferTargetIndex[1] = -1;
+    bossState.boss3OfferType[0] = 0;
+    bossState.boss3OfferType[1] = 0;
+    bossAiClearPromptQueue();
+    clearBoss3TemptationMarks();
 }
 
 static int isBoss1EnemyName(const char* name) {
@@ -534,7 +574,6 @@ void bossAiOnCombatStart(void) {
             saveOriginalPartyResistances();
 
             /* Aviso antecipado do próximo elemento do boss */
-            bossAiQueueMessage("%s prepara magia de %s!", enemyManager.enemies[worldEnemyIndex].name, getBossElementName(bossState.currentElementIndex));
             break;
         }
     }
@@ -583,6 +622,9 @@ void bossAiOnRoundWrap(void) {
 }
 
 int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
+    boss2EnsureEncounterState(worldEnemyIndex, enemy);
+    boss3EnsureEncounterState(worldEnemyIndex, enemy);
+
     if (!bossState.active || worldEnemyIndex != bossState.worldEnemyIndex || enemy == NULL || !enemy->isAlive) {
         return 0;
     }
@@ -1036,7 +1078,7 @@ static void boss3UsePhase2DebtAttack(void) {
 }
 
 int bossAiGetPlayerWeaknessElement(int playerIndex) {
-    if (!bossState.active || bossState.phase < 2) return -1;
+    if (!bossState.active || bossState.kind != BOSS_KIND_1 || bossState.phase < 2) return -1;
     if (playerIndex < 0 || playerIndex >= PARTY_SIZE) return -1;
     return bossState.displayedWeakness[playerIndex];
 }
