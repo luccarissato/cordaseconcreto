@@ -86,14 +86,14 @@ void SetupTestWorldContent(int includeStarterItems) {
 
     Interactable testChest = createChest(
         (Vector2){400, 400},
-        "assets/interagiveis/caixa_fechada_placeholder.png",
-        "assets/interagiveis/caixa_aberta_placeholder.png"
+        "assets/interagiveis/CAIXA_FECHADA.png",
+        "assets/interagiveis/CAIXA_ABERTA.png"
     );
     addInteractable(&interactableManager, &testChest);
 
     Interactable testDoor = createDoor(
         (Vector2){0, 0},
-        "assets/interagiveis/porta_fechada_placeholder.png",
+        "assets/interagiveis/PORTA_FECHADA_A2_PCFREVO.png",
         "assets/interagiveis/porta_aberta_placeholder.png",
         &doorQuestion1,
         1
@@ -110,10 +110,10 @@ void SetupTestWorldContent(int includeStarterItems) {
 
     Interactable colorPuzzle = createColorPuzzle(
         (Vector2){500, 700},
-        "assets/interagiveis/chao_azul_placeholder.png",
-        "assets/interagiveis/chao_verde_placeholder.png",
-        "assets/interagiveis/chao_amarelo_placeholdert.png",
-        "assets/interagiveis/chao_vermelho_placeholder.png",
+        "assets/interagiveis/chao_azul.png",
+        "assets/interagiveis/chao_verde.png",
+        "assets/interagiveis/chao_amarelo.png",
+        "assets/interagiveis/chao_vermelho.png",
         2.0f,
         30
     );

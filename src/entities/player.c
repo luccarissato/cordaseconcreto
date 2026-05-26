@@ -10,7 +10,7 @@
 
 static float playerWorldScale = 1.0f;
 
-#define PLAYER2_FRONT_IDLE_PATH "assets/personagens/p2_frente_placeholder.png"
+#define PLAYER2_FRONT_IDLE_PATH "assets/personagens/MANGUEBEAT_FRENTE.png"
 #define PLAYER2_BACK_PATH "assets/personagens/MANGUEBEAT_COSTAS.png"
 #define PLAYER2_SIDE_PATH "assets/personagens/MANGUEBEAT_DIREITA.png"
 #define PLAYER2_SIDE_WALK_PATH "assets/personagens/MANGUEBEAT_ESQUERDA.png"

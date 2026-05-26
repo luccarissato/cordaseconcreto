@@ -11,6 +11,7 @@ pernambucana que tomaram vida e estão aterrorizando os habitantes da região.
 ## Requisitos
 
 - GCC (MinGW-w64) 10+
+- mingw32-make disponivel no PATH
 - Windows
 
 ## Setup
@@ -26,6 +27,9 @@ mingw32-make
 ```
 
 ## Executar
+
+Execute o jogo a partir da pasta raiz do projeto, pois os assets sao carregados por caminhos relativos (`assets/...`).
+
 ```bash
 .\cordaseconcreto.exe
 ```
