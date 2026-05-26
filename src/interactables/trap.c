@@ -111,8 +111,15 @@ void trap_on_update(Interactable* self, Vector2 playerPos) {
     }
 
     Player* leader = &partyMembers[0];
-    Collider leaderCollider = leader->collider;
-    Rectangle leaderRect = getColliderRect(playerPos, leaderCollider);
+    float playerScale = getPlayerWorldScale();
+    Rectangle leaderRect = (playerScale != 1.0f)
+        ? (Rectangle){
+            playerPos.x + (50.0f * playerScale),
+            playerPos.y,
+            184.0f * playerScale,
+            184.0f * playerScale
+        }
+        : getColliderRect(playerPos, leader->collider);
     Rectangle trapRect = getInteractableRect(self);
     int isOverlapping = rectsCollide(leaderRect, trapRect);
 
@@ -150,7 +157,12 @@ void trap_on_draw(Interactable* self) {
         return;
     }
 
-    DrawTexture(spriteToDraw, (int)self->position.x, (int)self->position.y, WHITE);
+    DrawTexture(
+        spriteToDraw,
+        (int)self->position.x,
+        (int)self->position.y,
+        trap->discovered ? WHITE : ColorAlpha(WHITE, 0.32f)
+    );
 
     Rectangle collider = getColliderRect(self->position, self->collider);
     Color debugColor = trap->discovered ? RED : ORANGE;

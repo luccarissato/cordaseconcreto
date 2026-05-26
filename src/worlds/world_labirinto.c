@@ -4,15 +4,21 @@
 #include "../core/game.h"
 #include "../core/collision.h"
 #include "../entities/player.h"
+#include "../interactables/interactable.h"
+#include "../interactables/trap.h"
 #include "raylib.h"
 #include <stddef.h>
 #include <stdlib.h>
 
+extern InteractableManager interactableManager;
+
 static const Vector2 WORLD_CS_LABIRINTO_RETURN_SPAWN = {880.0f, 410.0f};
 static const char* WORLD_LABIRINTO_MAP_PATH = "assets/cenarios/PUZZLE_CS.png";
 static const char* WORLD_LABIRINTO_BOSS2_TEXTURE_PATH = "assets/antagonistas/PAPA_FIGO.png";
+static const char* WORLD_LABIRINTO_TRAP_PATH = "assets/icones/trap.png";
 static const float WORLD_LABIRINTO_PLAYER_SCALE = 35.0f / 184.0f;
 static const float WORLD_LABIRINTO_BORDER_THICKNESS = 64.0f;
+static const int WORLD_LABIRINTO_TRAP_DAMAGE = 30;
 
 static const Rectangle WORLD_LABIRINTO_RETURN_TRIGGER = {915.0f, 60.0f, 80.0f, 12.0f};
 static const Rectangle WORLD_LABIRINTO_BOSS2_TRIGGER = {915.0f, 1055.0f, 80.0f, 12.0f};
@@ -23,6 +29,18 @@ static Rectangle* WORLD_LABIRINTO_BLACK_BLOCKERS = NULL;
 static int WORLD_LABIRINTO_BLACK_BLOCKER_COUNT = 0;
 static int WORLD_LABIRINTO_BLACK_BLOCKER_CAPACITY = 0;
 static int WORLD_LABIRINTO_BOSS2_TRIGGER_USED = 0;
+
+static const Vector2 WORLD_LABIRINTO_TRAP_POSITIONS[] = {
+    {250.0f, 90.0f},
+    {380.0f, 280.0f},
+    {1070.0f, 290.0f},
+    {1650.0f, 220.0f},
+    {750.0f, 730.0f},
+    {1420.0f, 730.0f},
+    {1270.0f, 860.0f},
+    {1420.0f, 350.0f},
+    {1050.0f, 600.0f}
+};
 
 static const Rectangle WORLD_LABIRINTO_BLACK_COLLISION_EXCEPTIONS[] = {
     {900.0f, 900.0f, 101.0f, 180.0f},
@@ -52,6 +70,20 @@ static int isInsideExceptionAreaPixel(int x, int y) {
 
 static int isPureBlackPixel(Color color) {
     return color.a > 0 && color.r == 0 && color.g == 0 && color.b == 0;
+}
+
+static void setupWorldLabirintoTraps(void) {
+    initInteractableManager(&interactableManager);
+
+    for (int i = 0; i < (int)(sizeof(WORLD_LABIRINTO_TRAP_POSITIONS) / sizeof(WORLD_LABIRINTO_TRAP_POSITIONS[0])); i++) {
+        Interactable trap = createTrap(
+            WORLD_LABIRINTO_TRAP_POSITIONS[i],
+            WORLD_LABIRINTO_TRAP_PATH,
+            WORLD_LABIRINTO_TRAP_PATH,
+            WORLD_LABIRINTO_TRAP_DAMAGE
+        );
+        addInteractable(&interactableManager, &trap);
+    }
 }
 
 static void clearWorldLabirintoBlackBlockers(void) {
@@ -280,6 +312,7 @@ static void setupWorldLabirintoNode(void* userData) {
 
     setPlayerWorldScale(WORLD_LABIRINTO_PLAYER_SCALE);
     initParty(0, getWorldSpawnPosition(WORLD_LABIRINTO_PARTY_SPAWN));
+    setupWorldLabirintoTraps();
 
     if (mapTexture.id != 0) {
         UnloadTexture(mapTexture);
@@ -302,6 +335,7 @@ static void teardownWorldLabirintoNode(void) {
 
     WORLD_LABIRINTO_EDGE_BLOCKER_COUNT = 0;
     clearWorldLabirintoBlackBlockers();
+    unloadInteractableManager(&interactableManager);
     unloadParty();
 }
 
