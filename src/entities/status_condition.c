@@ -12,8 +12,9 @@
 /* Porcentagem do HP máximo perdida por turno com ensolação (15%) */
 #define ENSOLACAO_DAMAGE_PERCENT 0.15f
 
-/* Dano base de sangramento (5 HP inicial, cresce +5/turno) */
-#define BLEED_BASE_DAMAGE 5
+/* Dano base de sangramento (20 HP inicial, cresce +10/turno) */
+#define BLEED_BASE_DAMAGE 20
+#define BLEED_DAMAGE_GROWTH 10.0f
 
 /* Porcentagem do HP máximo recuperada por turno com regeneração (10%) */
 #define REGEN_HEAL_PERCENT 0.10f
@@ -284,7 +285,7 @@ int processStatusEffects(StatusList* statusList, int* currentHP, int maxHP) {
                     if (bleedDamage < 1) bleedDamage = 1;
                     *currentHP -= bleedDamage;
                     totalDamage += bleedDamage;
-                    condition->intensity += 5.0f;
+                    condition->intensity += BLEED_DAMAGE_GROWTH;
                     break;
                 }
 

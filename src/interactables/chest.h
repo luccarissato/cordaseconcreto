@@ -32,4 +32,6 @@ void chest_on_update(Interactable* self, Vector2 playerPos);
 void chest_on_draw(Interactable* self);
 void chest_on_unload(Interactable* self);
 
+void resetOpenedChests(void);
+
 #endif

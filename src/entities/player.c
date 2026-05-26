@@ -5,6 +5,7 @@
 #include <math.h>
 
 #define SPEED 5.0f
+#define RUN_SPEED_MULTIPLIER 1.3f
 #define ANIM_SPEED 0.2f
 
 static float playerWorldScale = 1.0f;
@@ -317,21 +318,26 @@ void updatePlayerAnimation(Player* p, int isMoving) {
 
 void updatePlayer(Player* p, const Rectangle* blockers, int blockerCount) {
     Vector2 move = {0};
+    float currentSpeed = SPEED;
+
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+        currentSpeed *= RUN_SPEED_MULTIPLIER;
+    }
 
     if (IsKeyDown(KEY_UP)) {
-        move.y -= SPEED;
+        move.y -= currentSpeed;
         p->direction = DIR_UP;
     }
     if (IsKeyDown(KEY_DOWN)) {
-        move.y += SPEED;
+        move.y += currentSpeed;
         p->direction = DIR_DOWN;
     }
     if (IsKeyDown(KEY_RIGHT)) {
-        move.x += SPEED;
+        move.x += currentSpeed;
         p->direction = DIR_RIGHT;
     }
     if (IsKeyDown(KEY_LEFT)) {
-        move.x -= SPEED;
+        move.x -= currentSpeed;
         p->direction = DIR_LEFT;
     }
 

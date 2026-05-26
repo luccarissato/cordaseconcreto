@@ -48,6 +48,45 @@ static Item* chestLootPool[] = {
 };
 
 static const int CHEST_LOOT_POOL_SIZE = sizeof(chestLootPool) / sizeof(chestLootPool[0]);
+static Vector2 openedChestPositions[128];
+static int openedChestCount = 0;
+
+static int isSameChestPosition(Vector2 a, Vector2 b) {
+    return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
+}
+
+static int wasChestOpened(Vector2 position) {
+    for (int i = 0; i < openedChestCount; i++) {
+        if (isSameChestPosition(openedChestPositions[i], position)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static void rememberOpenedChest(Vector2 position) {
+    if (wasChestOpened(position)) {
+        return;
+    }
+
+    if (openedChestCount < (int)(sizeof(openedChestPositions) / sizeof(openedChestPositions[0]))) {
+        openedChestPositions[openedChestCount++] = position;
+    }
+}
+
+static void applyPersistedChestState(Interactable* chest) {
+    if (chest == NULL || chest->data == NULL) {
+        return;
+    }
+
+    ChestData* data = (ChestData*)chest->data;
+    if (wasChestOpened(chest->position)) {
+        chest->hasInteracted = 1;
+        data->isClosed = 0;
+        chest->sprite = data->spriteOpen;
+    }
+}
 
 static Item* selectRandomItem(void) {
     int randomIndex = rand() % CHEST_LOOT_POOL_SIZE;
@@ -69,6 +108,7 @@ void chest_on_interact(Interactable* self, void* playerData) {
     if (!self->hasInteracted) {
         self->hasInteracted = 1;
         data->isClosed = 0;
+        rememberOpenedChest(self->position);
         
         Item* selectedItem = selectRandomItem();
         addItemToInventory(selectedItem);
@@ -122,11 +162,11 @@ Interactable createChest(
         .type = INTERACTABLE_CHEST,
         .position = position,
         .collider = {
-            .offset = {0.0f, 0.0f},
-            .size = {(float)data->spriteClosed.width, (float)data->spriteClosed.height}
+            .offset = {(float)data->spriteClosed.width * 0.14f, (float)data->spriteClosed.height * 0.14f},
+            .size = {(float)data->spriteClosed.width * 0.72f, (float)data->spriteClosed.height * 0.72f}
         },
         .hasInteracted = 0,
-        .interactionDistance = 80.0f,
+        .interactionDistance = 50.0f,
         .sprite = data->spriteClosed,
         
         .on_interact = chest_on_interact,
@@ -136,6 +176,8 @@ Interactable createChest(
         
         .data = (void*) data
     };
+
+    applyPersistedChestState(&chest);
     
     return chest;
 }
@@ -153,7 +195,12 @@ void addChestSequence(
     for (int i = 0; i < count; i++) {
         Interactable chest = createChest(basePosition, closedSpritePath, openSpritePath);
         chest.position.y -= (float)chest.sprite.height;
+        applyPersistedChestState(&chest);
         addInteractable(manager, &chest);
         basePosition.x += (float)chest.sprite.width + gap;
     }
+}
+
+void resetOpenedChests(void) {
+    openedChestCount = 0;
 }

@@ -133,6 +133,16 @@ void startCombatWithEnemies(Player* players, int playerCount, Enemy* enemies, in
     }
     
     calculateTurnOrder();
+
+    for (int i = 0; i < enemyCount && combatState.combatantCount < MAX_COMBATANTS; i++) {
+        if (isBoss2EnemyName(enemies[i].name)) {
+            combatState.combatants[combatState.combatantCount].type = COMBATANT_ENEMY;
+            combatState.combatants[combatState.combatantCount].enemyIndex = i;
+            combatState.combatants[combatState.combatantCount].speedStat = -999;
+            combatState.combatantCount++;
+            break;
+        }
+    }
     
     combatState.inCombat = 1;
 }

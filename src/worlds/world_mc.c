@@ -218,8 +218,12 @@ static int processWorldMCTriggers(Vector2 playerPos) {
 
     Rectangle playerRect = getColliderRect(playerPos, playerCollider);
 
-    if (IsKeyPressed(KEY_Z)) {
-        if (!WORLD_MC_BOSS3_TRIGGER_USED && CheckCollisionRecs(playerRect, WORLD_MC_HATCH_INTERACTION_BOX)) {
+    if (!WORLD_MC_BOSS3_TRIGGER_USED && CheckCollisionRecs(playerRect, WORLD_MC_HATCH_INTERACTION_BOX)) {
+        if (bossAiHasActiveMessage()) {
+            return 1;
+        }
+
+        if (IsKeyPressed(KEY_Z)) {
             int hasFirstKeyPiece = hasItemInInventory("Pedaco de Chave 1");
             int hasSecondKeyPiece = hasItemInInventory("Pedaco de Chave 2");
 
@@ -238,14 +242,17 @@ static int processWorldMCTriggers(Vector2 playerPos) {
             );
 
             if (enemyManager.count > bossIndex) {
-                setEnemyStats(&enemyManager.enemies[bossIndex], 1300, 45, 18, 10);
+                setEnemyStats(&enemyManager.enemies[bossIndex], 800, 45, 18, 10);
+                setEnemyElementalResistances(&enemyManager.enemies[bossIndex], 5, 5, 5, 5);
             }
 
             WORLD_MC_BOSS3_TRIGGER_USED = 1;
             startCombat(playerPos, COMBAT_DETECTION_DISTANCE);
             return 1;
         }
+    }
 
+    if (IsKeyPressed(KEY_Z)) {
         Rectangle treeRect = getWorldMCTreeRect(WORLD_MC_TREE_POSITIONS_RD[1]);
         Rectangle pickArea;
         if (treeRect.width > 0 && treeRect.height > 0) {

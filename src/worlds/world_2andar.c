@@ -174,7 +174,8 @@ static int processWorld2AndarTriggers(Vector2 playerPos) {
 
             spawnEnemy("Mulher do Guarda Chuva Branco", WORLD_2ANDAR_BOSS1_SPAWN, WORLD_2ANDAR_BOSS1_TEXTURE_PATH, MAX_ENEMIES);
             if (enemyManager.count > bossIndex) {
-                setEnemyStats(&enemyManager.enemies[bossIndex], 900, 40, 10, 12);
+                setEnemyStats(&enemyManager.enemies[bossIndex], 700, 34, 5, 12);
+                setEnemyElementalResistances(&enemyManager.enemies[bossIndex], 20, 20, 20, 20);
             }
 
             WORLD_2ANDAR_BOSS1_TRIGGER_USED = 1;

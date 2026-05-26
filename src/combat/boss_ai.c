@@ -78,6 +78,7 @@ static int boss3PromptIndex = 0;
 static int boss3PromptActive = 0;
 
 #define BOSS_STATUS_DURATION 3
+#define BOSS_MESSAGE_DURATION 4.6f
 
 static void clearBoss2TrapMarks(void) {
     for (int i = 0; i < PARTY_SIZE; i++) {
@@ -251,8 +252,8 @@ static void boss2ApplyTrapEffect(int playerIndex, Boss2TrapEffect effect) {
     if (!target->isAlive) return;
 
     float damageMultiplier = 1.0f + bossState.cumulativeDamageBonus;
-    int trapDamageHigh = (bossState.phase >= 2) ? 150 : 120;
-    int trapDamageLow = (bossState.phase >= 2) ? 60 : 45;
+    int trapDamageHigh = (bossState.phase >= 2) ? 130 : 100;
+    int trapDamageLow = (bossState.phase >= 2) ? 50 : 35;
 
     switch (effect) {
         case BOSS2_TRAP_HIGH_DAMAGE:
@@ -294,7 +295,7 @@ static void boss2UseSpecialAttack(void) {
 
     Player* target = &party[targetIndex];
     bossAiQueueMessage("Papa figo esmagou %s com um ataque especial!", target->name);
-    applyCombatDamageToPlayer(target, (int)(150 * (1.0f + bossState.cumulativeDamageBonus)));
+    applyCombatDamageToPlayer(target, (int)(125 * (1.0f + bossState.cumulativeDamageBonus)));
     bossState.boss2SpecialUsedThisRound = 1;
 }
 
@@ -321,7 +322,7 @@ void bossAiQueueMessage(const char* fmt, ...) {
 
     if (bossMessageCount == 1) {
         bossMessageIndex = 0;
-        bossMessageTimer = 1.4f;
+        bossMessageTimer = BOSS_MESSAGE_DURATION;
     }
 }
 
@@ -351,7 +352,7 @@ void bossAiUpdateMessages(float deltaTime) {
         return;
     }
 
-    bossMessageTimer = 1.4f;
+    bossMessageTimer = BOSS_MESSAGE_DURATION;
 }
 
 static const char* getBossElementName(int elementIndex) {
@@ -536,7 +537,6 @@ void bossAiOnRoundWrap(void) {
     if (!bossState.active) return;
 
     if (bossState.kind == BOSS_KIND_2) {
-        boss2UseRoundWrapAction();
         bossState.boss2SpecialUsedThisRound = 0;
         return;
     }
@@ -639,7 +639,7 @@ int bossAiHandleEnemyTurn(int worldEnemyIndex, Enemy* enemy) {
     if (bossState.phase >= 2) {
         totalMultiplier += bossState.cumulativeDamageBonus;
     }
-    int baseDamage = (bossState.phase == 1) ? 70 : 90;
+    int baseDamage = (bossState.phase == 1) ? 55 : 70;
     int weaknessHits = 0;
     char weakNames[96] = "";
 

@@ -727,13 +727,13 @@ Item pimentaMalagueta = {
  * Substância que causa ferimentos escaláveis */
 Item gotaSangreMaldita = {
     .name = "Gota de Sangue Maldita",
-    .description = "Aplica Sangramento permanente no alvo. Dano cresce +5 HP/turno.",
+    .description = "Aplica Sangramento permanente no alvo. Dano cresce +10 HP/turno.",
     .type = ITEM_INFLICT_STATUS,
     .hpRestore = 0,
     .manaRestore = 0,
     .statusToApply = STATUS_BLEED,
     .statusDuration = -1,
-    .statusIntensity = 5.0f,
+    .statusIntensity = 0.0f,
     .statusToCure = STATUS_NONE,
     .cureType = CURE_SPECIFIC,
     .statBoostType = BOOST_HP,
