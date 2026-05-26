@@ -2,6 +2,12 @@
 
 Projeto em C usando raylib para a cadeira de Algoritmos e Estrutura de Dados.
 
+# Do que se trata?
+
+Em um mundo onde o consciente coletivo humano pode com (energia positiva o suficiente) dar vida a musica e (com energia negativa
+dar vida o suficiente) a monstros, um grupo de quatro heróis é enviado ao Marco Zero para afugentar 3 figuras da mitologia
+pernambucana que tomaram vida e estão aterrorizando os habitantes da região.
+
 ## Requisitos
 
 - GCC (MinGW-w64) 10+
